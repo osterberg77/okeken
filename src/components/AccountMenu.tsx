@@ -10,6 +10,7 @@ type Session$ = Session | null | undefined; // undefined = laddar
 export default function AccountMenu() {
   const [session, setSession] = useState<Session$>(undefined);
   const [open, setOpen] = useState(false);
+  const [passwordMail, setPasswordMail] = useState<'idle' | 'sent' | 'error'>('idle');
   const root = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +43,17 @@ export default function AccountMenu() {
     };
   }, [open]);
 
+  async function onChoosePassword() {
+    if (!session) return;
+    try {
+      const { sendPasswordReset } = await import('../lib/firebase/session');
+      await sendPasswordReset(session.email);
+      setPasswordMail('sent');
+    } catch {
+      setPasswordMail('error');
+    }
+  }
+
   async function onSignOut() {
     const { signOut } = await import('../lib/firebase/session');
     await signOut();
@@ -49,7 +61,8 @@ export default function AccountMenu() {
   }
 
   if (session === null) {
-    const next = typeof location === 'undefined' ? '' : `?next=${encodeURIComponent(location.pathname)}`;
+    const path = typeof location === 'undefined' ? '/' : location.pathname;
+    const next = path === '/' || path.startsWith('/logga-in') ? '' : `?next=${encodeURIComponent(path)}`;
     return (
       <a
         href={`/logga-in${next}`}
@@ -95,6 +108,17 @@ export default function AccountMenu() {
             </>
           )}
           <div className="h-px bg-line" />
+          {passwordMail === 'idle' ? (
+            <button type="button" onClick={onChoosePassword} className="cursor-pointer py-1.5 text-left font-medium text-ink hover:text-accent">
+              Välj eller byt lösenord
+            </button>
+          ) : (
+            <p className="m-0 text-[13px] text-muted">
+              {passwordMail === 'sent'
+                ? `Vi har mejlat en länk till ${session.email} där du väljer lösenord.`
+                : 'Kunde inte skicka mejlet. Försök igen senare.'}
+            </p>
+          )}
           <button type="button" onClick={onSignOut} className="cursor-pointer py-1.5 text-left font-semibold text-accent">
             Logga ut
           </button>

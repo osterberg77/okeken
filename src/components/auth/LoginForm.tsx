@@ -1,100 +1,176 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { safeNext } from '../../lib/firebase/flags';
 import {
   completeEmailLink,
+  createAccount,
   isEmailLink,
   pendingEmail,
   sendEmailLink,
+  sendPasswordReset,
   signInWithGoogle,
+  signInWithPassword,
 } from '../../lib/firebase/session';
 
-type State =
-  | { step: 'start' }
-  | { step: 'busy' }
-  | { step: 'sent'; email: string }
-  | { step: 'confirmEmail' } // länken öppnad i en annan webbläsare än den som begärde den
-  | { step: 'error'; message: string };
+type Mode = 'password' | 'create' | 'reset' | 'link' | 'confirmLink';
+
+interface Notice {
+  title: string;
+  text: ReactNode;
+}
+
+const MIN_PASSWORD = 8;
 
 function errorMessage(err: unknown): string {
   const code = (err as { code?: string })?.code ?? '';
-  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return '';
-  if (code === 'auth/invalid-email') return 'E-postadressen ser inte ut att stämma.';
-  if (code === 'auth/invalid-action-code' || code === 'auth/expired-action-code')
-    return 'Länken har redan använts eller gått ut. Begär en ny.';
-  if (code === 'auth/operation-not-allowed') return 'Inloggningssättet är inte aktiverat. Kontakta klubben.';
-  if (code === 'auth/network-request-failed') return 'Ingen kontakt med servern. Kontrollera uppkopplingen.';
-  return 'Något gick fel vid inloggningen. Försök igen.';
+  switch (code) {
+    case 'auth/popup-closed-by-user':
+    case 'auth/cancelled-popup-request':
+      return '';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+      return 'Fel e-postadress eller lösenord. Har du tidigare loggat in med Google eller länk? Välj "Glömt lösenord?" så får du sätta ett lösenord.';
+    case 'auth/email-already-in-use':
+      return 'Det finns redan ett konto med den adressen. Logga in, eller välj "Glömt lösenord?".';
+    case 'auth/weak-password':
+      return `Lösenordet behöver vara minst ${MIN_PASSWORD} tecken.`;
+    case 'auth/too-many-requests':
+      return 'För många försök. Vänta en stund, eller välj "Glömt lösenord?".';
+    case 'auth/invalid-email':
+      return 'E-postadressen ser inte ut att stämma.';
+    case 'auth/invalid-action-code':
+    case 'auth/expired-action-code':
+      return 'Länken har redan använts eller gått ut. Begär en ny.';
+    case 'auth/operation-not-allowed':
+      return 'Inloggningssättet är inte aktiverat. Kontakta klubben.';
+    case 'auth/network-request-failed':
+      return 'Ingen kontakt med servern. Kontrollera uppkopplingen.';
+    default:
+      return 'Något gick fel vid inloggningen. Försök igen.';
+  }
 }
 
 export default function LoginForm() {
-  const [state, setState] = useState<State>({ step: 'start' });
+  const [mode, setMode] = useState<Mode>('password');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState<Notice | null>(null);
   const next = safeNext(new URLSearchParams(location.search).get('next'));
 
   const done = () => location.replace(next);
 
-  async function run(action: () => Promise<void>, onSuccess: () => void) {
-    setState({ step: 'busy' });
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
+    setError('');
     try {
       await action();
-      onSuccess();
     } catch (err) {
-      const message = errorMessage(err);
-      setState(message ? { step: 'error', message } : { step: 'start' });
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
     }
   }
 
-  // Användaren kommer tillbaka via länken i mejlet
+  function go(m: Mode) {
+    setMode(m);
+    setError('');
+  }
+
+  // Användaren kommer tillbaka via inloggningslänken i mejlet
   useEffect(() => {
     if (!isEmailLink()) return;
     const saved = pendingEmail();
-    if (saved) run(() => completeEmailLink(saved), done);
-    else setState({ step: 'confirmEmail' });
+    if (saved) run(async () => { await completeEmailLink(saved); done(); });
+    else setMode('confirmLink');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     const address = email.trim();
-    if (state.step === 'confirmEmail') run(() => completeEmailLink(address), done);
-    else run(() => sendEmailLink(address, next), () => setState({ step: 'sent', email: address }));
+    run(async () => {
+      if (mode === 'password') {
+        if ((await signInWithPassword(address, password)) === 'ok') done();
+        else
+          setNotice({
+            title: 'Bekräfta din e-postadress',
+            text: <>Kontot är inte bekräftat än. Vi har skickat ett nytt mejl till <strong>{address}</strong>. Klicka på länken i det och logga sedan in här igen.</>,
+          });
+      } else if (mode === 'create') {
+        await createAccount(name.trim(), address, password);
+        setNotice({
+          title: 'Bekräfta din e-postadress',
+          text: <>Vi har skickat ett mejl till <strong>{address}</strong>. Klicka på länken i det och logga sedan in här med ditt lösenord. Styrelsen ger dig därefter behörighet.</>,
+        });
+      } else if (mode === 'reset') {
+        await sendPasswordReset(address);
+        setNotice({
+          title: 'Kolla din inkorg',
+          text: <>Om det finns ett konto för <strong>{address}</strong> har vi skickat en länk där du väljer ett nytt lösenord.</>,
+        });
+      } else if (mode === 'link') {
+        await sendEmailLink(address, next);
+        setNotice({
+          title: 'Kolla din inkorg',
+          text: <>Vi har skickat en inloggningslänk till <strong>{address}</strong>. Öppna den i den här webbläsaren så loggas du in direkt.</>,
+        });
+      } else {
+        await completeEmailLink(address);
+        done();
+      }
+    });
   }
 
-  if (state.step === 'sent') {
+  if (notice) {
     return (
       <Card>
-        <h1 className="m-0 font-display text-[32px] leading-[1.1] font-bold tracking-[-.02em]">Kolla din inkorg</h1>
-        <p className="text-[17px] leading-[1.65]">
-          Vi har skickat en inloggningslänk till <strong>{state.email}</strong>. Öppna länken i den här webbläsaren så
-          loggas du in direkt.
-        </p>
-        <p className="text-sm text-muted">Hittar du inget? Titta i skräpposten eller försök igen om en stund.</p>
-        <button type="button" onClick={() => setState({ step: 'start' })} className="self-start text-sm font-semibold text-accent">
-          Använd en annan adress
-        </button>
+        <Title>{notice.title}</Title>
+        <p className="text-[17px] leading-[1.65]">{notice.text}</p>
+        <p className="text-sm text-muted">Hittar du inget mejl? Titta i skräpposten.</p>
+        <TextButton onClick={() => { setNotice(null); go('password'); }}>Tillbaka till inloggningen</TextButton>
       </Card>
     );
   }
 
-  const busy = state.step === 'busy';
-  const confirming = state.step === 'confirmEmail';
+  const titles: Record<Mode, string> = {
+    password: 'Logga in',
+    create: 'Skapa konto',
+    reset: 'Glömt lösenord',
+    link: 'Logga in med länk',
+    confirmLink: 'Slutför inloggningen',
+  };
+  const intros: Record<Mode, string> = {
+    password: 'För dig som publicerar, lägger banor eller sitter i styrelsen. Besökare behöver inte logga in.',
+    create: 'Efter att du bekräftat e-postadressen ger styrelsen dig rätt behörighet.',
+    reset: 'Skriv din e-postadress så mejlar vi en länk där du väljer ett nytt lösenord. Fungerar också om du aldrig haft något lösenord.',
+    link: 'Inget lösenord behövs: vi mejlar en länk som loggar in dig.',
+    confirmLink: 'Skriv in e-postadressen som länken skickades till.',
+  };
+  const submitLabels: Record<Mode, string> = {
+    password: 'Logga in',
+    create: 'Skapa konto',
+    reset: 'Skicka länk för nytt lösenord',
+    link: 'Skicka inloggningslänk',
+    confirmLink: 'Logga in',
+  };
+  const withPassword = mode === 'password' || mode === 'create';
 
   return (
     <Card>
-      <h1 className="m-0 font-display text-[32px] leading-[1.1] font-bold tracking-[-.02em] sm:text-[36px]">Logga in</h1>
-      <p className="text-muted">
-        {confirming
-          ? 'Skriv in e-postadressen som länken skickades till, så slutför vi inloggningen.'
-          : 'För dig som publicerar, lägger banor eller sitter i styrelsen. Besökare behöver inte logga in.'}
-      </p>
+      <Title>{titles[mode]}</Title>
+      <p className="text-muted">{intros[mode]}</p>
 
-      {!confirming && (
+      {mode === 'password' && (
         <>
           <button
             type="button"
             disabled={busy}
-            onClick={() => run(signInWithGoogle, done)}
-            className="flex cursor-pointer items-center justify-center gap-3 rounded-full border-[1.5px] border-ink/18 bg-white px-6 py-[13px] text-sm font-semibold text-ink hover:border-accent disabled:opacity-60"
+            onClick={() => run(async () => { await signInWithGoogle(); done(); })}
+            className="flex cursor-pointer items-center justify-center gap-3 rounded-full border-[1.5px] border-ink/18 bg-white px-6 py-[13px] text-base font-semibold text-ink hover:border-accent disabled:opacity-60"
           >
             <GoogleLogo />
             Fortsätt med Google
@@ -107,38 +183,110 @@ export default function LoginForm() {
         </>
       )}
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <label htmlFor="email" className="text-sm font-semibold">
-          E-postadress
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="rounded-2xl border-[1.5px] border-ink/15 bg-white px-4 py-3 text-base outline-none focus:border-accent"
-        />
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {mode === 'create' && (
+          <Field label="Namn" id="name">
+            <input id="name" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={INPUT} />
+          </Field>
+        )}
+        <Field label="E-postadress" id="email">
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete={mode === 'create' ? 'email' : 'username'}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={INPUT}
+          />
+        </Field>
+        {withPassword && (
+          <Field
+            label="Lösenord"
+            id="password"
+            hint={mode === 'create' ? `Minst ${MIN_PASSWORD} tecken` : undefined}
+            aside={
+              <button type="button" onClick={() => setShowPassword((s) => !s)} className="cursor-pointer text-sm font-semibold text-accent">
+                {showPassword ? 'Dölj' : 'Visa'}
+              </button>
+            }
+          >
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              required
+              minLength={mode === 'create' ? MIN_PASSWORD : undefined}
+              autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={INPUT}
+            />
+          </Field>
+        )}
+
         <button
           type="submit"
           disabled={busy}
-          className="cursor-pointer rounded-full bg-accent px-6 py-[13px] text-sm font-semibold text-white shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110 disabled:opacity-60"
+          className="cursor-pointer rounded-full bg-accent px-6 py-[14px] text-base font-semibold text-white shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110 disabled:opacity-60"
         >
-          {busy ? 'Vänta…' : confirming ? 'Logga in' : 'Skicka inloggningslänk'}
+          {busy ? 'Vänta…' : submitLabels[mode]}
         </button>
       </form>
 
-      {state.step === 'error' && (
-        <p role="alert" className="rounded-2xl bg-[#FBEAEA] px-4 py-3 text-sm text-[#8A2B2B]">
-          {state.message}
+      {error && (
+        <p role="alert" className="rounded-2xl bg-[#FBEAEA] px-4 py-3 text-[15px] text-[#8A2B2B]">
+          {error}
         </p>
       )}
+
+      <div className="flex flex-col items-start gap-2.5 border-t border-line pt-4">
+        {mode === 'password' ? (
+          <>
+            <TextButton onClick={() => go('reset')}>Glömt lösenord?</TextButton>
+            <TextButton onClick={() => go('create')}>Första gången? Skapa konto</TextButton>
+            <TextButton onClick={() => go('link')}>Logga in utan lösenord, med en länk i mejlet</TextButton>
+          </>
+        ) : (
+          <TextButton onClick={() => go('password')}>
+            {mode === 'create' ? 'Har du redan ett konto? Logga in' : 'Tillbaka till inloggningen'}
+          </TextButton>
+        )}
+      </div>
     </Card>
   );
 }
 
-function Card({ children }: { children: React.ReactNode }) {
+const INPUT =
+  'w-full rounded-2xl border-[1.5px] border-ink/15 bg-white px-4 py-3 text-[17px] outline-none focus:border-accent';
+
+function Field({ label, id, hint, aside, children }: { label: string; id: string; hint?: string; aside?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between">
+        <label htmlFor={id} className="text-[15px] font-semibold">
+          {label}
+        </label>
+        {aside}
+      </div>
+      {children}
+      {hint && <span className="text-sm text-muted">{hint}</span>}
+    </div>
+  );
+}
+
+function Title({ children }: { children: ReactNode }) {
+  return <h1 className="m-0 font-display text-[32px] leading-[1.1] font-bold tracking-[-.02em] sm:text-[36px]">{children}</h1>;
+}
+
+function TextButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} className="cursor-pointer text-left text-[15px] font-semibold text-accent hover:underline">
+      {children}
+    </button>
+  );
+}
+
+function Card({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto flex max-w-[460px] flex-col gap-[18px] rounded-[28px] bg-white px-6 py-8 shadow-card sm:px-[38px] sm:py-[38px]">
       {children}

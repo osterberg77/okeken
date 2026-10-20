@@ -54,9 +54,12 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || has('board') || has('superadmin'));
 
-      // Första inloggningen: eget dokument utan behörigheter
+      // Första inloggningen: eget dokument utan behörigheter. Kräver bekräftad e-post
+      // (Google och e-postlänk är det direkt; lösenordskonton efter bekräftelsemejlet),
+      // så att ingen kan registrera sig med någon annans adress och få dennes roller.
       allow create: if signedIn()
         && request.auth.uid == uid
+        && request.auth.token.email_verified == true
         && request.resource.data.keys().hasOnly(['displayName', 'email', 'permissions', 'createdAt'])
         && request.resource.data.permissions == []
         && request.resource.data.email == request.auth.token.email

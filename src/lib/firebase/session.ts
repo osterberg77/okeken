@@ -1,11 +1,16 @@
 import {
+  createUserWithEmailAndPassword,
   GoogleAuthProvider,
   isSignInWithEmailLink,
   onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
   sendSignInLinkToEmail,
+  signInWithEmailAndPassword,
   signInWithEmailLink,
   signInWithPopup,
   signOut as firebaseSignOut,
+  updateProfile,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
@@ -62,6 +67,39 @@ export async function completeEmailLink(email: string): Promise<void> {
   storage()?.removeItem(EMAIL_KEY);
   await ensureUserDoc(user);
   setRememberedSignIn(true);
+}
+
+/** Mejl från Firebase (bekräftelse, nytt lösenord) leder tillbaka hit */
+function returnToLogin() {
+  return { url: new URL('/logga-in', location.origin).href };
+}
+
+/**
+ * Lösenordskonton måste ha bekräftat e-postadressen innan de får ett users-dokument
+ * (se firestore.rules). Obekräftade loggas ut och får ett nytt bekräftelsemejl.
+ */
+export async function signInWithPassword(email: string, password: string): Promise<'ok' | 'unverified'> {
+  const { user } = await signInWithEmailAndPassword(auth, email, password);
+  if (!user.emailVerified) {
+    await sendEmailVerification(user, returnToLogin());
+    await firebaseSignOut(auth);
+    return 'unverified';
+  }
+  await ensureUserDoc(user);
+  setRememberedSignIn(true);
+  return 'ok';
+}
+
+export async function createAccount(name: string, email: string, password: string): Promise<void> {
+  const { user } = await createUserWithEmailAndPassword(auth, email, password);
+  if (name) await updateProfile(user, { displayName: name });
+  await sendEmailVerification(user, returnToLogin());
+  await firebaseSignOut(auth);
+}
+
+/** Används både för "Glömt lösenord?" och för att välja lösenord första gången */
+export async function sendPasswordReset(email: string): Promise<void> {
+  await sendPasswordResetEmail(auth, email, returnToLogin());
 }
 
 export async function signOut(): Promise<void> {

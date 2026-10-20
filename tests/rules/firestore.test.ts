@@ -77,11 +77,14 @@ describe('users: create', () => {
     permissions: [],
     createdAt: serverTimestamp(),
   });
-  const newUser = () =>
-    env.authenticatedContext('new', { email: 'new@example.com' }).firestore();
+  const newUser = (emailVerified = true) =>
+    env.authenticatedContext('new', { email: 'new@example.com', email_verified: emailVerified }).firestore();
 
   it('allows own doc with empty permissions', async () => {
     await assertSucceeds(setDoc(doc(newUser(), 'users', 'new'), valid()));
+  });
+  it('denies unverified email (password account before confirmation)', async () => {
+    await assertFails(setDoc(doc(newUser(false), 'users', 'new'), valid()));
   });
   it('denies non-empty permissions', async () => {
     await assertFails(

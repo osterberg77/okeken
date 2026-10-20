@@ -29,7 +29,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 
 1. Layout, header/footer, meny enligt designriktningen.
 2. Statiska infosidor seedade från `seed/` (Om klubben, Bli medlem, Träning & tävling, Terrängspår, Tävla, guider, Eken-Nytt-arkiv), möjlighet att lägga till sidor och menyalternativ i rimlig omfattning.
-3. Inloggning (Google + e-postlänk) och roller med admin-sida för tilldelning.
+3. Inloggning (lösenord, Google, e-postlänk) och roller med admin-sida för tilldelning.
 4. Events och träningar: titel, typ, start och slut, plats, text. Skapa, redigera, publicera, avpublicera.
 5. **Live preview** i admin av utkast, inkl. SoMe-kort.
 6. **Statusbadge** i hörnet på allt opublicerat för inloggade (`StatusBadge`).
@@ -108,7 +108,7 @@ API-nyckel som GitHub Secret `EVENTOR_API_KEY` (aldrig i repot). Det nattliga by
 ## Övrigt beslutat från granskningen
 
 - Stabila event-adresser: `/event/<datum>-<slug>`, låses efter första publicering.
-- Inloggning: Google + e-postlänk (utan lösenord).
+- Inloggning: e-post + lösenord (med bekräftelsemejl), Google eller e-postlänk utan lösenord.
 
 ## Startinnehåll
 
