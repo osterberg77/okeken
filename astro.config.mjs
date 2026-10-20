@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   site: 'https://okeken.web.app',
   output: 'static',
+  // Matchar Hosting (cleanUrls, trailingSlash: false): /event/x, inte /event/x/
+  trailingSlash: 'never',
+  build: { format: 'file' },
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
