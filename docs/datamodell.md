@@ -9,11 +9,11 @@
 | `title` | string | |
 | `startsAt` | timestamp | Eventet blir "aktivt" |
 | `endsAt` | timestamp | T.ex. tisdagsträning, banor ute till söndag |
-| `location` | `{ name, lat?, lng? }` | |
+| `location` | `{ name, mapUrl?, lat?, lng? }` | `mapUrl` = länk till Google Maps e.d. |
 | `body` | string (markdown) | |
 | `courseFiles` | `[{ name, storagePath, label }]` | PDF-banor. Unika filnamn i Storage (skriv aldrig över), så att `published`-snapshoten inte påverkas av ändringar i utkastet |
 | `livelox` | string? | Länk (senare) |
-| `courseSetter` | uid? | Banläggare |
+| `courseSetter` | string? | Banläggarens namn (fritext; banläggare behöver inget konto) |
 | `source` | `manual \| eventor` | |
 | `eventorId` | string? | Vid speglad tävling |
 | `slug` | string | Stabil adress, t.ex. `2026-10-21-tisdagstraning`. Låses efter första publicering |
