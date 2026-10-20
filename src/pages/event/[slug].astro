@@ -1,0 +1,26 @@
+---
+import EventDetail from '../../components/EventDetail';
+import Icon from '../../components/Icon';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPublicEvents } from '../../lib/events';
+import type { PublicEvent } from '../../types/event';
+
+export async function getStaticPaths() {
+  const events = await getPublicEvents();
+  return events.map((event) => ({ params: { slug: event.slug }, props: { event } }));
+}
+
+const { event } = Astro.props as { event: PublicEvent };
+const url = new URL(`/event/${event.slug}`, Astro.site).href;
+---
+
+<BaseLayout title={`${event.title} – OK Eken`} ogTitle={event.title} description={event.excerpt} ogType="article">
+  <main class="mx-auto max-w-3xl px-4 py-6 sm:py-8">
+    <a href="/" class="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-600 hover:text-brand-purple">
+      <Icon name="arrowLeft" /> Till kalendern
+    </a>
+    <div class="mt-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+      <EventDetail event={event} shareUrl={url} />
+    </div>
+  </main>
+</BaseLayout>

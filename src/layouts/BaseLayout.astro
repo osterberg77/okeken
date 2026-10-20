@@ -1,12 +1,18 @@
 ---
 import '../styles/global.css';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
 
 interface Props {
   title: string;
   description?: string;
+  /** Rubrik för delning (Open Graph); standard är `title` */
+  ogTitle?: string;
+  ogType?: 'website' | 'article';
 }
 
-const { title, description = 'OK Eken – orienteringsklubb' } = Astro.props;
+const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
 ---
 
 <!doctype html>
@@ -14,11 +20,22 @@ const { title, description = 'OK Eken – orienteringsklubb' } = Astro.props;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta property="og:site_name" content="OK Eken" />
+    <meta property="og:locale" content="sv_SE" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={ogTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
   </head>
-  <body class="font-sans text-gray-900">
-    <slot />
+  <body class="flex min-h-screen flex-col bg-brand-sand font-sans text-stone-900 antialiased">
+    <Header />
+    <div class="flex-1">
+      <slot />
+    </div>
+    <Footer />
   </body>
 </html>

@@ -1,0 +1,38 @@
+---
+import { CLUB } from '../lib/club';
+
+const path = Astro.url.pathname;
+const links = [{ href: '/', label: 'Kalender', active: path === '/' || path.startsWith('/event') }];
+---
+
+<header class="border-b border-stone-200 bg-white">
+  <div class="h-1 bg-brand-purple"></div>
+  <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+    <a href="/" class="flex items-center gap-3">
+      <img src="/logo.svg" alt="" class="h-11 w-auto" width="40" height="44" />
+      <span class="leading-tight">
+        <span class="block text-lg font-extrabold tracking-tight text-brand-purple-dark">{CLUB.name}</span>
+        <span class="block text-[11px] font-bold uppercase tracking-widest text-brand-green-dark">Orientering i Åtvidaberg</span>
+      </span>
+    </a>
+    <nav aria-label="Huvudmeny" class="flex items-center gap-1 text-sm font-semibold">
+      {
+        links.map((l) => (
+          <a
+            href={l.href}
+            aria-current={l.active ? 'page' : undefined}
+            class:list={[
+              'rounded-full px-3 py-2',
+              l.active ? 'bg-brand-purple-light text-brand-purple-dark' : 'text-stone-700 hover:text-brand-purple',
+            ]}
+          >
+            {l.label}
+          </a>
+        ))
+      }
+      <a href={CLUB.eventor} class="hidden rounded-full px-3 py-2 text-stone-700 hover:text-brand-purple sm:block" target="_blank" rel="noopener">
+        Eventor ↗
+      </a>
+    </nav>
+  </div>
+</header>

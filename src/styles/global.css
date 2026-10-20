@@ -1,9 +1,50 @@
 @import "tailwindcss";
 @import "@fontsource-variable/plus-jakarta-sans";
 
+/* Färger hämtade från logotypen (lila sköld, grön ek, gul text) */
 @theme {
-  --color-forest: #2E7D32;
-  --color-purple: #7B1FA2;
-  --color-gold: #F9A825;
+  --color-brand-purple: #9c397b;
+  --color-brand-purple-dark: #682652;
+  --color-brand-purple-light: #f6e9f2;
+  --color-brand-green: #31a947;
+  --color-brand-green-dark: #21712f;
+  --color-brand-green-light: #e8f5ea;
+  --color-brand-gold: #f9d932;
+  --color-brand-sand: #f7f4ec;
   --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Markdown-innehåll i events och sidor */
+.prose-eken {
+  @apply leading-relaxed text-stone-800;
+}
+.prose-eken > * + * {
+  @apply mt-4;
+}
+.prose-eken h2 {
+  @apply mt-8 text-xl font-extrabold text-stone-900;
+}
+.prose-eken h3 {
+  @apply mt-6 text-lg font-bold text-stone-900;
+}
+.prose-eken a {
+  @apply font-semibold text-brand-purple underline decoration-brand-purple/30 underline-offset-2 hover:decoration-brand-purple;
+}
+.prose-eken ul {
+  @apply list-disc pl-5;
+}
+.prose-eken ol {
+  @apply list-decimal pl-5;
+}
+.prose-eken img {
+  @apply rounded-xl;
 }

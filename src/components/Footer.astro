@@ -1,0 +1,26 @@
+---
+import { CLUB } from '../lib/club';
+---
+
+<footer class="mt-16 bg-brand-purple-dark text-white/90">
+  <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
+    <div class="flex items-center gap-4">
+      <img src="/logo.svg" alt="" class="h-16 w-auto" width="58" height="64" loading="lazy" />
+      <div>
+        <div class="text-lg font-extrabold text-white">{CLUB.fullName}</div>
+        <div class="text-sm text-white/70">Orienteringsklubb sedan {CLUB.founded}</div>
+      </div>
+    </div>
+    <div class="text-sm">
+      <div class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-gold">Kontakt</div>
+      <a href={`mailto:${CLUB.email}`} class="hover:underline">{CLUB.email}</a>
+    </div>
+    <div class="text-sm">
+      <div class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-gold">Följ oss</div>
+      <ul class="grid gap-1">
+        <li><a href={CLUB.facebook} class="hover:underline" target="_blank" rel="noopener">Facebook</a></li>
+        <li><a href={CLUB.eventor} class="hover:underline" target="_blank" rel="noopener">Eventor</a></li>
+      </ul>
+    </div>
+  </div>
+</footer>
