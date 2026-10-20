@@ -23,7 +23,12 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 
 ## Kommandon
 
-Fylls i vid scaffolding (`npm run dev`, `npm run build`, `firebase emulators:start`, test av regler).
+- `npm run dev` – lokal utveckling
+- `npm run build` – statisk build till `dist/`
+- `npm run preview` – förhandsgranska bygget
+- `npm run check` – typkontroll (`astro check`), kör före commit
+- `npm run emulators` – Firebase-emulatorer (Auth, Firestore, Storage, Hosting)
+- Test av regler mot emulatorn: läggs till i steg 3.
 
 ## Arbetssätt och modellval
 

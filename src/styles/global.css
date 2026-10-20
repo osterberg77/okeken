@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
+
+@theme {
+  --color-forest: #2E7D32;
+  --color-purple: #7B1FA2;
+  --color-gold: #F9A825;
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+}

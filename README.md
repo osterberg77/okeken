@@ -77,13 +77,13 @@ Detaljer i [`docs/roller-och-behorigheter.md`](docs/roller-och-behorigheter.md).
 
 ## Utveckling
 
-Kommer när projektet är scaffoldat. Förväntat flöde:
-
 ```bash
 npm install
-npm run dev                          # lokal utveckling
-firebase emulators:start             # Auth, Firestore, Storage lokalt
-npm run build                        # statisk build till dist/
+npm run dev          # lokal utveckling (Astro)
+npm run build        # statisk build till dist/
+npm run preview      # förhandsgranska bygget
+npm run check        # typkontroll (astro check)
+npm run emulators    # Auth, Firestore, Storage, Hosting lokalt
 ```
 
 ## Deploy
