@@ -23,7 +23,7 @@ Ersätta okeken.se (Wix) med en snabb, statisk och sökbar sajt plus ett enkelt 
 
 ## Förslag (bekräfta vid scaffolding)
 
-Astro + React-öar, Tailwind 4 (Plus Jakarta Sans), Pagefind, TypeScript (beslut 0003).
+Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontrollsymboler.md`), Pagefind, TypeScript (beslut 0003).
 
 ## V1 – ersätter Wix
 

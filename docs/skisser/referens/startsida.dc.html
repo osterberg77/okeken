@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>OK Eken – Startsida och kalender</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="background:#FBFAFD;color:#2B2838;font-family:'Inter',system-ui,sans-serif;min-height:100%;font-size:15px;line-height:1.5;position:relative;overflow:hidden">
+
+<div aria-hidden="true" style="position:absolute;top:-180px;right:-120px;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(164,112,190,.22),rgba(164,112,190,0) 70%)"></div>
+<div aria-hidden="true" style="position:absolute;top:420px;left:-200px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(170,205,160,.25),rgba(170,205,160,0) 70%)"></div>
+
+<header style="position:relative;z-index:5">
+<div style="max-width:1240px;margin:0 auto;padding:22px 32px 8px;display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
+<a href="Main.dc.html" aria-label="OK Eken Åtvidaberg – startsida" style="display:block;text-decoration:none">
+<img src="/_blob/6614737ef4a746aac72834a91defa122" alt="OK Eken Åtvidaberg" width="138" height="153" style="display:block;width:138px;height:auto;filter:drop-shadow(0 14px 18px rgba(43,40,56,.18))">
+</a>
+<nav aria-label="Huvudmeny" style="display:flex;gap:4px;margin-left:24px;margin-top:23px;flex:1 1 auto;flex-wrap:wrap">
+<a href="Main.dc.html" style="text-decoration:none;font-weight:600;padding:10px 24px;font-size:30px;line-height:1.2;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(43,40,56,.08);color:#2B2838">Kalender</a>
+<a href="Info.dc.html" style="text-decoration:none;font-weight:500;padding:10px 24px;font-size:30px;line-height:1.2;border-radius:999px;color:#5F5A72">Börja orientera</a>
+<a href="Main.dc.html" style="text-decoration:none;font-weight:500;padding:10px 24px;font-size:30px;line-height:1.2;border-radius:999px;color:#5F5A72">Om oss</a>
+<a href="Main.dc.html" style="text-decoration:none;font-weight:500;padding:10px 24px;font-size:30px;line-height:1.2;border-radius:999px;color:#5F5A72">Bli medlem</a>
+</nav>
+<div style="position:relative;margin-top:21px">
+<button onClick="{{toggleMenu}}" aria-label="Min profil" aria-haspopup="true" style="cursor:pointer;border:0;padding:0;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#C9A7DA,#8A4B9E);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:22px;box-shadow:0 8px 18px -8px #8A4B9E,0 0 0 3px #fff">E</button>
+<sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;right:0;top:68px;width:272px;box-sizing:border-box;background:#fff;border-radius:22px;padding:18px;box-shadow:0 24px 48px -20px rgba(43,40,56,.45),0 2px 8px rgba(43,40,56,.08);display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;flex-direction:column;gap:6px">
+<span style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:18px">Erik</span>
+<span style="display:flex;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;background:#EFE3F5;color:#6E3A82">Medlem</span><span style="font-size:12px;font-weight:600;border-radius:999px;padding:3px 10px;background:#E3F0DC;color:#3F6B3A">Publicerare</span></span>
+</div>
+<div style="height:1px;background:#ECE8F2"></div>
+<a href="Main.dc.html" style="text-decoration:none;font-weight:500;padding:6px 0">Min profil</a>
+<a href="Main.dc.html" style="text-decoration:none;font-weight:500;padding:6px 0">Mina träningar och tider</a>
+<a href="Admin.dc.html" style="text-decoration:none;font-weight:500;padding:6px 0">Publicera event</a>
+<div style="height:1px;background:#ECE8F2"></div>
+<a href="Main.dc.html" style="text-decoration:none;font-weight:600;padding:6px 0;color:#8A4B9E">Logga ut</a>
+</div>
+</sc-if>
+</div>
+</div>
+</header>
+
+<main style="position:relative;max-width:1240px;margin:0 auto;padding:8px 32px 48px;display:flex;flex-direction:column;gap:28px">
+
+<section aria-label="Tidslinje" style="position:relative;border-radius:28px;overflow:hidden;background:#FFFEF8;box-shadow:0 20px 50px -24px rgba(43,40,56,.25),0 2px 6px rgba(43,40,56,.05)">
+<svg aria-hidden="true" viewBox="0 0 1240 260" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%">
+<rect width="1240" height="260" fill="#FFFEF8"></rect>
+<path d="M0 190 C150 160 260 230 420 200 S700 150 860 190 S1120 220 1240 180 L1240 260 L0 260z" fill="#DDEBD0" opacity=".55"></path>
+<ellipse cx="1080" cy="60" rx="90" ry="26" fill="#D6EAF2" opacity=".7"></ellipse>
+<g fill="none" stroke="#C9A77A" stroke-width="1" opacity=".5">
+<path d="M0 50 C200 20 340 90 520 55 S860 20 1240 70"></path>
+<path d="M0 90 C180 60 330 130 520 95 S880 60 1240 110"></path>
+<path d="M0 130 C200 100 360 170 540 135 S900 100 1240 150"></path>
+<path d="M0 230 C200 205 360 250 560 225 S900 205 1240 240"></path>
+</g>
+</svg>
+
+
+<div style="position:relative;padding:22px 0 14px">
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:0 28px 12px">
+<span style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:700;margin-right:6px">{{monthLabel}}</span>
+<button onClick="{{prev}}" aria-label="Tidigare" style="cursor:pointer;border:0;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 1px 3px rgba(43,40,56,.12);font-size:18px;line-height:1;color:#2B2838">‹</button>
+<button onClick="{{next}}" aria-label="Senare" style="cursor:pointer;border:0;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 1px 3px rgba(43,40,56,.12);font-size:18px;line-height:1;color:#2B2838">›</button>
+<div style="flex:1 1 0"></div>
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+<button onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button>
+</sc-for>
+<button onClick="{{goToday}}" aria-label="Gå till idag" style="cursor:pointer;border:0;display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.9);color:#2B2838;font-weight:600;font-size:13px;padding:8px 14px 8px 12px;border-radius:999px;box-shadow:0 1px 3px rgba(43,40,56,.12)"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><polygon transform="rotate(-30 10 10)" points="10,1.5 17.4,14.3 2.6,14.3" fill="none" stroke="#8A4B9E" stroke-width="2.2" stroke-linejoin="round"></polygon></svg>idag</button>
+</div>
+<div style="display:flex;gap:0;overflow-x:auto;padding:4px 20px 8px">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="12">
+<button onClick="{{d.pick}}" aria-label="{{d.aria}}" style="{{d.cell}}">
+<span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8A859C">{{d.dow}}</span>
+<span style="position:relative;display:block;width:72px;height:64px"><span style="position:absolute;left:0;top:0;width:72px;height:64px;display:flex;align-items:center;justify-content:center;padding-top:1px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:16px;line-height:1;color:#2B2838">{{d.num}}</span><sc-if value="{{d.isPlain}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 72 64" width="72" height="64" aria-hidden="true" style="display:block;overflow:visible"><line x1="0" y1="32" x2="12.9" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><line x1="59.1" y1="32" x2="72" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><circle opacity="0.75" cx="36" cy="32" r="23.1" fill="none" stroke="rgba(138,75,158,.62)" stroke-width="2.6"></circle></svg></sc-if><sc-if value="{{d.isEvent}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 72 64" width="72" height="64" aria-hidden="true" style="display:block;overflow:visible"><line x1="0" y1="32" x2="12.9" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><line x1="59.1" y1="32" x2="72" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><circle cx="36" cy="32" r="23.1" fill="none" stroke="#8A4B9E" stroke-width="2.6"></circle><circle cx="36" cy="32" r="16" fill="none" stroke="#8A4B9E" stroke-width="2.6"></circle></svg></sc-if><sc-if value="{{d.isTri}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 72 64" width="72" height="64" aria-hidden="true" style="display:block;overflow:visible"><line x1="0" y1="32" x2="21.2" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><line x1="65.65" y1="32" x2="72" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><polygon transform="rotate(-30 36 32)" points="36,2.35 61.68,46.83 10.32,46.83" fill="none" stroke="#8A4B9E" stroke-width="2.6" stroke-linejoin="round"></polygon></svg></sc-if><sc-if value="{{d.isTriEv}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 72 64" width="72" height="64" aria-hidden="true" style="display:block;overflow:visible"><line x1="0" y1="32" x2="12.9" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><line x1="59.1" y1="32" x2="72" y2="32" stroke="rgba(138,75,158,.62)" stroke-width="2"></line><circle cx="36" cy="32" r="23.1" fill="none" stroke="#8A4B9E" stroke-width="2.6"></circle><circle cx="36" cy="32" r="16" fill="none" stroke="#8A4B9E" stroke-width="2.6"></circle><polygon transform="rotate(-30 36 32)" points="36,4.1 60.16,45.95 11.84,45.95" fill="none" stroke="#8A4B9E" stroke-width="2.6" stroke-linejoin="round"></polygon></svg></sc-if></span>
+</button>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+
+<div style="flex:1 1 380px;max-width:440px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<h2 style="margin:0 0 2px;font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700">Kommande</h2>
+<sc-for list="{{upcoming}}" as="e" hint-placeholder-count="4">
+<button onClick="{{e.pick}}" style="{{e.style}}">
+<span style="display:flex;flex-direction:column;align-items:center;width:44px;flex:none">
+<span style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;line-height:1">{{e.day}}</span>
+<span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8A859C">{{e.mon}}</span>
+</span>
+<span style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="{{e.tagStyle}}">{{e.label}}</span>
+<span style="font-family:'DM Sans',sans-serif;font-size:17px;font-weight:600;line-height:1.25">{{e.title}}</span>
+<span style="font-size:13px;color:#8A859C">{{e.meta}}</span>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{hasPast}}" hint-placeholder-val="{{ true }}"><h2 style="margin:14px 0 2px;font-family:'DM Sans',sans-serif;font-size:20px;font-weight:700">Tidigare</h2></sc-if>
+<sc-for list="{{past}}" as="e" hint-placeholder-count="4">
+<button onClick="{{e.pick}}" style="{{e.style}}">
+<span style="display:flex;flex-direction:column;align-items:center;width:44px;flex:none">
+<span style="font-family:'DM Sans',sans-serif;font-size:24px;font-weight:700;line-height:1">{{e.day}}</span>
+<span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8A859C">{{e.mon}}</span>
+</span>
+<span style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:5px">
+<span style="{{e.tagStyle}}">{{e.label}}</span>
+<span style="font-family:'DM Sans',sans-serif;font-size:17px;font-weight:600;line-height:1.25">{{e.title}}</span>
+<span style="font-size:13px;color:#8A859C">{{e.meta}}</span>
+</span>
+</button>
+</sc-for>
+</div>
+
+<article style="flex:999 1 480px;min-width:0;display:flex;flex-wrap:wrap;background:#fff;border-radius:28px;box-shadow:0 20px 50px -24px rgba(43,40,56,.22),0 2px 6px rgba(43,40,56,.04);overflow:hidden">
+<div style="flex:1 1 360px;min-width:0;padding:34px 38px 38px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="{{detail.tagStyle}}">{{detail.label}}</span><sc-if value="{{detail.isPast}}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;font-weight:600;border-radius:999px;padding:4px 12px;background:#ECE8F2;color:#5F5A72">Avslutad</span></sc-if></div>
+<h1 style="margin:0;font-family:'DM Sans',sans-serif;font-size:36px;line-height:1.1;font-weight:700;letter-spacing:-.02em">{{detail.title}}</h1>
+<div style="display:flex;gap:8px 24px;flex-wrap:wrap;color:#5F5A72;font-weight:500">
+<span>{{detail.when}}</span><span>{{detail.time}}</span><span>{{detail.place}}</span>
+</div>
+<sc-if value="{{detail.hasPeriod}}" hint-placeholder-val="{{ true }}">
+<div style="background:#F7F3FA;border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+<span style="font-size:12px;font-weight:600;letter-spacing:.12em;color:#8A859C">BANAN ÄR UTE</span>
+<div style="display:flex;align-items:flex-end;overflow-x:auto">
+<sc-for list="{{detail.period}}" as="p" hint-placeholder-count="6">
+<span style="display:flex;flex-direction:column;align-items:center;gap:4px;width:56px;flex:none"><span style="{{p.mark}}"></span><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8A859C">{{p.dow}}</span></span>
+</sc-for>
+</div>
+<span style="font-size:13px;color:#5F5A72">{{detail.periodText}}</span>
+</div>
+</sc-if>
+<p style="margin:0;font-size:17px;line-height:1.65;max-width:62ch">{{detail.text}}</p>
+<sc-if value="{{detail.hasBanor}}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<sc-for list="{{detail.banor}}" as="b" hint-placeholder-count="3">
+<span style="display:inline-flex;align-items:center;gap:10px;background:#F4F1F9;border-radius:16px;padding:10px 16px">
+<span style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:18px;color:{{accent}}">{{b.code}}</span>
+<span style="display:flex;flex-direction:column;line-height:1.2"><span style="font-weight:600;font-size:14px">{{b.name}}</span><span style="font-size:12px;color:#8A859C">{{b.km}}</span></span>
+</span>
+</sc-for>
+</div>
+</sc-if>
+<div style="display:flex;gap:10px;flex-wrap:wrap;padding-top:4px">
+<sc-for list="{{detail.actions}}" as="a" hint-placeholder-count="2">
+<button style="{{a.style}}">{{a.label}}</button>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{detail.hasImg}}" hint-placeholder-val="{{ true }}">
+<div style="flex:0 1 300px;min-width:240px;min-height:280px;position:relative;margin:14px 14px 14px 0;border-radius:20px;overflow:hidden">
+<img src="/_blob/1c9f4f4df02ac43d394e58d588698eca" alt="Bild från banan (platshållare)" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+</div>
+</sc-if>
+<sc-if value="{{detail.hasResults}}" hint-placeholder-val="{{ true }}">
+<div style="flex:1 1 100%;box-sizing:border-box;padding:6px 38px 38px;display:flex;flex-direction:column;gap:18px">
+<div style="height:1px;background:#ECE8F2"></div>
+<div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+<h2 style="margin:0;font-family:'DM Sans',sans-serif;font-size:26px;letter-spacing:-.01em">Resultat</h2>
+<span style="color:#8A859C;font-size:14px">{{detail.resultMeta}}</span>
+</div>
+<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">
+<sc-for list="{{detail.results}}" as="r" hint-placeholder-count="3">
+<div style="flex:1 1 240px;min-width:0;background:#F7F4FB;border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:22px;color:{{accent}}">{{r.code}}</span><span style="font-size:13px;color:#5F5A72">{{r.name}}</span></div>
+<sc-for list="{{r.rows}}" as="row" hint-placeholder-count="4">
+<div style="display:flex;gap:12px;align-items:center;padding:7px 0;border-top:1px solid #E7E1EF;font-size:15px"><span style="width:20px;color:#8A859C;font-weight:600">{{row.pos}}</span><span style="flex:1 1 0;min-width:0;font-weight:500">{{row.name}}</span><span style="font-variant-numeric:tabular-nums;font-weight:600">{{row.time}}</span></div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<span style="font-size:13px;color:#8A859C">Exempeldata. Tiderna kommer från de som själva registrerat sig efter träningen.</span>
+</div>
+</sc-if>
+</article>
+
+</section>
+</main>
+
+<footer style="position:relative;background:#2B2838;color:#E9E6F0">
+<div style="max-width:1240px;margin:0 auto;padding:32px;display:flex;gap:28px 64px;flex-wrap:wrap;align-items:flex-start;font-size:14px">
+<div style="display:flex;align-items:center;gap:12px"><img src="/_blob/6614737ef4a746aac72834a91defa122" alt="" width="42" height="47" style="display:block;width:42px;height:auto"><span style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:20px">OK Eken</span></div>
+<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#A9A3BD">KONTAKT</span><span>ok-eken@hotmail.com</span><span>0702 892 899</span><span>Storsättersv 15, 597 52 Åtvidaberg</span></div>
+<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;font-weight:600;letter-spacing:.14em;color:#A9A3BD">LÄNKAR</span><span>Facebook · Eventor · Livelox</span><span>Bildad 1958</span></div>
+</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#8A4B9E","options":["#8A4B9E","#5E7F55","#4F7FA0"]},"$preview":{"width":1360,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const acc = this.props.accent ?? '#8A4B9E';
+    const st = this.state || {};
+    const TODAY = '2026-05-19';
+    const sel = st.sel ?? TODAY;
+    const filter = st.filter ?? 'alla';
+    const DOW = ['sön','mån','tis','ons','tors','fre','lör'];
+    const DOWL = ['söndag','måndag','tisdag','onsdag','torsdag','fredag','lördag'];
+    const MON = ['jan','feb','mar','apr','maj','jun','jul','aug','sep','okt','nov','dec'];
+    const MONL = ['januari','februari','mars','april','maj','juni','juli','augusti','september','oktober','november','december'];
+    const parse = (s) => { const p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); };
+    const iso = (dt) => dt.toISOString().slice(0, 10);
+    const RING = 'rgba(138,75,158,.62)';
+    // Begränsad palett: lila (tävling), grön (träning), gul (övrigt)
+    const TYPES = {
+      traning: { label: 'Träning', fg: '#3F6B3A', bg: '#E3F0DC' },
+      tavling: { label: 'Tävling', fg: '#6E3A82', bg: '#EFE3F5' },
+      mote: { label: 'Möte', fg: '#6A5A12', bg: '#F6F0D2' },
+      info: { label: 'Information', fg: '#6A5A12', bg: '#F6F0D2' },
+      handelse: { label: 'Händelse', fg: '#6A5A12', bg: '#F6F0D2' }
+    };
+    const ABC = [
+      { code: 'A', name: 'Lång – svår', km: '4–5 km' },
+      { code: 'C', name: 'Kort – svårare', km: '2–3 km' },
+      { code: 'D', name: 'Kort – lätt', km: '1–2 km' }
+    ];
+    const EV = [
+      { id: 'e1', date: '2026-05-12', until: '2026-05-17', results: true, type: 'traning', title: 'Veckans bana V20 – Eksätter', time: '17:00–18:00', place: 'Eksätter', text: 'Veckans träning sker i Eksätter. Banläggare: Thomas Persson.', banor: ABC },
+      { id: 'e2', date: '2026-05-16', type: 'tavling', title: 'Tävling i Östergötland', time: '10:00', place: 'Se Eventor', text: 'Klubben betalar startavgiften för medlemmar – anmäl dig via Eventor så faktureras klubben.' },
+      { id: 'e3', date: '2026-05-19', until: '2026-05-24', type: 'traning', title: 'Veckans bana V21 – sprint i centrala Åtvidaberg', time: '17:00–18:00', place: 'Centrala Åtvidaberg', text: 'Välkomna att testa på en sprint i centrala Åtvidaberg! Alla är välkomna oavsett ålder och tidigare erfarenhet – meddela banläggaren om du vill ha hjälp.', banor: ABC },
+      { id: 'e4', date: '2026-05-21', type: 'mote', title: 'Styrelsemöte', time: '18:30', place: 'Plats meddelas', text: 'Möte för styrelsen. Frågor till klubben går till ok-eken@hotmail.com.' },
+      { id: 'e5', date: '2026-05-26', until: '2026-05-31', type: 'traning', title: 'Veckans bana V22 – stigfinnarrunda', time: '17:00–18:00', place: 'Hallaholmsskogen', text: 'Välkomna till en stigfinnarrunda i Hallaholmsskogen.', banor: ABC },
+      { id: 'e6', date: '2026-05-28', type: 'info', title: 'Anmälan till O-Ringen', time: 'Hela dagen', place: 'Eventor', text: 'Vid O-Ringen betalar du startavgiften själv – det är ett undantag från klubbens vanliga regel.' },
+      { id: 'e7', date: '2026-06-02', until: '2026-06-07', type: 'traning', title: 'Veckans bana V23 – Glypen', time: '17:00–18:00', place: 'Glypen', text: 'Välkommen på träning i trakten kring Glypen!', banor: ABC },
+      { id: 'e8', date: '2026-06-06', type: 'handelse', title: 'Familjedag', time: '10:00', place: 'Åtvidaberg', text: 'Klubbens familjedag – prova på orientering tillsammans.' },
+      { id: 'e9', date: '2026-06-09', until: '2026-06-14', type: 'traning', title: 'Veckans bana V24 – elljusspåret', time: '17:00–18:00', place: 'Elljusspåret', text: 'Denna vecka är det stiftklämmor vid elljusspåret.', banor: ABC }
+    ];
+
+    const fEv = EV.filter((e) => filter === 'alla' || e.type === filter);
+    const upList = fEv.filter((e) => (e.until || e.date) >= sel).sort((a, b) => (a.date < b.date ? -1 : 1));
+    const pastList = fEv.filter((e) => (e.until || e.date) < sel).sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 3);
+    const chosen = fEv.find((e) => e.id === st.ev) || upList[0] || pastList[0] || EV[2];
+
+    const tagStyle = (t) => 'align-self:flex-start;font-size:12px;font-weight:600;border-radius:999px;padding:4px 12px;color:' + TYPES[t].fg + ';background:' + TYPES[t].bg;
+    const mkRow = (e) => {
+      const dt = parse(e.date);
+      const on = e.id === chosen.id;
+      return {
+        day: dt.getUTCDate(), mon: MON[dt.getUTCMonth()], title: e.title, label: TYPES[e.type].label,
+        meta: DOW[dt.getUTCDay()] + ' · ' + e.time + ' · ' + e.place,
+        style: 'display:flex;align-items:center;gap:16px;width:100%;box-sizing:border-box;cursor:pointer;text-align:left;font:inherit;color:inherit;border:0;border-radius:22px;padding:16px 18px;background:' + (on ? '#fff' : 'rgba(255,255,255,.6)') + ';box-shadow:' + (on ? '0 12px 28px -14px rgba(138,75,158,.45),0 0 0 2px ' + RING : '0 1px 3px rgba(43,40,56,.06)'),
+        tagStyle: tagStyle(e.type),
+        pick: () => this.setState({ sel: e.date, ev: e.id })
+      };
+    };
+
+    const days = [];
+    const off = st.off ?? 0;
+    const startDt = new Date(parse(TODAY).getTime() + (off * 7 - 5) * 86400000);
+    for (let i = 0; i < 16; i++) {
+      const dt = new Date(startDt.getTime() + i * 86400000);
+      const ds = iso(dt);
+      const dw = dt.getUTCDay();
+      const evs = EV.filter((e) => e.date === ds);
+      const has = evs.length > 0;
+      const on = ds === sel;
+      const weekend = dw === 0 || dw === 6;
+      const isToday = ds === TODAY;
+      days.push({
+        dow: DOW[dw], num: dt.getUTCDate(),
+        aria: DOWL[dw] + ' ' + dt.getUTCDate() + ' ' + MONL[dt.getUTCMonth()] + (isToday ? ', idag' : '') + (has ? ', aktivitet' : ''),
+        cell: 'flex:none;width:72px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit;color:#2B2838;border:0;border-radius:20px;padding:8px 0 6px;background:' + (on ? 'rgba(138,75,158,.12)' : (weekend ? 'rgba(43,40,56,.035)' : 'transparent')),
+        isPlain: !has && !isToday, isEvent: has && !isToday, isTri: isToday && !has, isTriEv: isToday && has,
+        pick: () => this.setState({ sel: ds, ev: has ? evs[0].id : null })
+      });
+    }
+
+    const filters = [{ key: 'alla', label: 'Alla' }, { key: 'traning', label: 'Träning' }, { key: 'tavling', label: 'Tävling' }].map((f) => {
+      const on = f.key === filter;
+      return { label: f.label, style: 'cursor:pointer;border:0;font-weight:600;font-size:13px;padding:8px 16px;border-radius:999px;background:' + (on ? '#2B2838' : 'rgba(255,255,255,.85)') + ';color:' + (on ? '#fff' : '#2B2838') + ';box-shadow:0 1px 3px rgba(43,40,56,.1)', pick: () => this.setState({ filter: f.key, ev: null }) };
+    });
+
+    const RES = [
+      { code: 'A', name: 'Lång – svår', rows: [['Johan Berg','31:42'],['Maria Sjöberg','34:10'],['Peter Lund','38:55'],['Karin Holm','41:20'],['Olof Nyström','47:03']] },
+      { code: 'C', name: 'Kort – svårare', rows: [['Lena Åkesson','26:14'],['Anders Wik','29:48'],['Sofia Dahl','33:30'],['Björn Ek','36:12']] },
+      { code: 'D', name: 'Kort – lätt', rows: [['Elsa Ström','21:05'],['Gustav Falk','23:40'],['Ida Lind','25:11'],['Nils Hed','28:59']] }
+    ].map((c) => ({ code: c.code, name: c.name, rows: c.rows.map((r, i) => ({ pos: i + 1, name: r[0], time: r[1] })) }));
+    const isPast = (chosen.until || chosen.date) < TODAY;
+    let period = [];
+    let periodText = '';
+    if (chosen.until) {
+      const a0 = parse(chosen.date).getTime(), b0 = parse(chosen.until).getTime();
+      const n = Math.round((b0 - a0) / 86400000);
+      for (let i = 0; i <= n; i++) {
+        const dt = new Date(a0 + i * 86400000);
+        let mark;
+        if (i === 0) mark = 'width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:19px solid #8A4B9E;margin:6px 0 4px';
+        else if (i === n) mark = 'width:26px;height:26px;border-radius:50%;box-sizing:border-box;border:3px solid #8A4B9E;box-shadow:0 0 0 5px #F7F3FA,0 0 0 8px #8A4B9E;margin:4px 0';
+        else mark = 'width:20px;height:20px;border-radius:50%;box-sizing:border-box;border:2.5px solid rgba(138,75,158,.5);margin:8px 0 6px';
+        period.push({ dow: DOW[dt.getUTCDay()], mark: mark });
+      }
+      const u = parse(chosen.until);
+      periodText = 'Ute ' + DOWL[parse(chosen.date).getUTCDay()] + ' ' + parse(chosen.date).getUTCDate() + ' ' + MON[parse(chosen.date).getUTCMonth()] + ' till ' + DOWL[u.getUTCDay()] + ' ' + u.getUTCDate() + ' ' + MON[u.getUTCMonth()] + '. Karta och bana går att ladda ner.';
+    }
+    const sd = parse(sel);
+    const cd = parse(chosen.date);
+    const prim = 'cursor:pointer;border:0;font:inherit;font-weight:600;font-size:14px;border-radius:999px;padding:13px 24px;background:' + acc + ';color:#fff;box-shadow:0 8px 18px -8px ' + acc;
+    const sec = 'cursor:pointer;font:inherit;font-weight:600;font-size:14px;border-radius:999px;padding:13px 24px;border:1.5px solid rgba(43,40,56,.18);background:#fff;color:#2B2838';
+    let actions = [{ label: 'Lägg i min kalender', style: sec }];
+    if (chosen.type === 'traning') actions = [{ label: 'Ladda ner bana', style: prim }, { label: 'Öppna i Livelox', style: sec }];
+    if (chosen.type === 'tavling') actions = [{ label: 'Anmäl i Eventor', style: prim }, { label: 'Lägg i min kalender', style: sec }];
+    if (isPast && chosen.type === 'traning') actions = [{ label: 'Jag var med – registrera tid', style: prim }, { label: 'Ladda ner bana', style: sec }];
+    if (isPast && chosen.type === 'tavling') actions = [{ label: 'Se resultat i Eventor', style: prim }];
+
+    return {
+      accent: acc,
+      monthLabel: MONL[sd.getUTCMonth()].charAt(0).toUpperCase() + MONL[sd.getUTCMonth()].slice(1) + ' ' + sd.getUTCFullYear(),
+      filters: filters, days: days,
+      goToday: () => this.setState({ sel: TODAY, ev: null, off: 0 }),
+      prev: () => this.setState({ off: off - 1 }),
+      next: () => this.setState({ off: off + 1 }),
+      upcoming: upList.map(mkRow),
+      past: pastList.map(mkRow),
+      hasPast: pastList.length > 0,
+      menuOpen: !!st.menu,
+      toggleMenu: () => this.setState({ menu: !st.menu }),
+      detail: {
+        label: TYPES[chosen.type].label, tagStyle: tagStyle(chosen.type), title: chosen.title,
+        when: DOWL[cd.getUTCDay()] + ' ' + cd.getUTCDate() + ' ' + MONL[cd.getUTCMonth()],
+        time: chosen.time, place: chosen.place, text: chosen.text,
+        isPast: isPast, hasPeriod: period.length > 0, period: period, periodText: periodText,
+        hasResults: !!chosen.results, results: RES, resultMeta: '13 registrerade · ' + DOWL[cd.getUTCDay()] + ' ' + cd.getUTCDate() + ' ' + MON[cd.getUTCMonth()],
+        hasImg: chosen.id === 'e3', hasBanor: !!chosen.banor, banor: chosen.banor || [], actions: actions
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

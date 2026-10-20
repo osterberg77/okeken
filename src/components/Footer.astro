@@ -2,25 +2,24 @@
 import { CLUB } from '../lib/club';
 ---
 
-<footer class="mt-16 bg-brand-purple-dark text-white/90">
-  <div class="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
-    <div class="flex items-center gap-4">
-      <img src="/logo.svg" alt="" class="h-16 w-auto" width="58" height="64" loading="lazy" />
-      <div>
-        <div class="text-lg font-extrabold text-white">{CLUB.fullName}</div>
-        <div class="text-sm text-white/70">Orienteringsklubb sedan {CLUB.founded}</div>
-      </div>
+<footer class="relative bg-ink text-[#E9E6F0]">
+  <div class="mx-auto flex max-w-[1240px] flex-wrap items-start gap-x-16 gap-y-7 p-8 text-sm">
+    <div class="flex items-center gap-3">
+      <img src="/logo.svg" alt="" width="42" height="47" class="block h-auto w-[42px]" loading="lazy" />
+      <span class="font-display text-xl font-bold">{CLUB.name}</span>
     </div>
-    <div class="text-sm">
-      <div class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-gold">Kontakt</div>
+    <div class="flex flex-col gap-[3px]">
+      <span class="text-xs font-semibold tracking-[.14em] text-[#A9A3BD]">KONTAKT</span>
       <a href={`mailto:${CLUB.email}`} class="hover:underline">{CLUB.email}</a>
     </div>
-    <div class="text-sm">
-      <div class="mb-2 text-xs font-bold uppercase tracking-widest text-brand-gold">Följ oss</div>
-      <ul class="grid gap-1">
-        <li><a href={CLUB.facebook} class="hover:underline" target="_blank" rel="noopener">Facebook</a></li>
-        <li><a href={CLUB.eventor} class="hover:underline" target="_blank" rel="noopener">Eventor</a></li>
-      </ul>
+    <div class="flex flex-col gap-[3px]">
+      <span class="text-xs font-semibold tracking-[.14em] text-[#A9A3BD]">LÄNKAR</span>
+      <span class="flex flex-wrap gap-x-1.5">
+        <a href={CLUB.facebook} class="hover:underline" target="_blank" rel="noopener">Facebook</a><span aria-hidden="true">·</span>
+        <a href={CLUB.eventor} class="hover:underline" target="_blank" rel="noopener">Eventor</a><span aria-hidden="true">·</span>
+        <a href={CLUB.livelox} class="hover:underline" target="_blank" rel="noopener">Livelox</a>
+      </span>
+      <span>Bildad {CLUB.founded}</span>
     </div>
   </div>
 </footer>

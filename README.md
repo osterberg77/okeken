@@ -25,7 +25,7 @@ Ny webbplats för OK Eken (ersätter okeken.se på Wix). Snabb, statisk och sök
 | Serverlogik (publiceringstrigger, schemalagd publicering, Eventor-synk) | Cloud Functions for Firebase | Förslag |
 | Källkod / CI/CD | GitHub + GitHub Actions, auto-deploy från `main` | Beslutat |
 | Frontend | Astro (statisk output) + React-öar för interaktivt | Förslag |
-| Styling | Tailwind CSS 4, Plus Jakarta Sans | Förslag (följer designutkastet) |
+| Styling | Tailwind CSS 4, DM Sans + Inter | Beslutat (designspec i `docs/skisser/`) |
 | Sök | Pagefind (statiskt index vid build) | Förslag |
 | Språk | TypeScript | Förslag |
 

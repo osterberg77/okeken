@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
-import { CATEGORIES } from '../lib/categories';
 import {
   addDays,
   dayKey,
   daysBetween,
-  formatKeyShort,
-  formatPeriod,
+  formatEventTime,
+  formatKeyLong,
   isWeekend,
   keyDayOfMonth,
   keyMonthLabel,
@@ -14,17 +13,20 @@ import {
 } from '../lib/time';
 import type { EventType, PublicEvent } from '../types/event';
 import CategoryChip from './CategoryChip';
+import DaySymbol, { StartIcon, type DayKind } from './DaySymbol';
 import EventDetail from './EventDetail';
-import Icon from './Icon';
 
-const CELL = 52; // px per dag i tidslinjen
-const HEAD = 76; // höjd för månad + veckodag + datum
-const LANE = 12; // höjd per eventrad (stapel + mellanrum)
-const MAX_LANES = 3;
+const CELL = 72; // px per dag (symbolytans bredd)
+const DAYS_BEFORE = 5; // dagar till vänster om idag/valt datum (-5 … +10)
+const PAGE = 6; // antal kommande i listan innan "Visa fler"
 const DESKTOP = '(min-width: 1024px)';
 
-type Filter = 'all' | EventType;
-const FILTERS: Filter[] = ['all', 'training', 'competition', 'meeting'];
+type Filter = 'all' | Extract<EventType, 'training' | 'competition'>;
+const FILTERS: { key: Filter; label: string }[] = [
+  { key: 'all', label: 'Alla' },
+  { key: 'training', label: 'Träning' },
+  { key: 'competition', label: 'Tävling' },
+];
 
 interface CalEvent extends PublicEvent {
   startDay: string;
@@ -41,12 +43,11 @@ interface Props {
 export default function Calendar({ events, initialToday, siteUrl }: Props) {
   const [today, setToday] = useState(initialToday);
   const [selectedDay, setSelectedDay] = useState(initialToday);
-  const [filter, setFilter] = useState<Filter>('all');
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
-  const [extraPages, setExtraPages] = useState(0);
+  const [filter, setFilter] = useState<Filter>('all');
+  const [shown, setShown] = useState(PAGE);
   const [scrollRequest, setScrollRequest] = useState({ n: 0, smooth: false });
-  // Dagen ca 1/4 in i tidslinjen; styr månadsrubriken
-  const [viewDay, setViewDay] = useState(initialToday);
+  const [viewDay, setViewDay] = useState(initialToday); // styr månadsrubriken
   const scroller = useRef<HTMLDivElement>(null);
 
   const all = useMemo<CalEvent[]>(
@@ -54,6 +55,7 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
     [events],
   );
   const filtered = filter === 'all' ? all : all.filter((e) => e.type === filter);
+  const startsOn = useMemo(() => new Set(filtered.map((e) => e.startDay)), [filtered]);
 
   // Sidan kan vara byggd en annan dag än den visas.
   useEffect(() => {
@@ -65,36 +67,25 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
     }
   }, [initialToday]);
 
-  // Tidslinjen: ett år bakåt och framåt från idag, utökad så att alla events får plats.
+  // "Oändlig" tidslinje: ett år bakåt och framåt, utökad så att alla events får plats.
   const [rangeStart, rangeEnd] = useMemo(() => {
     const first = all[0]?.startDay ?? today;
     const last = all.reduce((max, e) => (e.endDay > max ? e.endDay : max), today);
-    return [addDays(first < today ? first : today, -365), addDays(last, 365)];
+    return [addDays(first < today ? first : today, -365), addDays(last > today ? last : today, 365)];
   }, [all, today]);
   const days = useMemo(
     () => Array.from({ length: daysBetween(rangeStart, rangeEnd) + 1 }, (_, i) => addDays(rangeStart, i)),
     [rangeStart, rangeEnd],
   );
-  const indexOf = (key: string) => daysBetween(rangeStart, key);
 
-  const bars = useMemo(() => {
-    const laneEnds: string[] = [];
-    return filtered
-      .map((e) => {
-        let lane = laneEnds.findIndex((end) => end < e.startDay);
-        if (lane === -1) lane = laneEnds.push(e.endDay) - 1;
-        else laneEnds[lane] = e.endDay;
-        return { e, lane };
-      })
-      .filter(({ lane }) => lane < MAX_LANES);
-  }, [filtered]);
+  // Antal dagar som visas före markerat datum; färre på smal skärm så att datumet syns.
+  const leadDays = (el: HTMLElement) => Math.min(DAYS_BEFORE, Math.floor(el.clientWidth / CELL / 3));
 
-  // Markerat datum hamnar ca 1/4 från vänster.
   useEffect(() => {
     const el = scroller.current;
     if (!el) return;
     el.scrollTo({
-      left: indexOf(selectedDay) * CELL - el.clientWidth / 4 + CELL / 2,
+      left: (daysBetween(rangeStart, selectedDay) - leadDays(el)) * CELL,
       behavior: scrollRequest.smooth ? 'smooth' : 'auto',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,14 +94,14 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
   function onTimelineScroll() {
     const el = scroller.current;
     if (!el) return;
-    const i = Math.floor((el.scrollLeft + el.clientWidth / 4) / CELL);
+    const i = Math.round(el.scrollLeft / CELL) + leadDays(el);
     setViewDay(days[Math.min(Math.max(i, 0), days.length - 1)]);
   }
 
-  function selectDay(key: string, slug: string | null = null) {
+  function selectDay(key: string) {
     setSelectedDay(key);
-    setSelectedSlug(slug);
-    setExtraPages(0);
+    setSelectedSlug(filtered.find((e) => e.startDay === key)?.slug ?? null);
+    setShown(PAGE);
     setScrollRequest((r) => ({ n: r.n + 1, smooth: true }));
   }
 
@@ -118,245 +109,185 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
     scroller.current?.scrollBy({ left: direction * 7 * CELL, behavior: 'smooth' });
   }
 
-  // Listan: valt datum först, sedan kommande (minst 6 st eller 2 månader), annars tidigare.
-  const active = filtered.filter((e) => e.startDay <= selectedDay && selectedDay <= e.endDay);
-  const upcomingAll = filtered.filter((e) => e.startDay > selectedDay);
-  const horizon = addDays(selectedDay, 61);
-  const baseCount = Math.max(6, upcomingAll.filter((e) => e.startDay <= horizon).length);
-  const upcoming = upcomingAll.slice(0, baseCount + extraPages * 6);
-  const past =
-    active.length + upcomingAll.length === 0
-      ? filtered.filter((e) => e.endDay < selectedDay).slice(-5).reverse()
-      : [];
-  const listed = [...active, ...upcoming, ...past];
-  const selected = listed.find((e) => e.slug === selectedSlug) ?? listed[0];
-  const isToday = selectedDay === today;
+  const upcomingAll = filtered.filter((e) => e.endDay >= selectedDay);
+  const upcoming = upcomingAll.slice(0, shown);
+  const past = filtered
+    .filter((e) => e.endDay < selectedDay)
+    .reverse()
+    .slice(0, 3);
+  const chosen = filtered.find((e) => e.slug === selectedSlug) ?? upcoming[0] ?? past[0];
 
-  function onItemClick(ev: MouseEvent, slug: string) {
+  function onRowClick(ev: MouseEvent, e: CalEvent) {
+    // Mobil: länken öppnar eventsidan. Desktop: visa i detaljvyn bredvid.
     if (window.matchMedia(DESKTOP).matches) {
       ev.preventDefault();
-      setSelectedSlug(slug);
+      setSelectedSlug(e.slug);
     }
   }
 
-  const renderItem = (e: CalEvent) => (
-    <li key={e.slug}>
-      <EventListItem event={e} selected={e.slug === selected?.slug} onClick={(ev) => onItemClick(ev, e.slug)} />
-    </li>
+  const row = (e: CalEvent) => (
+    <EventRow key={e.slug} event={e} selected={e.slug === chosen?.slug} onClick={(ev) => onRowClick(ev, e)} />
   );
 
   return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-brand-green-dark">Kalender</p>
-          <h1 className="text-2xl font-extrabold capitalize tracking-tight text-brand-purple-dark sm:text-3xl">
-            {keyMonthLabel(viewDay)}
-          </h1>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <IconButton label="Föregående vecka" onClick={() => scrollWeek(-1)} icon="chevronLeft" />
-          <button
-            type="button"
-            onClick={() => selectDay(today)}
-            className="h-9 rounded-full border border-stone-300 bg-white px-4 text-sm font-bold text-stone-800 hover:border-brand-purple hover:text-brand-purple"
-          >
-            Idag
-          </button>
-          <IconButton label="Nästa vecka" onClick={() => scrollWeek(1)} icon="chevronRight" />
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-        <div ref={scroller} onScroll={onTimelineScroll} className="no-scrollbar overflow-x-auto overscroll-x-contain">
-          <div className="relative" style={{ width: days.length * CELL, height: HEAD + MAX_LANES * LANE + 10 }}>
-            <div className="flex h-full">
-              {days.map((key, i) => {
-                const dom = keyDayOfMonth(key);
-                const sel = key === selectedDay;
-                const tod = key === today;
+    <div className="flex flex-col gap-7">
+      <section aria-label="Tidslinje" className="relative overflow-hidden rounded-[28px] bg-map shadow-panel">
+        <MapBackground />
+        <div className="relative pt-[22px] pb-[14px]">
+          <div className="flex flex-wrap items-center gap-2.5 px-5 pb-3 sm:px-7">
+            <span className="mr-1.5 font-display text-[22px] font-bold first-letter:uppercase">{keyMonthLabel(viewDay)}</span>
+            <RoundButton label="Tidigare" onClick={() => scrollWeek(-1)}>‹</RoundButton>
+            <RoundButton label="Senare" onClick={() => scrollWeek(1)}>›</RoundButton>
+            <div className="hidden flex-1 sm:block" />
+            <div className="no-scrollbar -mx-5 flex w-[calc(100%+40px)] items-center gap-2 overflow-x-auto px-5 sm:mx-0 sm:w-auto sm:gap-2.5 sm:overflow-visible sm:px-0">
+              {FILTERS.map((f) => {
+                const on = filter === f.key;
                 return (
                   <button
-                    key={key}
+                    key={f.key}
                     type="button"
-                    onClick={() => selectDay(key)}
-                    aria-label={formatKeyShort(key)}
-                    aria-pressed={sel}
-                    className={`relative flex h-full shrink-0 flex-col items-center pt-6 ${isWeekend(key) ? 'bg-stone-100/80' : ''} ${dom === 1 ? 'border-l border-stone-300' : ''}`}
-                    style={{ width: CELL }}
+                    aria-pressed={on}
+                    onClick={() => {
+                      setFilter(f.key);
+                      setSelectedSlug(null);
+                      setShown(PAGE);
+                    }}
+                    className={`flex-none cursor-pointer rounded-full px-3.5 py-2 text-[13px] sm:px-4 font-semibold shadow-[0_1px_3px_rgba(43,40,56,.1)] ${
+                      on ? 'bg-ink text-white' : 'bg-white/85 text-ink hover:bg-white'
+                    }`}
                   >
-                    {(dom === 1 || i === 0) && (
-                      <span className="absolute left-1.5 top-1.5 whitespace-nowrap text-[11px] font-bold uppercase tracking-wider text-brand-purple">
-                        {keyMonthShort(key)}
-                      </span>
-                    )}
-                    <span className={`text-[11px] font-semibold ${tod ? 'text-brand-green-dark' : 'text-stone-500'}`}>
-                      {keyWeekdayShort(key)}
-                    </span>
-                    <span
-                      className={`mt-0.5 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
-                        sel
-                          ? 'bg-brand-purple text-white'
-                          : tod
-                            ? 'text-brand-green-dark ring-2 ring-brand-green'
-                            : 'text-stone-800 hover:bg-stone-200'
-                      }`}
-                    >
-                      {dom}
-                    </span>
+                    {f.label}
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => selectDay(today)}
+                aria-label="Gå till idag"
+                className="inline-flex flex-none cursor-pointer items-center gap-[7px] rounded-full bg-white/90 py-2 pr-3.5 pl-3 text-[13px] font-semibold text-ink shadow-chip hover:bg-white"
+              >
+                <StartIcon />
+                idag
+              </button>
             </div>
-            {bars.map(({ e, lane }) => {
-              const cat = CATEGORIES[e.type];
-              const start = indexOf(e.startDay);
-              const span = daysBetween(e.startDay, e.endDay) + 1;
+          </div>
+
+          <div ref={scroller} onScroll={onTimelineScroll} className="no-scrollbar flex overflow-x-auto px-5 pt-1 pb-2">
+            {days.map((key) => {
+              const has = startsOn.has(key);
+              const isToday = key === today;
+              const kind: DayKind = isToday ? (has ? 'todayEvent' : 'today') : has ? 'event' : 'plain';
+              const bg = key === selectedDay ? 'bg-[rgba(138,75,158,.12)]' : isWeekend(key) ? 'bg-[rgba(43,40,56,.035)]' : '';
               return (
                 <button
-                  key={e.slug}
+                  key={key}
                   type="button"
-                  title={e.title}
-                  aria-label={`${e.title}, ${formatKeyShort(e.startDay)}`}
-                  onClick={() => selectDay(e.startDay, e.slug)}
-                  className="absolute h-2 rounded-full transition-[filter] hover:brightness-110"
-                  style={{
-                    left: start * CELL + 6,
-                    width: span * CELL - 12,
-                    top: HEAD + lane * LANE,
-                    backgroundColor: cat.color,
-                    opacity: e.slug === selected?.slug ? 1 : 0.75,
-                  }}
-                />
+                  onClick={() => selectDay(key)}
+                  aria-label={`${formatKeyLong(key)}${isToday ? ', idag' : ''}${has ? ', aktivitet' : ''}`}
+                  aria-pressed={key === selectedDay}
+                  className={`flex w-[72px] flex-none cursor-pointer flex-col items-center gap-0.5 rounded-[20px] pt-2 pb-1.5 text-ink ${bg}`}
+                >
+                  <span className="text-[11px] font-semibold tracking-[.08em] text-subtle uppercase">{keyWeekdayShort(key)}</span>
+                  <span className="relative block h-16 w-[72px]">
+                    <DaySymbol kind={kind} />
+                    <span className="absolute inset-0 flex items-center justify-center pt-px font-display text-base leading-none font-bold text-ink">
+                      {keyDayOfMonth(key)}
+                    </span>
+                  </span>
+                </button>
               );
             })}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrera på kategori">
-        {FILTERS.map((f) => {
-          const on = filter === f;
-          const cat = f === 'all' ? null : CATEGORIES[f];
-          const color = cat?.color ?? '#682652';
-          return (
-            <button
-              key={f}
-              type="button"
-              aria-pressed={on}
-              onClick={() => {
-                setFilter(f);
-                setSelectedSlug(null);
-              }}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors"
-              style={on ? { backgroundColor: color, borderColor: color, color: '#fff' } : { borderColor: '#d6d3d1', color: '#44403c', backgroundColor: '#fff' }}
-            >
-              {cat && <Icon name={cat.icon} className="h-3.5 w-3.5" />}
-              {cat?.label ?? 'Alla'}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-5">
-          {active.length > 0 && (
-            <Section title={isToday ? 'Pågår idag' : `Aktivt ${formatKeyShort(selectedDay)}`}>{active.map(renderItem)}</Section>
-          )}
-          {upcoming.length > 0 && <Section title="Kommande">{upcoming.map(renderItem)}</Section>}
+      <section className="flex flex-wrap items-start gap-7">
+        <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-3 lg:max-w-[440px]">
+          <h2 className="m-0 mb-0.5 font-display text-xl font-bold">Kommande</h2>
+          {upcoming.length > 0 ? upcoming.map(row) : <p className="text-muted">Inga kommande aktiviteter just nu.</p>}
           {upcomingAll.length > upcoming.length && (
             <button
               type="button"
-              onClick={() => setExtraPages((p) => p + 1)}
-              className="mt-1 w-full rounded-xl border border-dashed border-stone-300 py-2.5 text-sm font-semibold text-stone-600 hover:border-brand-purple hover:text-brand-purple"
+              onClick={() => setShown((n) => n + PAGE)}
+              className="cursor-pointer rounded-[22px] bg-white/60 py-3 text-sm font-semibold text-muted shadow-[0_1px_3px_rgba(43,40,56,.06)] hover:bg-white hover:text-accent"
             >
               Visa fler
             </button>
           )}
           {past.length > 0 && (
             <>
-              <div className="mb-6 rounded-xl bg-brand-green-light px-4 py-3 text-sm text-brand-green-dark">
-                Inga planerade aktiviteter efter {formatKeyShort(selectedDay)}. Håll utkik här och på{' '}
-                <a href="https://www.facebook.com/OKEkenOrientering" className="font-semibold underline">
-                  Facebook
-                </a>
-                !
-              </div>
-              <Section title="Senaste">{past.map(renderItem)}</Section>
+              <h2 className="mt-3.5 mb-0.5 font-display text-xl font-bold">Tidigare</h2>
+              {past.map(row)}
             </>
           )}
-          {listed.length === 0 && <p className="text-stone-600">Inga aktiviteter att visa.</p>}
         </div>
 
-        <aside className="hidden lg:col-span-7 lg:block">
-          {selected && (
-            <div className="sticky top-4 rounded-2xl border border-stone-200 bg-white p-7 shadow-sm">
-              <EventDetail event={selected} as="h2" shareUrl={`${siteUrl}/event/${selected.slug}`} />
-              <a
-                href={`/event/${selected.slug}`}
-                className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-purple hover:underline"
-              >
-                Öppna eventsidan <Icon name="chevronRight" />
-              </a>
-            </div>
-          )}
-        </aside>
-      </div>
+        {chosen && (
+          <div className="hidden min-w-0 flex-[999_1_480px] lg:block">
+            <EventDetail event={chosen} today={today} as="h2" shareUrl={`${siteUrl}/event/${chosen.slug}`} />
+          </div>
+        )}
+      </section>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mb-6">
-      <h2 className="mb-2.5 text-xs font-bold uppercase tracking-widest text-stone-500">{title}</h2>
-      <ul className="grid gap-2.5">{children}</ul>
-    </section>
-  );
-}
-
-function EventListItem({ event, selected, onClick }: { event: CalEvent; selected: boolean; onClick: (ev: MouseEvent) => void }) {
-  const cat = CATEGORIES[event.type];
-  const period = formatPeriod(event.startsAt, event.endsAt);
+function EventRow({ event, selected, onClick }: { event: CalEvent; selected: boolean; onClick: (ev: MouseEvent) => void }) {
+  const time = formatEventTime(event.startsAt, event.endsAt);
+  const meta = [keyWeekdayShort(event.startDay), time, event.location?.name].filter(Boolean).join(' · ');
   return (
     <a
       href={`/event/${event.slug}`}
       onClick={onClick}
-      className={`flex gap-3 rounded-xl border bg-white p-3 transition-shadow hover:shadow-md ${
-        selected ? 'border-stone-200 lg:border-transparent lg:ring-2 lg:ring-brand-purple' : 'border-stone-200'
+      className={`flex w-full items-center gap-4 rounded-[22px] px-[18px] py-4 text-ink no-underline ${
+        selected
+          ? 'bg-white shadow-[0_1px_3px_rgba(43,40,56,.06)] lg:shadow-[0_12px_28px_-14px_rgba(138,75,158,.45),0_0_0_2px_rgba(138,75,158,.62)]'
+          : 'bg-white/60 shadow-[0_1px_3px_rgba(43,40,56,.06)] hover:bg-white'
       }`}
     >
-      <div
-        className="flex w-14 shrink-0 flex-col items-center justify-center rounded-lg py-1.5"
-        style={{ backgroundColor: `${cat.color}14`, color: cat.color }}
-      >
-        <span className="text-[11px] font-bold uppercase">{keyWeekdayShort(event.startDay)}</span>
-        <span className="text-xl font-extrabold leading-none">{keyDayOfMonth(event.startDay)}</span>
-        <span className="text-[11px] font-semibold">{keyMonthShort(event.startDay)}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        <CategoryChip type={event.type} size="sm" />
-        <div className="mt-1 truncate font-bold text-stone-900">{event.title}</div>
-        <div className="truncate text-sm text-stone-600">
-          {event.location?.name ?? (period.to ? `${period.from} → ${period.to}` : period.from)}
-        </div>
-        {period.to && event.location && (
-          <div className="truncate text-xs text-stone-500">t.o.m. {period.to}</div>
-        )}
-      </div>
+      <span className="flex w-11 flex-none flex-col items-center">
+        <span className="font-display text-2xl leading-none font-bold">{keyDayOfMonth(event.startDay)}</span>
+        <span className="text-[11px] font-semibold tracking-[.08em] text-subtle uppercase">{keyMonthShort(event.startDay)}</span>
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-[5px]">
+        <CategoryChip type={event.type} />
+        <span className="font-display text-[17px] leading-[1.25] font-semibold">{event.title}</span>
+        <span className="text-[13px] text-subtle">{meta}</span>
+      </span>
     </a>
   );
 }
 
-function IconButton({ label, icon, onClick }: { label: string; icon: 'chevronLeft' | 'chevronRight'; onClick: () => void }) {
+function RoundButton({ label, onClick, children }: { label: string; onClick: () => void; children: string }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-700 hover:border-brand-purple hover:text-brand-purple"
+      className="h-[34px] w-[34px] cursor-pointer rounded-full bg-white/90 text-lg leading-none text-ink shadow-chip hover:bg-white"
     >
-      <Icon name={icon} className="h-4 w-4" />
+      {children}
     </button>
+  );
+}
+
+/** Förenklad orienteringskarta som bakgrund i kalenderpanelen */
+function MapBackground() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 1240 260" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
+      <rect width="1240" height="260" fill="#FFFEF8" />
+      <path
+        d="M0 190 C150 160 260 230 420 200 S700 150 860 190 S1120 220 1240 180 L1240 260 L0 260z"
+        fill="#DDEBD0"
+        opacity=".55"
+      />
+      <ellipse cx="1080" cy="60" rx="90" ry="26" fill="#D6EAF2" opacity=".7" />
+      <g fill="none" stroke="#C9A77A" strokeWidth="1" opacity=".5">
+        <path d="M0 50 C200 20 340 90 520 55 S860 20 1240 70" />
+        <path d="M0 90 C180 60 330 130 520 95 S880 60 1240 110" />
+        <path d="M0 130 C200 100 360 170 540 135 S900 100 1240 150" />
+        <path d="M0 230 C200 205 360 250 560 225 S900 205 1240 240" />
+      </g>
+    </svg>
   );
 }

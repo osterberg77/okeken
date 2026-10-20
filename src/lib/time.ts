@@ -56,36 +56,33 @@ export function keyMonthLabel(key: string): string {
   return keyMonthLongFmt.format(keyToUtc(key));
 }
 
-/** 'tis 18 aug' */
-export function formatKeyShort(key: string): string {
-  return `${keyWeekdayShort(key)} ${keyDayOfMonth(key)} ${keyMonthShort(key)}`;
-}
-
 const timeFmt = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
 
 export function formatTime(iso: string): string {
   return timeFmt.format(new Date(iso));
 }
 
-export interface Period {
-  from: string;
-  to?: string;
+const keyWeekdayLongFmt = new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', weekday: 'long' });
+const keyMonthNameFmt = new Intl.DateTimeFormat('sv-SE', { timeZone: 'UTC', month: 'long' });
+
+/** 'tisdag' */
+export function keyWeekdayLong(key: string): string {
+  return keyWeekdayLongFmt.format(keyToUtc(key));
 }
 
-/**
- * - samma tidpunkt: 'tis 29 sep'
- * - samma dag:      'tis 18 aug 17:00–18:00'
- * - flera dagar:    'tis 18 aug 17:00' → 'sön 23 aug 12:00'
- */
-export function formatPeriod(startsAt: string, endsAt: string): Period {
-  const startDay = dayKey(startsAt);
-  const endDay = dayKey(endsAt);
-  if (startsAt === endsAt) return { from: formatKeyShort(startDay) };
-  if (startDay === endDay) {
-    return { from: `${formatKeyShort(startDay)} ${formatTime(startsAt)}–${formatTime(endsAt)}` };
-  }
-  return {
-    from: `${formatKeyShort(startDay)} ${formatTime(startsAt)}`,
-    to: `${formatKeyShort(endDay)} ${formatTime(endsAt)}`,
-  };
+/** 'tisdag 22 september' */
+export function formatKeyLong(key: string): string {
+  return `${keyWeekdayLong(key)} ${keyDayOfMonth(key)} ${keyMonthNameFmt.format(keyToUtc(key))}`;
+}
+
+/** 'tisdag 22 sep' */
+export function formatKeyMedium(key: string): string {
+  return `${keyWeekdayLong(key)} ${keyDayOfMonth(key)} ${keyMonthShort(key)}`;
+}
+
+/** Klockslag för listor och detaljvy: '17:00–18:00' samma dag, '17:00' vid period, '' utan tid. */
+export function formatEventTime(startsAt: string, endsAt: string): string {
+  if (startsAt === endsAt) return '';
+  if (dayKey(startsAt) === dayKey(endsAt)) return `${formatTime(startsAt)}–${formatTime(endsAt)}`;
+  return formatTime(startsAt);
 }

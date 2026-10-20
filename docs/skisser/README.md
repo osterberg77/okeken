@@ -12,7 +12,6 @@ Lägg valda skisser/layouter här (PNG/SVG/PDF) och beskriv kort vad som gäller
 - Startsida: tidslinje/kalender överst, aktivitetslista under (desktop: lista vänster, detalj höger)
 - Kategorier med färg + ikon: Träning, Tävling, Möte, Information, Händelse
 - Header: logotyp + meny. Footer: logotyp + kontaktinfo
-- Profil: färger hämtade från logotypen (lila `#9C397B`/`#682652`, grön `#31A947`/`#21712F`, gul `#F9D932`, sandbakgrund `#F7F4EC`); Plus Jakarta Sans. Definieras i `src/styles/global.css`. (Designutkastets `#2E7D32`/`#7B1FA2` ersattes 2026-10-20 för att matcha logotypen.)
-- Kategorifärger i `src/lib/categories.ts`. Eventets aktiva period visas med en orienteringskontroll (`ControlFlag`).
+- **Gällande spec för kalender, symboler, header, färger och typsnitt: [kalender-och-kontrollsymboler.md](kalender-och-kontrollsymboler.md)** (DM Sans + Inter, accent `#8A4B9E`). Implementerad i `src/styles/global.css`, `src/components/DaySymbol.tsx`, `Calendar.tsx`, `EventDetail.tsx`.
 
 Fullständig riktning finns i projektdokumentet *okeken-designriktning*.

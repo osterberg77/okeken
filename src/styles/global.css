@@ -1,17 +1,23 @@
 @import "tailwindcss";
-@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/dm-sans";
+@import "@fontsource-variable/inter";
 
-/* Färger hämtade från logotypen (lila sköld, grön ek, gul text) */
+/* Värden från docs/skisser/kalender-och-kontrollsymboler.md – ändra inte utan att fråga Erik */
 @theme {
-  --color-brand-purple: #9c397b;
-  --color-brand-purple-dark: #682652;
-  --color-brand-purple-light: #f6e9f2;
-  --color-brand-green: #31a947;
-  --color-brand-green-dark: #21712f;
-  --color-brand-green-light: #e8f5ea;
-  --color-brand-gold: #f9d932;
-  --color-brand-sand: #f7f4ec;
-  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-accent: #8a4b9e; /* kontrollfärg */
+  --color-ink: #2b2838;
+  --color-muted: #5f5a72;
+  --color-subtle: #8a859c;
+  --color-canvas: #fbfafd;
+  --color-pastel: #f1e8f6;
+  --color-period: #f7f3fa;
+  --color-line: #ece8f2;
+  --color-map: #fffef8;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-display: "DM Sans Variable", system-ui, sans-serif;
+  --shadow-panel: 0 20px 50px -24px rgba(43, 40, 56, 0.25), 0 2px 6px rgba(43, 40, 56, 0.05);
+  --shadow-card: 0 20px 50px -24px rgba(43, 40, 56, 0.22), 0 2px 6px rgba(43, 40, 56, 0.04);
+  --shadow-chip: 0 1px 3px rgba(43, 40, 56, 0.12);
 }
 
 @layer utilities {
@@ -25,19 +31,19 @@
 
 /* Markdown-innehåll i events och sidor */
 .prose-eken {
-  @apply leading-relaxed text-stone-800;
+  @apply max-w-[62ch] text-[17px] leading-[1.65] text-ink;
 }
 .prose-eken > * + * {
   @apply mt-4;
 }
 .prose-eken h2 {
-  @apply mt-8 text-xl font-extrabold text-stone-900;
+  @apply mt-8 font-display text-2xl font-bold;
 }
 .prose-eken h3 {
-  @apply mt-6 text-lg font-bold text-stone-900;
+  @apply mt-6 font-display text-xl font-bold;
 }
 .prose-eken a {
-  @apply font-semibold text-brand-purple underline decoration-brand-purple/30 underline-offset-2 hover:decoration-brand-purple;
+  @apply font-semibold text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent;
 }
 .prose-eken ul {
   @apply list-disc pl-5;
@@ -46,5 +52,5 @@
   @apply list-decimal pl-5;
 }
 .prose-eken img {
-  @apply rounded-xl;
+  @apply rounded-[20px];
 }

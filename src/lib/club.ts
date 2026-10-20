@@ -5,4 +5,5 @@ export const CLUB = {
   email: 'ok-eken@hotmail.com',
   facebook: 'https://www.facebook.com/OKEkenOrientering',
   eventor: 'https://eventor.orientering.se/',
+  livelox: 'https://www.livelox.com/',
 };
