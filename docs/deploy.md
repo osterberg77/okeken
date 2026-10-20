@@ -1,0 +1,14 @@
+# Deploy
+
+- Repo på GitHub, `main` är produktion.
+- GitHub Actions:
+  - **PR:** build + preview-kanal på Firebase Hosting.
+  - **Push till `main`:** build + deploy till Firebase Hosting (`firebase-tools` eller `FirebaseExtended/action-hosting-deploy`), samt deploy av Firestore/Storage-regler och Functions.
+- Secrets i GitHub: `FIREBASE_SERVICE_ACCOUNT` m.fl. Eventor-nyckeln ligger som GitHub Secret (synken körs i Actions). Hemligheter som bara Functions behöver (t.ex. GitHub-token för `repository_dispatch`) i Secret Manager.
+- Workflow-filer i `.github/workflows/` (läggs till vid scaffolding).
+
+## Firebase-projekt
+
+- Projekt-id `okeken` (Hosting: `okeken.web.app`), skapat 2026-10-20 på Eriks Google-konto.
+- Region **europe-north1** för Firestore, Storage och Functions (närmast, kan inte ändras i efterhand).
+- Blaze-plan med budgetlarm (t.ex. 50 kr/månad).

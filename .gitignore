@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.firebase/
+.env*
+*.log
+.DS_Store
+_to_delete/
