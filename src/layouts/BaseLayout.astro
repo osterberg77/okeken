@@ -12,7 +12,9 @@ interface Props {
 }
 
 const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website' } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site).href;
+// build.format 'file' ger '/event/x.html'; Hosting (cleanUrls) serverar '/event/x'
+const canonicalPath = Astro.url.pathname.replace(/(index)?\.html$/, '');
+const canonical = new URL(canonicalPath, Astro.site).href;
 ---
 
 <!doctype html>

@@ -2,6 +2,11 @@
 
 Lägg valda skisser/layouter här (PNG/SVG/PDF) och beskriv kort vad som gäller. Namnge `YYYY-MM-DD-namn.ext`.
 
+## Detaljspec
+
+- **[kalender-och-kontrollsymboler.md](kalender-och-kontrollsymboler.md)** – exakta mått, färger och SVG för kalendern, kontrollsymbolerna, kartbakgrunden, eventdetalj och header (Förslag 3, slutversion). Referenskod: `referens/startsida.dc.html`.
+- [logo.md](logo.md) – logotypvarianter.
+
 ## Vald designriktning (sammanfattning)
 
 - Startsida: tidslinje/kalender överst, aktivitetslista under (desktop: lista vänster, detalj höger)
