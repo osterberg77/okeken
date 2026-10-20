@@ -1,6 +1,6 @@
 # Seed
 
-Startmaterial som seed-skriptet (byggordning steg 4) skriver till Firestore. Fram till dess kan bygget läsa filerna direkt.
+Startmaterial som `scripts/seed-events.mjs` importerade till Firestore 2026-10-21. Firestore är nu källan; ändra events i admin, inte här.
 
 - `events/*.md` – de senaste träningarna från gamla okeken.se (hösten 2026), med frontmatter enligt `docs/datamodell.md`. Filnamnet är eventets `slug`. Tider i svensk tid (`+02:00`).
 

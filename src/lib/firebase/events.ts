@@ -1,0 +1,141 @@
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  Timestamp,
+  updateDoc,
+  where,
+  type DocumentData,
+} from 'firebase/firestore';
+import { eventSlug } from '../slug';
+import { dayKey } from '../time';
+import type { EventContent, EventRecord } from '../../types/event';
+import { db } from './client';
+
+const events = collection(db, 'events');
+
+function contentToFirestore(c: EventContent) {
+  return {
+    type: c.type,
+    title: c.title.trim(),
+    startsAt: Timestamp.fromDate(c.startsAt),
+    endsAt: Timestamp.fromDate(c.endsAt),
+    location: { name: c.location.name.trim(), mapUrl: c.location.mapUrl.trim() },
+    body: c.body,
+    courseSetter: c.courseSetter.trim(),
+    livelox: c.livelox.trim(),
+  };
+}
+
+function contentFromFirestore(d: DocumentData): EventContent {
+  return {
+    type: d.type,
+    title: d.title ?? '',
+    startsAt: (d.startsAt as Timestamp).toDate(),
+    endsAt: (d.endsAt as Timestamp).toDate(),
+    location: { name: d.location?.name ?? '', mapUrl: d.location?.mapUrl ?? '' },
+    body: d.body ?? '',
+    courseSetter: d.courseSetter ?? '',
+    livelox: d.livelox ?? '',
+  };
+}
+
+function recordFromFirestore(id: string, d: DocumentData): EventRecord {
+  return {
+    id,
+    ...contentFromFirestore(d),
+    status: d.status,
+    slug: d.slug ?? null,
+    published: d.published ? contentFromFirestore(d.published) : null,
+    publishedAt: d.publishedAt ? (d.publishedAt as Timestamp).toDate() : null,
+    updatedAt: d.updatedAt ? (d.updatedAt as Timestamp).toDate() : null,
+  };
+}
+
+export function sameContent(a: EventContent, b: EventContent): boolean {
+  return JSON.stringify(contentToFirestore(a)) === JSON.stringify(contentToFirestore(b));
+}
+
+/** Läget som statusbadgen visar */
+export type EventState = 'draft' | 'changed' | 'live' | 'unpublished';
+
+export function eventState(e: EventRecord, draft: EventContent = e): EventState {
+  if (e.status === 'draft' || !e.published) return 'draft';
+  if (e.status === 'unpublished') return 'unpublished';
+  return sameContent(draft, e.published) ? 'live' : 'changed';
+}
+
+export function watchEvents(callback: (events: EventRecord[]) => void, onError: () => void): () => void {
+  return onSnapshot(
+    query(events, orderBy('startsAt', 'desc')),
+    (snap) => callback(snap.docs.map((d) => recordFromFirestore(d.id, d.data()))),
+    onError,
+  );
+}
+
+export function watchEvent(id: string, callback: (event: EventRecord | null) => void, onError: () => void): () => void {
+  return onSnapshot(
+    doc(events, id),
+    (snap) => callback(snap.exists() ? recordFromFirestore(snap.id, snap.data()) : null),
+    onError,
+  );
+}
+
+const stamp = (uid: string) => ({ updatedBy: uid, updatedAt: serverTimestamp() });
+
+export async function createEvent(content: EventContent, uid: string): Promise<string> {
+  const ref = await addDoc(events, {
+    ...contentToFirestore(content),
+    status: 'draft',
+    slug: null,
+    published: null,
+    publishedAt: null,
+    source: 'manual',
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+    ...stamp(uid),
+  });
+  return ref.id;
+}
+
+export async function saveEvent(id: string, content: EventContent, uid: string): Promise<void> {
+  await updateDoc(doc(events, id), { ...contentToFirestore(content), ...stamp(uid) });
+}
+
+/** Ledig adress för ett event som publiceras första gången */
+async function uniqueSlug(id: string, content: EventContent): Promise<string> {
+  const base = eventSlug(dayKey(content.startsAt), content.title);
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`;
+    const taken = await getDocs(query(events, where('slug', '==', candidate)));
+    if (taken.docs.every((d) => d.id === id)) return candidate;
+  }
+}
+
+/** Sparar utkastet och gör det till den publicerade versionen. Adressen sätts första gången. */
+export async function publishEvent(id: string, slug: string | null, content: EventContent, uid: string): Promise<void> {
+  const data = contentToFirestore(content);
+  await updateDoc(doc(events, id), {
+    ...data,
+    status: 'published',
+    published: data,
+    publishedAt: serverTimestamp(),
+    slug: slug ?? (await uniqueSlug(id, content)),
+    ...stamp(uid),
+  });
+}
+
+export async function unpublishEvent(id: string, uid: string): Promise<void> {
+  await updateDoc(doc(events, id), { status: 'unpublished', ...stamp(uid) });
+}
+
+/** Bara aldrig publicerade utkast (se firestore.rules) */
+export async function deleteDraft(id: string): Promise<void> {
+  await deleteDoc(doc(events, id));
+}

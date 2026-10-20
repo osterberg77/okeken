@@ -3,20 +3,22 @@
 ## Firestore
 
 ### `events/{eventId}`
+Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `livelox`) är utkastet; `published` är en exakt kopia av dem vid publicering. Regler och tester: `firestore.rules`, `tests/rules/events.test.ts`.
+
 | Fält | Typ | Anm. |
 |---|---|---|
 | `type` | `training \| competition \| meeting \| info \| happening` | Styr färg/ikon |
 | `title` | string | |
 | `startsAt` | timestamp | Eventet blir "aktivt" |
 | `endsAt` | timestamp | T.ex. tisdagsträning, banor ute till söndag |
-| `location` | `{ name, mapUrl?, lat?, lng? }` | `mapUrl` = länk till Google Maps e.d. |
+| `location` | `{ name, mapUrl }` | Strängar; tom sträng = saknas. `mapUrl` = länk till Google Maps e.d. |
 | `body` | string (markdown) | |
 | `courseFiles` | `[{ name, storagePath, label }]` | PDF-banor. Unika filnamn i Storage (skriv aldrig över), så att `published`-snapshoten inte påverkas av ändringar i utkastet |
-| `livelox` | string? | Länk (senare) |
-| `courseSetter` | string? | Banläggarens namn (fritext; banläggare behöver inget konto) |
-| `source` | `manual \| eventor` | |
+| `livelox` | string | Länk till Livelox (tom = saknas) |
+| `courseSetter` | string | Banläggarens namn (fritext; tom = saknas) |
+| `source` | `manual \| seed \| eventor` | |
 | `eventorId` | string? | Vid speglad tävling |
-| `slug` | string | Stabil adress, t.ex. `2026-10-21-tisdagstraning`. Låses efter första publicering |
+| `slug` | string \| null | Stabil adress, t.ex. `2026-10-21-tisdagstraning`. Sätts vid första publiceringen (`<startdatum>-<titel>`, `-2` vid krock) och låses därefter |
 | `status` | `draft \| scheduled \| published \| unpublished` | Styr synlighet |
 | `publishAt` | timestamp? | Schemalagd publicering (status `scheduled`) |
 | `published` | objekt? | **Snapshot** av innehållet som är live (title, body, tider, plats, courseFiles m.m.). "Publicera" kopierar utkastet hit. **Bygget läser bara detta fält.** Utkastet är fälten på dokumentet i övrigt |

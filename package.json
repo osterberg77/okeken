@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "emulators": "firebase emulators:start",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-okeken \"vitest run tests/rules\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-okeken \"vitest run tests/rules\"",
+    "dev:emu": "PUBLIC_FIREBASE_EMULATORS=true FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 astro dev"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.0",
@@ -31,6 +32,7 @@
     "firebase-admin": "^14.5.0",
     "firebase-tools": "^15.34.0",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
   }
 }

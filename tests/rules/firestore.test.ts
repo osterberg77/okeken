@@ -53,7 +53,7 @@ beforeEach(async () => {
         createdAt: Timestamp.now(),
       });
     }
-    await setDoc(doc(db, 'events', 'x'), { title: 'x' });
+    await setDoc(doc(db, 'other', 'x'), { title: 'x' });
   });
 });
 
@@ -275,15 +275,15 @@ describe('users: delete', () => {
 });
 
 describe('other collections', () => {
-  it.each(['super', 'board', 'publisher', 'member'])('%s cannot read or write events/x', async (actor) => {
-    await assertFails(getDoc(doc(as(actor), 'events', 'x')));
-    await assertFails(getDocs(collection(as(actor), 'events')));
-    await assertFails(setDoc(doc(as(actor), 'events', 'y'), { title: 'y' }));
-    await assertFails(updateDoc(doc(as(actor), 'events', 'x'), { title: 'z' }));
-    await assertFails(deleteDoc(doc(as(actor), 'events', 'x')));
+  it.each(['super', 'board', 'publisher', 'member'])('%s cannot read or write other/x', async (actor) => {
+    await assertFails(getDoc(doc(as(actor), 'other', 'x')));
+    await assertFails(getDocs(collection(as(actor), 'other')));
+    await assertFails(setDoc(doc(as(actor), 'other', 'y'), { title: 'y' }));
+    await assertFails(updateDoc(doc(as(actor), 'other', 'x'), { title: 'z' }));
+    await assertFails(deleteDoc(doc(as(actor), 'other', 'x')));
   });
   it('unauthenticated denied', async () => {
-    await assertFails(getDoc(doc(anon(), 'events', 'x')));
-    await assertFails(setDoc(doc(anon(), 'events', 'y'), { title: 'y' }));
+    await assertFails(getDoc(doc(anon(), 'other', 'x')));
+    await assertFails(setDoc(doc(anon(), 'other', 'y'), { title: 'y' }));
   });
 });

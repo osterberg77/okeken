@@ -35,6 +35,11 @@ export function assignableBy(own: readonly Permission[]): Permission[] {
   return [];
 }
 
+/** Får skapa, redigera och publicera events och sidor. Måste spegla firestore.rules. */
+export function canPublish(own: readonly Permission[]): boolean {
+  return own.includes('publisher') || own.includes('board') || own.includes('superadmin');
+}
+
 export function canManageUsers(own: readonly Permission[]): boolean {
   return own.includes('superadmin') || own.includes('board');
 }

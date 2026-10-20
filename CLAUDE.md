@@ -17,6 +17,7 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 - Kod, identifierare, filnamn och commits på **engelska**. UI-text och dokumentation på **svenska**.
 - Rolldata använder engelska nycklar: `member`, `course_setter`, `publisher`, `board`, `superadmin`.
 - Datum/tider: lagra som Firestore-timestamp (UTC), visa alltid i `Europe/Stockholm`. Bygget körs i UTC på GitHub Actions, så ange tidszon explicit vid formatering.
+- Markdown renderas med `src/lib/markdown.ts` både i bygget och i preview; rå HTML escapas och bara säkra länkar släpps igenom.
 - TypeScript strict. Delade typer för Firestore-dokument på ett ställe (`src/types/`), används av både Astro-bygget och admin.
 - Komponenter som visas både publikt och i admin-preview (t.ex. eventdetalj) skrivs **en gång** som React-komponent: Astro renderar den till ren HTML vid build, admin renderar den live. Samma Markdown-renderare på båda sidor.
 - Håll `docs/` uppdaterade när implementationen avviker. Nya arkitekturbeslut får en ADR i `docs/beslut/`.
@@ -29,7 +30,9 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 - `npm run check` – typkontroll (`astro check`), kör före commit
 - `npm run emulators` – Firebase-emulatorer (Auth, Firestore, Storage, Hosting)
 - `npm run test:rules` – regeltester (vitest) mot Firestore-emulatorn; körs också i CI före deploy
-- Lokalt mot emulatorer: `npm run emulators` + `PUBLIC_FIREBASE_EMULATORS=true npm run dev` (Firestore-emulatorn på port 8180)
+- `npm run dev` läser publicerade events från produktionens Firestore (kräver `gcloud auth application-default login`)
+- Lokalt mot emulatorer: `npm run emulators` + `npm run dev:emu` (Firestore-emulatorn på port 8180); fyll emulatorn med `FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 node scripts/seed-events.mjs`
+- `node scripts/seed-events.mjs` – importerar `seed/events/*.md` till Firestore (hoppar över befintliga)
 - `node scripts/set-permissions.mjs <e-post> <behörighet…>` – sätter behörigheter med Admin SDK (första superadmin); kräver `gcloud auth application-default login`
 
 ## Arbetssätt och modellval

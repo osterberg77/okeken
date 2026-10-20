@@ -51,6 +51,87 @@ service cloud.firestore {
         && !('superadmin' in request.resource.data.permissions));
     }
 
+    // ---- Events ----------------------------------------------------------------
+    // Utkastet är fälten på dokumentet; `published` är ögonblicksbilden som är live.
+    // Bygget läser bara `published` för events med status 'published' (via Admin SDK).
+
+    function canPublish() {
+      return signedIn() && exists(userDoc())
+        && get(userDoc()).data.permissions.hasAny(['publisher', 'board', 'superadmin']);
+    }
+
+    function eventKeys() {
+      return ['type', 'title', 'startsAt', 'endsAt', 'location', 'body', 'courseSetter', 'livelox',
+        'status', 'slug', 'published', 'publishedAt', 'source',
+        'createdBy', 'createdAt', 'updatedBy', 'updatedAt'];
+    }
+
+    function validEventContent(d) {
+      return d.type in ['training', 'competition', 'meeting', 'info', 'happening']
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 200
+        && d.startsAt is timestamp && d.endsAt is timestamp && d.endsAt >= d.startsAt
+        && d.location is map && d.location.keys().hasOnly(['name', 'mapUrl'])
+        && d.location.name is string && d.location.name.size() <= 200
+        && d.location.mapUrl is string && d.location.mapUrl.size() <= 500
+        && d.body is string && d.body.size() <= 20000
+        && d.courseSetter is string && d.courseSetter.size() <= 200
+        && d.livelox is string && d.livelox.size() <= 500;
+    }
+
+    function eventSnapshot(d) {
+      return {
+        'type': d.type, 'title': d.title, 'startsAt': d.startsAt, 'endsAt': d.endsAt,
+        'location': d.location, 'body': d.body, 'courseSetter': d.courseSetter, 'livelox': d.livelox
+      };
+    }
+
+    function validSlug(slug) {
+      return slug is string && slug.size() <= 120 && slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$');
+    }
+
+    match /events/{eventId} {
+      allow read: if canPublish();
+
+      allow create: if canPublish()
+        && request.resource.data.keys().hasOnly(eventKeys())
+        && request.resource.data.keys().hasAll(eventKeys())
+        && validEventContent(request.resource.data)
+        && request.resource.data.status == 'draft'
+        && request.resource.data.slug == null
+        && request.resource.data.published == null
+        && request.resource.data.publishedAt == null
+        && request.resource.data.source == 'manual'
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if canPublish()
+        && request.resource.data.keys().hasOnly(eventKeys())
+        && request.resource.data.keys().hasAll(eventKeys())
+        && validEventContent(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt', 'source'])
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        // Publicering: ögonblicksbilden ska vara exakt utkastet i samma skrivning
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['published', 'publishedAt'])
+          || (request.resource.data.published == eventSnapshot(request.resource.data)
+            && request.resource.data.publishedAt == request.time))
+        // 'draft' bara för aldrig publicerade; publicerade/avpublicerade har ögonblicksbild och adress
+        && (request.resource.data.status == 'draft'
+          ? request.resource.data.published == null && request.resource.data.slug == null
+          : request.resource.data.status in ['published', 'unpublished']
+            && request.resource.data.published is map
+            && validSlug(request.resource.data.slug))
+        // Adressen låses vid första publiceringen (delade länkar ska fortsätta fungera)
+        && (resource.data.publishedAt == null || request.resource.data.slug == resource.data.slug);
+
+      // Bara aldrig publicerade utkast får raderas; publicerade avpubliceras i stället
+      allow delete: if canPublish() && resource.data.publishedAt == null;
+    }
+
+    // ---- Användare ---------------------------------------------------------------
+
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || has('board') || has('superadmin'));
 

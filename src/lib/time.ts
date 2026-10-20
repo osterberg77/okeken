@@ -86,3 +86,39 @@ export function formatEventTime(startsAt: string, endsAt: string): string {
   if (dayKey(startsAt) === dayKey(endsAt)) return `${formatTime(startsAt)}–${formatTime(endsAt)}`;
   return formatTime(startsAt);
 }
+
+// Formulärfält (datetime-local) tolkas alltid som svensk tid, oavsett webbläsarens tidszon.
+
+const partsFmt = new Intl.DateTimeFormat('en-US', {
+  timeZone: TZ,
+  hourCycle: 'h23',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function stockholmParts(date: Date) {
+  const parts = partsFmt.formatToParts(date);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  return { y: get('year'), m: get('month'), d: get('day'), h: get('hour'), min: get('minute') };
+}
+
+/** Date → 'YYYY-MM-DDTHH:mm' i svensk tid */
+export function toStockholmInput(date: Date): string {
+  const { y, m, d, h, min } = stockholmParts(date);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}`;
+}
+
+/** 'YYYY-MM-DDTHH:mm' i svensk tid → Date */
+export function fromStockholmInput(value: string): Date {
+  const [datePart, timePart = '00:00'] = value.split('T');
+  const [y, m, d] = datePart.split('-').map(Number);
+  const [h, min] = timePart.split(':').map(Number);
+  const guess = Date.UTC(y, m - 1, d, h, min);
+  const p = stockholmParts(new Date(guess));
+  const offset = Date.UTC(p.y, p.m - 1, p.d, p.h, p.min) - guess;
+  return new Date(guess - offset);
+}
