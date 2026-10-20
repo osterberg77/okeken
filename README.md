@@ -84,6 +84,7 @@ npm run build        # statisk build till dist/
 npm run preview      # förhandsgranska bygget
 npm run check        # typkontroll (astro check)
 npm run emulators    # Auth, Firestore, Storage, Hosting lokalt
+npm run test:rules   # säkerhetsregler mot emulatorn
 ```
 
 ## Deploy

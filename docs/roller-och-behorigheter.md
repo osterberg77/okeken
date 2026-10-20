@@ -17,7 +17,9 @@ Beslut: ingen separat `admin`-roll.
 
 `/admin/anvandare` listar konton med kryssrutor per behörighet. Superadmin ser alla rutor; styrelse ser bara de roller de får tilldela. Sidan skriver direkt till `users/{uid}.permissions` – reglerna avgör om skrivningen är tillåten, så UI:t är bara bekvämlighet.
 
-Nya konton: när någon loggar in första gången skapas `users/{uid}` med tom `permissions`. Superadmin/styrelse ger sedan behörigheter. Första superadmin sätts med ett engångsskript (Admin SDK).
+Nya konton: när någon loggar in första gången (Google eller e-postlänk via `/logga-in`) skapas `users/{uid}` med tom `permissions`. Superadmin/styrelse ger sedan behörigheter. Första superadmin sätts med `scripts/set-permissions.mjs` (Admin SDK).
+
+Headerns kontomeny laddar Firebase bara om webbläsaren varit inloggad tidigare (`localStorage`), så besökare får ingen extra JavaScript.
 
 ## Regler (princip)
 

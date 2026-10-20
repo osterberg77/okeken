@@ -9,6 +9,21 @@ permissions:
   checks: write
 
 jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run test:rules
+
   preview:
     # Fork-PR:er saknar tillgång till secrets
     if: github.event.pull_request.head.repo.full_name == github.repository

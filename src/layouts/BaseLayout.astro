@@ -9,9 +9,11 @@ interface Props {
   /** Rubrik för delning (Open Graph); standard är `title` */
   ogTitle?: string;
   ogType?: 'website' | 'article';
+  /** Admin- och inloggningssidor ska inte indexeras */
+  noindex?: boolean;
 }
 
-const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website' } = Astro.props;
+const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website', noindex = false } = Astro.props;
 // build.format 'file' ger '/event/x.html'; Hosting (cleanUrls) serverar '/event/x'
 const canonicalPath = Astro.url.pathname.replace(/(index)?\.html$/, '');
 const canonical = new URL(canonicalPath, Astro.site).href;
@@ -25,6 +27,7 @@ const canonical = new URL(canonicalPath, Astro.site).href;
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex" />}
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta property="og:site_name" content="OK Eken" />
     <meta property="og:locale" content="sv_SE" />

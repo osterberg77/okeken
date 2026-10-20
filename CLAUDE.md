@@ -28,7 +28,9 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 - `npm run preview` – förhandsgranska bygget
 - `npm run check` – typkontroll (`astro check`), kör före commit
 - `npm run emulators` – Firebase-emulatorer (Auth, Firestore, Storage, Hosting)
-- Test av regler mot emulatorn: läggs till i steg 3.
+- `npm run test:rules` – regeltester (vitest) mot Firestore-emulatorn; körs också i CI före deploy
+- Lokalt mot emulatorer: `npm run emulators` + `PUBLIC_FIREBASE_EMULATORS=true npm run dev` (Firestore-emulatorn på port 8180)
+- `node scripts/set-permissions.mjs <e-post> <behörighet…>` – sätter behörigheter med Admin SDK (första superadmin); kräver `gcloud auth application-default login`
 
 ## Arbetssätt och modellval
 

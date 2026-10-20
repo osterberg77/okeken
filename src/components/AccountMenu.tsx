@@ -1,0 +1,105 @@
+import { useEffect, useRef, useState } from 'react';
+import { rememberedSignIn } from '../lib/firebase/flags';
+import { canManageUsers, type Session } from '../types/user';
+import PermissionTag from './PermissionTag';
+
+// Firebase laddas bara för den som varit inloggad på den här enheten,
+// så vanliga besökare får ingen extra JavaScript.
+type Session$ = Session | null | undefined; // undefined = laddar
+
+export default function AccountMenu() {
+  const [session, setSession] = useState<Session$>(undefined);
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!rememberedSignIn()) {
+      setSession(null);
+      return;
+    }
+    let stop = () => {};
+    let cancelled = false;
+    import('../lib/firebase/session').then(({ watchSession }) => {
+      if (!cancelled) stop = watchSession(setSession);
+    });
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('click', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  async function onSignOut() {
+    const { signOut } = await import('../lib/firebase/session');
+    await signOut();
+    location.href = '/';
+  }
+
+  if (session === null) {
+    const next = typeof location === 'undefined' ? '' : `?next=${encodeURIComponent(location.pathname)}`;
+    return (
+      <a
+        href={`/logga-in${next}`}
+        className="inline-block rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-ink no-underline shadow-chip hover:bg-white hover:text-accent"
+      >
+        Logga in
+      </a>
+    );
+  }
+
+  const name = session?.displayName || session?.email || '';
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        onClick={() => session && setOpen((o) => !o)}
+        aria-label="Min profil"
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="h-11 w-11 cursor-pointer rounded-full bg-[linear-gradient(135deg,#C9A7DA,#8A4B9E)] font-display text-lg font-bold text-white shadow-[0_8px_18px_-8px_#8A4B9E,0_0_0_3px_#fff] sm:h-14 sm:w-14 sm:text-[22px]"
+      >
+        {name.charAt(0).toUpperCase()}
+      </button>
+      {open && session && (
+        <div className="absolute top-[56px] right-0 z-20 flex w-[272px] flex-col gap-3 rounded-[22px] bg-white p-[18px] shadow-[0_24px_48px_-20px_rgba(43,40,56,.45),0_2px_8px_rgba(43,40,56,.08)] sm:top-[68px]">
+          <div className="flex flex-col gap-1.5">
+            <span className="font-display text-lg font-bold">{name}</span>
+            {session.displayName && <span className="text-[13px] text-subtle">{session.email}</span>}
+            {session.permissions.length > 0 && (
+              <span className="flex flex-wrap gap-1.5">
+                {session.permissions.map((p) => (
+                  <PermissionTag key={p} permission={p} />
+                ))}
+              </span>
+            )}
+          </div>
+          {canManageUsers(session.permissions) && (
+            <>
+              <div className="h-px bg-line" />
+              <a href="/admin/anvandare" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+                Användare och behörigheter
+              </a>
+            </>
+          )}
+          <div className="h-px bg-line" />
+          <button type="button" onClick={onSignOut} className="cursor-pointer py-1.5 text-left font-semibold text-accent">
+            Logga ut
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

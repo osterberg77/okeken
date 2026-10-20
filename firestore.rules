@@ -1,10 +1,87 @@
 rules_version = '2';
 
-// Deny-all baseline. Riktiga regler kommer i steg 3 i docs/plan.md.
+// Behörigheter lagras i users/{uid}.permissions (beslut 0005, docs/roller-och-behorigheter.md).
+// UI:t döljer funktioner men det är dessa regler som skyddar. Ändringar kräver regeltester (tests/rules).
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function has(permission) {
+      return signedIn() && exists(userDoc()) && permission in get(userDoc()).data.permissions;
+    }
+
+    function allPermissions() {
+      return ['member', 'course_setter', 'publisher', 'board', 'superadmin'];
+    }
+
+    // Det styrelsen får tilldela och ta bort
+    function boardAssignable() {
+      return ['member', 'course_setter', 'publisher'];
+    }
+
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function validPermissions(list) {
+      return list is list
+        && list.size() <= allPermissions().size()
+        && list.toSet().size() == list.size()
+        && list.toSet().hasOnly(allPermissions());
+    }
+
+    // Behörigheter som lagts till eller tagits bort i denna skrivning
+    function changedPermissions() {
+      let before = resource.data.permissions.toSet();
+      let after = request.resource.data.permissions.toSet();
+      return after.difference(before).union(before.difference(after));
+    }
+
+    // Ingen får ta bort sin egen superadmin (skydd mot att låsa ute sig)
+    function keepsOwnSuperadmin(uid) {
+      return !(uid == request.auth.uid
+        && 'superadmin' in resource.data.permissions
+        && !('superadmin' in request.resource.data.permissions));
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || has('board') || has('superadmin'));
+
+      // Första inloggningen: eget dokument utan behörigheter
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['displayName', 'email', 'permissions', 'createdAt'])
+        && request.resource.data.permissions == []
+        && request.resource.data.email == request.auth.token.email
+        && (!('displayName' in request.resource.data) || request.resource.data.displayName is string)
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if signedIn() && (
+        // Användaren själv: bara visningsnamn
+        (request.auth.uid == uid
+          && onlyChanges(['displayName'])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() <= 100)
+        // Superadmin: alla behörigheter
+        || (has('superadmin')
+          && onlyChanges(['permissions'])
+          && validPermissions(request.resource.data.permissions)
+          && keepsOwnSuperadmin(uid))
+        // Styrelse: bara member, course_setter, publisher
+        || (has('board')
+          && onlyChanges(['permissions'])
+          && validPermissions(request.resource.data.permissions)
+          && changedPermissions().hasOnly(boardAssignable()))
+      );
+
+      allow delete: if false;
     }
   }
 }

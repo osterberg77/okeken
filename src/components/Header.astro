@@ -1,4 +1,6 @@
 ---
+import AccountMenu from './AccountMenu';
+
 // Mått enligt docs/skisser/kalender-och-kontrollsymboler.md (desktop); nedskalat på mobil.
 const path = Astro.url.pathname;
 
@@ -21,7 +23,7 @@ const links = [
         class="block h-auto w-[64px] drop-shadow-[0_14px_18px_rgba(43,40,56,.18)] sm:w-[138px]"
       />
     </a>
-    <nav aria-label="Huvudmeny" class="mt-2 flex flex-1 flex-wrap gap-0 sm:mt-[23px] sm:ml-6 sm:flex-auto sm:gap-1">
+    <nav aria-label="Huvudmeny" class="order-last -mt-1 flex w-full flex-wrap gap-0 sm:order-none sm:mt-[23px] sm:ml-6 sm:w-auto sm:flex-1 sm:gap-1">
       {
         links.map((l) => (
           <a
@@ -37,5 +39,8 @@ const links = [
         ))
       }
     </nav>
+    <div class="mt-2 ml-auto sm:mt-[21px]">
+      <AccountMenu client:load />
+    </div>
   </div>
 </header>

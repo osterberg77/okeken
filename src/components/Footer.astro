@@ -11,6 +11,8 @@ import { CLUB } from '../lib/club';
     <div class="flex flex-col gap-[3px]">
       <span class="text-xs font-semibold tracking-[.14em] text-[#A9A3BD]">KONTAKT</span>
       <a href={`mailto:${CLUB.email}`} class="hover:underline">{CLUB.email}</a>
+      <a href={`tel:${CLUB.phone.replace(/\s/g, '')}`} class="hover:underline">{CLUB.phone}</a>
+      <span>{CLUB.address}</span>
     </div>
     <div class="flex flex-col gap-[3px]">
       <span class="text-xs font-semibold tracking-[.14em] text-[#A9A3BD]">LÄNKAR</span>
