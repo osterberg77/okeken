@@ -83,16 +83,25 @@ Coworken (`~/progg/coworken`) har en fungerande bildbank och ett mallverktyg. Sl
 
 API-nyckel som GitHub Secret `EVENTOR_API_KEY` (aldrig i repot). Det nattliga bygget börjar med ett synksteg som hämtar tävlingar (`/api/events`, header `ApiKey`) och skriver dem till Firestore (`source: eventor`); publicerare väljer vilka som visas. Knappen "Synka nu" kör samma workflow manuellt. Detaljer i `eventor.md`.
 
-## Byggordning (v1)
+## Byggordning (v1) och status
 
-1. Git, GitHub-repo, Firebase-projekt (Blaze + budgetlarm). Scaffolda Astro + Tailwind, `firebase.json`, emulatorer, GitHub Actions för deploy från `main`.
-2. Layout, header/footer, meny. Infosidor byggda direkt från `seed/` (Markdown i repot) så att sajten syns tidigt.
-3. Auth, `users`, regler med regeltester, admin-sida för behörigheter, engångsskript för första superadmin.
-4. Events och sidor i Firestore: datamodell, admin-CRUD, preview, `StatusBadge`, publicera/avpublicera. Seed-skript flyttar sidorna från `seed/` till Firestore.
-5. Publiceringspipeline: trigger → Actions → deploy → `lastBuildAt`, delningsknapp.
-6. Kalender, tidslinje och aktivitetslista.
-7. PDF-banor (Storage).
-8. Pagefind-sök, omdirigeringar, finjustering, lansering (DNS på Loopia).
+Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
+
+1. ✅ Git, privat GitHub-repo (`osterberg77/okeken`), Firebase-projekt `okeken` (Blaze, europe-north1), Astro + Tailwind, `firebase.json`, emulatorer, GitHub Actions (deploy från `main`, preview för PR).
+2. ✅ Layout enligt `skisser/kalender-och-kontrollsymboler.md`: header, footer, kalender med kontrollsymboler, aktivitetslista, detaljvy, eventsidor med Open Graph. *Kvar:* infosidorna (Om oss, Bli medlem länkar tills vidare till gamla sajten; innehållet tas fram av Erik).
+3. ✅ Inloggning (lösenord med bekräftelsemejl, Google, e-postlänk), `users` + regler + tester, `/admin/anvandare`, `scripts/set-permissions.mjs`. Erik (osterbergsab@gmail.com) är superadmin.
+4. ✅ Events i Firestore (utkast + `published`-ögonblicksbild), regler + tester, `/admin/events` och editor med preview, Facebook-kortpreview och `StatusBadge`. Seed-eventen importerade. Bygget läser Firestore via Admin SDK. *Kvar:* redigerbara infosidor (`pages`, samma mönster) när innehållet finns; utkast/statusetiketter i publika kalendern för inloggade.
+5. **← Nästa.** Publiceringspipeline: Cloud Function vid publicering/avpublicering → `repository_dispatch` → Actions bygger och deployar → skriver `meta/build.lastBuildAt`; delningsknappen aktiv först när `lastBuildAt > publishedAt`; nattligt skyddsbygge (cron). Behöver: `functions/`, GitHub-token i Secret Manager, deploy av Functions i CI. Tills dess: Actions → Deploy → "Run workflow" efter publicering.
+6. Kalendern: finjustering (t.ex. inloggade ser utkast med statusetikett).
+7. PDF-banor (Storage-regler + uppladdning i editorn, `courseFiles`).
+8. Pagefind-sök, omdirigeringar från Wix (`firebase.json`), finjustering, lansering (DNS för okeken.se på Loopia).
+
+### Att veta inför nästa session
+
+- Arbetssätt och kommandon: `CLAUDE.md`. Designspec är bindande: `skisser/kalender-och-kontrollsymboler.md`.
+- Regeltester: `npm run test:rules` (142 st). Lokalt mot emulatorer: `npm run emulators` + `npm run dev:emu`.
+- Deploykontot `github-deploy@okeken.iam.gserviceaccount.com` har roller för Hosting, regler, index och Firestore-läsning; Functions-deploy kräver fler roller i steg 5.
+- Ospårade logotypfiler i `assets/logo/` (utom `lila-bakgrund.svg`) ska flyttas till arkivet av Erik, inte committas.
 
 ## Flytt från Wix
 

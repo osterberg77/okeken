@@ -2,7 +2,7 @@
 
 Ny webbplats för OK Eken (ersätter okeken.se på Wix). Snabb, statisk och sökbar sida med ett enkelt CMS för träningar, tävlingar och events.
 
-> Status: uppstart. Se [`docs/`](docs/README.md) för implementationsdetaljer, skisser och beslut. Full projektplan: [`docs/plan.md`](docs/plan.md).
+> Status: v1 under uppbyggnad, live på https://okeken.web.app. Var vi är och nästa steg: [`docs/plan.md` → Byggordning och status](docs/plan.md#byggordning-v1-och-status). Se [`docs/`](docs/README.md) för implementationsdetaljer, skisser och beslut. Full projektplan: [`docs/plan.md`](docs/plan.md).
 
 ## Sammanfattning
 
