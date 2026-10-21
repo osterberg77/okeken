@@ -34,7 +34,7 @@ const items: NavItem[] =
         { href: 'https://www.okeken.se/bli-medlem', label: 'Bli medlem', children: [], active: false },
       ];
 
-const text = 'whitespace-nowrap text-[15px] leading-[1.2] no-underline sm:text-[30px]';
+const text = 'whitespace-nowrap text-[15px] leading-[1.2] no-underline';
 const pill = 'rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
 const tone = (active: boolean) =>
   active ? 'bg-white font-semibold text-ink shadow-[0_1px_3px_rgba(43,40,56,.08)]' : 'font-medium text-muted hover:text-ink';
@@ -55,7 +55,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
     </a>
     <nav
       aria-label="Huvudmeny"
-      class="relative order-last -mt-1 flex w-full flex-wrap gap-0 sm:order-none sm:mt-[23px] sm:ml-6 sm:w-auto sm:flex-1 sm:gap-1"
+      class="relative order-last -mt-1 flex w-full flex-wrap gap-0 sm:order-none sm:mt-8 sm:ml-6 sm:w-auto sm:flex-1 sm:gap-1"
     >
       {
         items.map((item, i) => {
@@ -64,7 +64,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
               <a
                 href={item.href!}
                 aria-current={item.active ? 'page' : undefined}
-                class:list={[text, pill, tone(item.active), 'px-2.5 py-1.5 sm:px-6 sm:py-2.5']}
+                class:list={[text, pill, tone(item.active), 'px-2.5 py-1.5 sm:px-4 sm:py-2']}
               >
                 {item.label}
               </a>
@@ -80,7 +80,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
               stroke-linecap="round"
               stroke-linejoin="round"
               aria-hidden="true"
-              class="h-3.5 w-3.5 shrink-0 text-accent transition-transform group-open/sub:rotate-180 sm:h-[22px] sm:w-[22px]"
+              class="h-3.5 w-3.5 shrink-0 text-accent transition-transform group-open/sub:rotate-180 sm:h-4 sm:w-4"
             >
               <path d="m4 6 4 4 4-4" />
             </svg>
@@ -97,7 +97,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
                     href={c.href}
                     aria-current={c.active ? 'page' : undefined}
                     class:list={[
-                      'block rounded-[14px] px-4 py-2.5 text-[15px] leading-[1.3] no-underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:text-[17px]',
+                      'block rounded-[14px] px-4 py-2.5 text-[15px] leading-[1.3] no-underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent',
                       c.active ? 'bg-pastel font-semibold text-accent' : 'font-medium text-ink hover:bg-pastel hover:text-accent',
                     ]}
                   >
@@ -113,7 +113,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
               <a
                 href={item.href}
                 aria-current={path === item.href ? 'page' : undefined}
-                class:list={[text, pill, 'py-1.5 pr-1 pl-2.5 text-inherit sm:py-2.5 sm:pr-1.5 sm:pl-6']}
+                class:list={[text, pill, 'py-1.5 pr-1 pl-2.5 text-inherit sm:py-2 sm:pr-1 sm:pl-4']}
               >
                 {item.label}
               </a>
@@ -121,7 +121,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
                 <summary
                   aria-label={`Visa undermeny för ${item.label}`}
                   aria-controls={id}
-                  class:list={[summaryBase, pill, 'h-[30px] pr-2.5 pl-1 sm:h-[56px] sm:pr-5 sm:pl-1.5']}
+                  class:list={[summaryBase, pill, 'h-[30px] pr-2.5 pl-1 sm:h-[34px] sm:pr-3 sm:pl-1']}
                 >
                   {chevron}
                 </summary>
@@ -133,7 +133,7 @@ const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-deta
               <summary
                 aria-controls={id}
                 aria-current={item.active ? 'true' : undefined}
-                class:list={[summaryBase, text, pill, tone(item.active), 'gap-1 px-2.5 py-1.5 sm:gap-2 sm:px-6 sm:py-2.5']}
+                class:list={[summaryBase, text, pill, tone(item.active), 'gap-1 px-2.5 py-1.5 sm:gap-1.5 sm:px-4 sm:py-2']}
               >
                 {item.label}
                 {chevron}
