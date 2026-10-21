@@ -609,15 +609,20 @@ service cloud.firestore {
 
     // ---- Eventor-spegel ----------------------------------------------------------------
     // eventorEvents är en spegel av Eventor (beslut: ingen egen event-post). Eventor-fälten skrivs bara av
-    // synkskriptet (Admin SDK); publicerare får bara kryssa i/ur `selected`, vilket styr om tävlingen visas i kalendern.
+    // synkskriptet (Admin SDK). Publicerare kryssar i/ur `selected` (utkast) och trycker sedan Publicera, som sätter
+    // `live` = `selected`. Bara `live` når besökarna (som published på events).
     match /eventorEvents/{eventId} {
       allow read: if canPublish();
       allow create, delete: if false;
-      allow update: if canPublish()
-        && onlyChanges(['selected', 'selectedBy', 'selectedAt'])
-        && request.resource.data.selected is bool
-        && request.resource.data.selectedBy == request.auth.uid
-        && request.resource.data.selectedAt == request.time;
+      allow update: if canPublish() && (
+        (onlyChanges(['selected', 'selectedBy', 'selectedAt'])
+          && request.resource.data.selected is bool
+          && request.resource.data.selectedBy == request.auth.uid
+          && request.resource.data.selectedAt == request.time)
+        || (onlyChanges(['live', 'liveBy', 'liveAt'])
+          && request.resource.data.live == request.resource.data.selected
+          && request.resource.data.liveBy == request.auth.uid
+          && request.resource.data.liveAt == request.time));
     }
 
     // Urvalsregler för synken. Styrelse och superadmin ändrar, publicerare läser.

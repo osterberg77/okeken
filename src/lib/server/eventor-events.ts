@@ -1,5 +1,5 @@
-// Körs bara i bygget (Astro content loader). Läser valda tävlingar ur Eventor-spegeln med Admin SDK.
-// Bara `selected` och inte `gone` släpps igenom; allt annat i spegeln når aldrig besökarna.
+// Körs bara i bygget (Astro content loader). Läser publicerade tävlingar ur Eventor-spegeln med Admin SDK.
+// Bara publicerade (`live`) och inte `gone` släpps igenom; allt annat i spegeln når aldrig besökarna.
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 
@@ -8,7 +8,7 @@ export async function loadSelectedEventorEvents() {
 
   let snap;
   try {
-    snap = await getFirestore().collection('eventorEvents').where('selected', '==', true).get();
+    snap = await getFirestore().collection('eventorEvents').where('live', '==', true).get();
   } catch (err) {
     // Hellre ett misslyckat bygge än en deployad sajt utan de valda tävlingarna
     throw new Error(

@@ -119,10 +119,10 @@ export async function syncEventor(db: Firestore, key: string): Promise<SyncResul
     const ref = db.doc(`eventorEvents/${id}`);
     if (data.suggested) result.suggested++;
     if (existing.has(id)) {
-      batch.update(ref, data); // rör inte selected/selectedBy/selectedAt
+      batch.update(ref, data); // rör inte selected*/live*
       result.updated++;
     } else {
-      batch.set(ref, { ...data, selected: false, selectedBy: null, selectedAt: null });
+      batch.set(ref, { ...data, selected: false, selectedBy: null, selectedAt: null, live: false, liveBy: null, liveAt: null });
       result.added++;
     }
   }
@@ -130,7 +130,7 @@ export async function syncEventor(db: Firestore, key: string): Promise<SyncResul
     if (fetched.has(id)) continue;
     const ref = db.doc(`eventorEvents/${id}`);
     const past = (old.endsAt as Timestamp).toMillis() < from.getTime();
-    if (old.selected && !past) {
+    if ((old.selected || old.live) && !past) {
       batch.update(ref, { gone: true });
       result.gone++;
     } else {

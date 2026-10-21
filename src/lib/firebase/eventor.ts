@@ -8,6 +8,7 @@ import {
   setDoc,
   Timestamp,
   updateDoc,
+  writeBatch,
   type DocumentData,
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -34,6 +35,9 @@ function fromFirestore(id: string, d: DocumentData): EventorEvent {
     selected: d.selected === true,
     selectedBy: d.selectedBy ?? null,
     selectedAt: d.selectedAt ? (d.selectedAt as Timestamp).toDate() : null,
+    live: d.live === true,
+    liveBy: d.liveBy ?? null,
+    liveAt: d.liveAt ? (d.liveAt as Timestamp).toDate() : null,
     fetchedAt: (d.fetchedAt as Timestamp).toDate(),
   };
 }
@@ -46,9 +50,22 @@ export function watchEventorEvents(onData: (events: EventorEvent[]) => void, onE
   );
 }
 
-/** Kryssa i/ur: tävlingen visas i kalendern (efter nästa bygge) eller tas bort därifrån. */
+/** Kryssa i/ur (utkast). Syns i kalendern först när det publicerats. */
 export function setEventorSelected(id: string, selected: boolean, uid: string): Promise<void> {
   return updateDoc(doc(db, 'eventorEvents', id), { selected, selectedBy: uid, selectedAt: serverTimestamp() });
+}
+
+/** Publicera: det som är kryssat blir det som visas i kalendern (startar ett bygge). */
+export async function publishEventorSelection(events: EventorEvent[], uid: string): Promise<number> {
+  const changed = events.filter((e) => e.live !== e.selected);
+  for (let i = 0; i < changed.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const e of changed.slice(i, i + 400)) {
+      batch.update(doc(db, 'eventorEvents', e.id), { live: e.selected, liveBy: uid, liveAt: serverTimestamp() });
+    }
+    await batch.commit();
+  }
+  return changed.length;
 }
 
 export function watchEventorSettings(onData: (s: EventorSettings) => void, onError: (err: Error) => void): () => void {

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { saveEventorSettings, setEventorSelected, syncEventorNow, watchEventorEvents, watchEventorSettings, type SyncResult } from '../../lib/firebase/eventor';
+import { publishEventorSelection, saveEventorSettings, setEventorSelected, syncEventorNow, watchEventorEvents, watchEventorSettings, type SyncResult } from '../../lib/firebase/eventor';
 import { dayKey, keyDayOfMonth, keyMonthShort, keyWeekdayShort } from '../../lib/time';
 import type { EventorEvent, EventorSettings } from '../../types/eventor';
 import { canPublish, type Session } from '../../types/user';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
 import { ActionButton, Field, INPUT } from './AdminUi';
 import BuildStatus from './BuildStatus';
+import StatusBadge, { StatusLabel } from './StatusBadge';
 
 const CLASSIFICATIONS: Record<number, string> = { 0: 'Övrigt', 1: 'Mästerskap', 2: 'Nationell', 3: 'Distrikt', 4: 'Lokal', 5: 'Klubb' };
 const disciplineLabel = (id: number) => (id === 1 ? 'Orientering' : `Disciplin ${id}`);
@@ -27,6 +28,7 @@ function Eventor({ session }: { session: Session }) {
   const [search, setSearch] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
+  const [publishing, setPublishing] = useState(false);
   useEffect(() => watchEventorEvents(setEvents, () => setError('Kunde inte läsa tävlingarna.')), []);
 
   async function toggle(e: EventorEvent) {
@@ -35,6 +37,22 @@ function Eventor({ session }: { session: Session }) {
       await setEventorSelected(e.id, !e.selected, session.uid);
     } catch {
       setError('Kunde inte spara valet.');
+    }
+  }
+
+  const pending = useMemo(() => (events ?? []).filter((e) => e.live !== e.selected).length, [events]);
+
+  async function publish() {
+    setPublishing(true);
+    setError('');
+    setSyncMessage('');
+    try {
+      const n = await publishEventorSelection(events ?? [], session.uid);
+      setSyncMessage(`Publicerat! ${n} ändring${n === 1 ? '' : 'ar'} syns i kalendern efter nästa ombyggnad (1–2 min).`);
+    } catch {
+      setError('Kunde inte publicera.');
+    } finally {
+      setPublishing(false);
     }
   }
 
@@ -73,14 +91,17 @@ function Eventor({ session }: { session: Session }) {
         <div>
           <AdminTitle>Tävlingar från Eventor</AdminTitle>
           <p className="mt-2 max-w-[60ch] text-muted">
-            Kryssa i de tävlingar som ska visas i kalendern. De länkar till Eventor och sparas inte som egna events. Ändringar syns på sajten när bygget är klart (1–2 minuter).
+            Kryssa i de tävlingar som ska visas i kalendern och tryck sedan Publicera. De länkar till Eventor och sparas inte som egna events.
           </p>
         </div>
         <BuildStatus />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <ActionButton primary busy={syncing} disabled={syncing} onClick={sync}>Hämta från Eventor</ActionButton>
+        <ActionButton primary busy={publishing} disabled={publishing || pending === 0} onClick={publish}>
+          {pending > 0 ? `Publicera ändringar (${pending})` : 'Publicerad'}
+        </ActionButton>
+        <ActionButton busy={syncing} disabled={syncing} onClick={sync}>Hämta från Eventor</ActionButton>
         <span className="text-[13px] text-muted">
           {lastFetched ? `Senast hämtat ${lastFetched.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', dateStyle: 'short', timeStyle: 'short' })}.` : 'Inget hämtat ännu.'}
         </span>
@@ -121,6 +142,7 @@ function Eventor({ session }: { session: Session }) {
       </ul>
 
       {canEditRules && <Rules uid={session.uid} />}
+      {pending > 0 && <StatusBadge state="changed" detail={`${pending} ändring${pending === 1 ? '' : 'ar'} väntar på att publiceras`} />}
     </AdminPanel>
   );
 }
@@ -138,6 +160,7 @@ function Row({ event: e, onToggle }: { event: EventorEvent; onToggle: () => void
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex flex-wrap items-center gap-2">
+          {e.live !== e.selected && <StatusLabel state="changed" />}
           {e.suggested && <Tag>Föreslagen</Tag>}
           {e.gone && <Tag warn>Finns inte längre hos Eventor</Tag>}
         </span>

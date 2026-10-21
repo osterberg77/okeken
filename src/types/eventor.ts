@@ -22,10 +22,14 @@ export interface EventorEvent {
   suggested: boolean;
   /** Finns inte längre hos Eventor men var vald: visas inte i kalendern, publicerare får ta ställning */
   gone: boolean;
-  /** Publicerarens val: visa i kalendern */
+  /** Publicerarens val (utkast): visa i kalendern. Syns för besökare först när det publicerats (`live`). */
   selected: boolean;
   selectedBy: string | null;
   selectedAt: Date | null;
+  /** Det som är publicerat; knappen Publicera sätter live = selected. Äldre poster saknar fältet (= false). */
+  live: boolean;
+  liveBy: string | null;
+  liveAt: Date | null;
   fetchedAt: Date;
 }
 

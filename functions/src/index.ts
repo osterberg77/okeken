@@ -89,10 +89,10 @@ export const onMenuWritten = onDocumentWritten(
     }),
 );
 
-/** Det besökarna ser av en Eventor-tävling: bara valda (och inte borttagna hos Eventor). Övriga fält påverkar inte sajten. */
+/** Det besökarna ser av en Eventor-tävling: bara publicerade (och inte borttagna hos Eventor). Utkastvalet och övriga fält påverkar inte sajten. */
 function visibleEventor(s: Snapshot) {
   const d = s?.data();
-  if (!d || d.selected !== true || d.gone === true) return null;
+  if (!d || d.live !== true || d.gone === true) return null;
   return {
     name: d.name,
     startsAt: d.startsAt,

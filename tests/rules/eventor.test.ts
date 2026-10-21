@@ -50,6 +50,9 @@ const eventorEvent = () => ({
   selected: false,
   selectedBy: null,
   selectedAt: null,
+  live: false,
+  liveBy: null,
+  liveAt: null,
   fetchedAt: NOW,
 });
 
@@ -118,6 +121,36 @@ describe('eventorEvents', () => {
     const db = as('publisher');
     await assertFails(setDoc(doc(db, 'eventorEvents', '1'), eventorEvent()));
     await assertFails(deleteDoc(doc(db, 'eventorEvents', '54134')));
+  });
+});
+
+describe('eventorEvents: publicera', () => {
+  const publish = (uid: string, live = true) => ({ live, liveBy: uid, liveAt: serverTimestamp() });
+  const ref = (uid: string) => doc(as(uid), 'eventorEvents', '54134');
+
+  it('publicerare kan publicera det som är valt', async () => {
+    await assertSucceeds(updateDoc(ref('publisher'), select('publisher')));
+    await assertSucceeds(updateDoc(ref('publisher'), publish('publisher')));
+  });
+
+  it('live måste vara samma som selected', async () => {
+    await assertFails(updateDoc(ref('publisher'), publish('publisher'))); // selected är false
+    await assertSucceeds(updateDoc(ref('publisher'), select('publisher')));
+    await assertFails(updateDoc(ref('publisher'), publish('publisher', false)));
+  });
+
+  it('kan inte byta val och publicera i samma skrivning', async () => {
+    await assertFails(updateDoc(ref('publisher'), { ...select('publisher'), ...publish('publisher') }));
+  });
+
+  it('signeras med eget uid och servertid', async () => {
+    await assertSucceeds(updateDoc(ref('publisher'), select('publisher')));
+    await assertFails(updateDoc(ref('publisher'), { ...publish('publisher'), liveBy: 'board' }));
+    await assertFails(updateDoc(ref('publisher'), { ...publish('publisher'), liveAt: NOW }));
+  });
+
+  it.each(['setter', 'member', 'nobody'])('%s kan inte publicera', async (uid) => {
+    await assertFails(updateDoc(ref(uid), publish(uid, false)));
   });
 });
 
