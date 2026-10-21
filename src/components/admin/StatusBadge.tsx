@@ -1,4 +1,5 @@
 import type { EventState } from '../../lib/firebase/events';
+import { PROTOCOL_STATE_LABELS, type ProtocolState } from '../../types/protocol';
 
 // Statusfärgerna (mörk botten, gul markering) får inte förväxlas med eventkategorierna.
 // Se docs/arkitektur.md "Statusbadge (obligatorisk)".
@@ -39,6 +40,45 @@ export default function StatusBadge({ state, detail }: { state: EventState; deta
       <span className="h-2.5 w-2.5 flex-none animate-pulse rounded-full bg-[#F9D932]" />
       <span>
         {LABELS[state].long}
+        {detail && <span className="block text-xs font-medium tracking-normal text-white/70">{detail}</span>}
+      </span>
+    </div>
+  );
+}
+
+// ---- Styrelsens protokoll (beslut 0009) -------------------------------------------------
+// Samma stil som ovan. Låst = godkänt och klart: ingen fast badge (som live), men en tydlig etikett i listan
+// och ett meddelande i vyn.
+
+/** Liten etikett för protokolllistan och editorn */
+export function ProtocolStatusLabel({ state }: { state: ProtocolState }) {
+  if (state === 'locked') {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 bg-white px-2.5 py-[3px] text-xs font-semibold text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#3F8A3A]" />
+        {PROTOCOL_STATE_LABELS.locked.short}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-ink px-2.5 py-[3px] text-xs font-semibold text-[#F9D932]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#F9D932]" />
+      {PROTOCOL_STATE_LABELS[state].short}
+    </span>
+  );
+}
+
+/** Fast badge i hörnet för protokoll som inte är låsta. Skrivs inte ut (utskriften märks i ProtocolView). */
+export function ProtocolStatusBadge({ state, detail }: { state: ProtocolState; detail?: string }) {
+  if (state === 'locked') return null;
+  return (
+    <div
+      role="status"
+      className="fixed bottom-4 left-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-2.5 rounded-2xl bg-ink px-4 py-3 text-[13px] font-bold tracking-[.04em] text-white shadow-[0_12px_32px_-8px_rgba(43,40,56,.6)] ring-2 ring-[#F9D932] print:hidden"
+    >
+      <span className="h-2.5 w-2.5 flex-none animate-pulse rounded-full bg-[#F9D932]" />
+      <span>
+        {PROTOCOL_STATE_LABELS[state].long}
         {detail && <span className="block text-xs font-medium tracking-normal text-white/70">{detail}</span>}
       </span>
     </div>

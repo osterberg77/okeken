@@ -60,22 +60,41 @@ Logotyper och länkar i sidfoten eller på egen sida. Kostnad: liten.
 Innehåll som bara inloggade medlemmar ser (t.ex. kontaktlistor, interna dokument). Allt statiskt prerenderas och är publikt per definition (ADR 0004), så detta kräver en annan teknik och blir därför en större förändring. Rekommendation: undvik, lägg känsligt material utanför sajten.
 
 ## 11. Styrelsens protokollarkiv
-Arkiv över styrelseprotokoll, skrivna och godkända direkt på sajten (kompletterar punkt 6, som gäller uppladdade PDF:er).
+**Status: byggs (2026-10-21), se ADR 0009.** Datamodell, regler och tester är klara; justerare väljs per protokoll (inte alltid ordföranden); deltagarlistan är bara närvarande; personer kan omnämnas i texten (`@[Namn](mention:uid)`); tak 10 närvarande och 8 att göra-punkter (reglernas uttrycksgräns). Medlemsläsning tas eventuellt senare (ny ADR). Texten nedan är underlaget från beslutet; vid avvikelse gäller ADR 0009.
+
+**Beslutat ja (2026-10-21).** Arkiv över styrelseprotokoll, skrivna och godkända direkt på sajten (kompletterar punkt 6, som gäller uppladdade PDF:er).
+
+**Beslut från Erik**
+- Protokoll skrivs i samma Markdown-editor med WYSIWYG som övriga sidredigerare (`src/lib/markdown.ts`, ingen egen editor).
+- Gamla protokoll laddas **inte** upp. Första protokollet är exemplet från 2026-10-20 (se nedan).
+- Bara styrelsen (`board`) ser protokollen. Det räcker till att börja med.
+- **Deltagarlista** med taggar mot riktiga konton, så det står noterat vilka som var på plats.
 
 **Så skulle det fungera**
 - **Nytt protokoll från mall.** Inför ett möte skapar man ett nytt protokoll och väljer "Hämta mall från", med senaste protokollet som förval. Alla rubriker förs över (utan innehåll).
-- **Att göra.** En sektion längst ner med punkter som olika personer ska göra till nästa möte (ansvarig + text).
-- **Punkter från föregående protokoll.** När man skapar nästa protokoll frågar sajten om "Att göra" ska lyftas över som "Punkter från föregående protokoll" överst i det nya.
-- **Sekreterare och justeringsman.** Man taggar vem som är sekreterare och justeringsman. De två godkänner protokollet i efterhand, och då **låses** det. Fram tills dess kan alla med styrelsebehörighet redigera.
+- **Deltagare.** Kallade väljs bland riktiga konton (förval: alla med `board`). Per person markeras närvarande eller frånvarande. I exemplet visas frånvarande som överstruket.
+- **Att göra.** En checkbox-lista där varje punkt kan vara avbockad eller inte. Punkten har text och ansvarig (kontotagg). Ansvariga i exemplet står i löptexten ("Andreas tar ansvar för planering"). Avbockning går att ändra så länge protokollet är utkast.
+- **Senare utbyggnad (inte nu):** Att göra som riktiga uppgifter där personer taggas och punkterna kopplas till en todo-lista per användare. Håll datamodellen öppen för det: varje punkt får eget id, ansvarig som uid och status, så att den kan lyftas ur protokollet utan omarbetning.
+- **Punkter från föregående protokoll.** Vid nytt protokoll frågar sajten om "Att göra" ska lyftas över överst. Förslag: bara de som inte är avbockade förs över, så att det blir tydligt vad som återstår.
+- **Sekreterare och justeringsman.** Taggas som konton. De godkänner i efterhand och då **låses** protokollet. Fram tills dess kan alla med styrelsebehörighet redigera.
+- **Metadata:** mötesdatum, plats, nästa möte (datum, tid, plats/digitalt), distribution.
+
+**Exempel: OK Ekens styrelseprotokoll 2026-10-20**
+- Dagordning (mallens rubriker): 1 Mötets öppnande, 2 Val av mötessekreterare, 3 Godkännande av dagordning, 4 Föregående protokoll, 5 Föreningsrepresentation, 6 Ekonomi (vartannat möte), 7 Inkomna skrivelser och information, 8 Ledskötsel, 9 Kartor, 10 Träningar, 11 OK Ekens Arrangemang (a Tävlingar, b Nybörjare), 12 Externa tävlingar, 13 Information till okeken.se, Facebook, Mejl, 14 Övriga frågor, 15 Nästa möte, 16 Mötets avslutande.
+- Rubriknumrering och ordning ska följa mallen. I exemplet skiljer sig ordningen på punkt 5–7 mellan dagordning och protokoll (Inkomna skrivelser och Föreningsrepresentation har bytt plats, Ekonomi ligger före Ledskötsel); mallen ska ha en enda ordning.
+- Underskriftsfält: "Vid protokollet" (sekreterare) och "Justeras" (ordförande), med datum.
+- Fotrad: "DISTRIBUTION: Mejl till styrelsen; original finns även tillgängligt på Onedrive under Styrelsemöten". Med arkivet på sajten behöver texten ses över.
+- PDF-filen med exemplet ligger utanför repot (se "minimal commits"); lägg den som seed-protokoll vid implementation, inte som fil i repot.
 
 **Teknik och säkerhet (utkast)**
 - Protokoll är internt och får aldrig prerenderas eller hamna i publikt bygge (ADR 0004). De ligger i en egen Firestore-collection och visas bara i admin, klientsida bakom inloggning, med regler för rollen `board` i `firestore.rules` och regeltest mot emulatorn.
 - Låsningen måste ligga i reglerna, inte bara i UI:t: efter godkännande nekas all ändring av dokumentet. Godkännande får bara göras av den som är utsedd till sekreterare respektive justeringsman, och redigering bara när status är utkast.
+- Deltagare och ansvariga lagras som användar-id (uid), inte som fritext, och visas med namn från användarprofilen. Regeln ska kräva att taggade uid finns.
 - Statusflöde: *utkast* → *godkänt av sekreterare* + *godkänt av justeringsman* → *låst*. Använd `StatusBadge` i alla vyer.
-- Återanvänder Markdown-editorn och `src/lib/markdown.ts`. Rättelser efter låsning bör ske som ett nytt protokoll eller en tillagd anteckning, inte genom att låsa upp.
+- Rättelser efter låsning bör ske som ett nytt protokoll eller en tillagd anteckning, inte genom att låsa upp.
 - Kostnad: medel.
 
-**Frågor till styrelsen:** "Vilka rubriker har ni i ett vanligt protokoll? Ska 'Att göra' kunna bockas av? Ska gamla protokoll från Wix/Drive läggas in som PDF i arkivet? Vem får läsa arkivet: hela styrelsen eller alla medlemmar?"
+**Öppna frågor kvar:** Ska ordföranden (justeraren) alltid vara den som justerar, eller kan man välja? Ska medlemmar senare kunna läsa arkivet (ändrar behörighetsmodellen, ny ADR)?
 
 ## Hur vi använder listan
 1. Erik väljer en fråga och postar den i WhatsApp-gruppen (börja med "🤖 AI-byggaren:" om Claude postar, se `CLAUDE.md`).

@@ -83,6 +83,23 @@ Ett enda dokument. Samma publiceringsmönster som events/sidor men utan status: 
 
 Id-format: 1–128 tecken `A–Z a–z 0–9 _ -`. En sida får förekomma högst en gång i hela menyn (som post eller undersida); reglerna kontrollerar det. Att sidan finns och är publicerad kan reglerna inte kontrollera: bygget hoppar tyst över sidor som inte är publicerade (en post vars egen sida saknas visas som rubrik om den har publicerade undersidor) och skriver en varning i byggloggen; adminvyn ska visa samma varningar (`resolveMenu`). En rubrik utan synliga undersidor visas inte. Är menyn aldrig publicerad, eller innehåller den ingen publicerad sida, visar headern platshållarna Om oss/Bli medlem (gamla sajten). Function `onMenuWritten` startar bygget när `published` ändras.
 
+### `protocols/{protocolId}` (styrelsens protokoll, beslut 0009)
+Internt: bara styrelse och superadmin får läsa och skriva. **Bygget läser aldrig collectionen.** Alla 15 fält finns alltid (reglerna kräver exakt dessa). Ingen status lagras; den härleds ur godkännandena (*utkast* → *godkänt av en* → *låst*, `protocolState` i `src/lib/protocol.ts`). Regler och tester: `firestore.rules`, `tests/rules/protocols.test.ts`. Typer och gränser: `src/types/protocol.ts`. Datalager: `src/lib/firebase/protocols.ts`.
+
+| Fält | Typ | Anm. |
+|---|---|---|
+| `meetingAt` | timestamp | Mötets tid (UTC, visas i Europe/Stockholm) |
+| `location` | string | 0–200 tecken |
+| `body` | string (markdown) | Högst 50 000 tecken. Omnämnanden skrivs `@[Namn](mention:uid)` och renderas som "@Namn" |
+| `attendees` | `[{ uid, name }]` | Närvarande, högst 10. `uid` = konto i `users`, `name` = ögonblicksnamn 1–200 tecken. Frånvarande noteras inte |
+| `todos` | `[{ id, text, assigneeUid, assigneeName, done }]` | Att göra, högst 8. `id` eget och stabilt (`A–Z a–z 0–9 _ -`, 1–64), `text` 1–300, `assigneeUid` uid eller `null`, `assigneeName` ögonblicksnamn 0–200, `done` bool |
+| `secretaryUid`, `secretaryName` | uid \| null, string | Sekreterare ("Vid protokollet"), namn 0–200 |
+| `adjusterUid`, `adjusterName` | uid \| null, string | Justerare ("Justeras"), väljs per protokoll. Aldrig samma som sekreteraren |
+| `secretaryApprovedAt`, `adjusterApprovedAt` | timestamp \| null | Servertid när respektive person godkände. Båda satta = låst |
+| `createdBy`, `createdAt`, `updatedBy`, `updatedAt` | | Egen uid och servertid. Godkännanden ändrar inte `updated*` |
+
+uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utsedda personen, bara det egna fältet, värdet `request.time`; tillbakadragande av eget godkännande (`null`) går på olåst protokoll. Varje innehållsändring nollställer båda godkännandena i samma skrivning. Låst protokoll kan inte ändras eller raderas; radering bara av utkast utan godkännanden. Reglerna kontrollerar inte att uid:n finns eller är unika i listorna (klienten gör det, `validateProtocol`).
+
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 

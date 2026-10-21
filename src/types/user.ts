@@ -45,6 +45,11 @@ export function canViewEvents(own: readonly Permission[]): boolean {
   return canPublish(own) || own.includes('course_setter');
 }
 
+/** Får läsa och skriva styrelsens protokoll (beslut 0009). Måste spegla canViewProtocols i firestore.rules. */
+export function canViewProtocols(own: readonly Permission[]): boolean {
+  return own.includes('board') || own.includes('superadmin');
+}
+
 export function canManageUsers(own: readonly Permission[]): boolean {
   return own.includes('superadmin') || own.includes('board');
 }

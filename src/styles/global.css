@@ -54,3 +54,49 @@
 .prose-eken img {
   @apply h-auto max-w-full rounded-[20px];
 }
+
+/* Omnämnande (@Namn) i protokollets editor */
+.mention-chip {
+  @apply rounded-full bg-pastel px-2 py-px font-semibold text-accent;
+}
+
+/* Protokollets rubriker ligger tätt (dagordningen har många) */
+.prose-eken.protocol-body {
+  overflow-wrap: anywhere;
+}
+.prose-eken.protocol-body table {
+  @apply block max-w-full overflow-x-auto border-collapse;
+}
+.prose-eken.protocol-body th,
+.prose-eken.protocol-body td {
+  @apply border border-line px-3 py-1.5 text-left align-top;
+}
+.prose-eken.protocol-body blockquote {
+  @apply m-0 border-l-4 border-line pl-4;
+}
+.prose-eken.protocol-body h2 {
+  @apply mt-5 text-xl;
+}
+.prose-eken.protocol-body h3 {
+  @apply mt-3 text-lg;
+}
+
+/* Utskrift av styrelsens protokoll: bara själva protokollet (ProtocolView), inget annat */
+@media print {
+  body:has(.protocol-print) header,
+  body:has(.protocol-print) footer {
+    display: none !important;
+  }
+  body:has(.protocol-print) {
+    background: #fff;
+  }
+  .protocol-print .protocol-body h2,
+  .protocol-print .protocol-body h3 {
+    break-after: avoid;
+  }
+  .protocol-print .protocol-body > *,
+  .protocol-print .protocol-todo,
+  .protocol-print .protocol-sign {
+    break-inside: avoid;
+  }
+}

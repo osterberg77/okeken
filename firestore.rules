@@ -452,6 +452,161 @@ service cloud.firestore {
       allow delete: if canPublish();
     }
 
+    // ---- Styrelsens protokoll (beslut 0009) ------------------------------------------
+    // Internt: bara styrelse och superadmin får läsa och skriva. Bygget läser aldrig collectionen (beslut 0004).
+    // Godkännanden: sekreterarens och justerarens godkännande är var sitt fält med servertid (eller null).
+    // När båda är satta är protokollet låst: ingen ändring, ingen radering. Innehållsändringar (allt utom
+    // godkännandena) går bara på olåsta protokoll och nollställer båda godkännandena i samma skrivning, så ett
+    // godkännande gäller exakt den text som godkändes. Ingen status lagras; den härleds ur godkännandena
+    // (src/lib/protocol.ts).
+    //
+    // Tak: högst 10 närvarande och 8 att göra-punkter (MAX_ATTENDEES/MAX_TODOS i src/types/protocol.ts).
+    // Rules saknar loopar, så posterna kontrolleras plats för plats. Taket på 1000 uttryck per anrop räcker inte
+    // till fler: varje operator och funktionsanrop räknas, och en att göra-punkt kostar ungefär lika mycket som
+    // 1,5 deltagare. Mätt (innehållsändring av sekreteraren, dyraste vägen, maxlängd på alla texter): 10 deltagare
+    // + 9 punkter går igenom, alltså en punkt i marginal. Testet "fullt protokoll" i tests/rules/protocols.test.ts
+    // bevakar taket. Unikhet för uid:n och id:n kontrolleras inte här (att samla värdena i en lista för join +
+    // regex/toSet kostade mer än det ryms); klienten säkerställer den (validateProtocol i src/lib/protocol.ts).
+    //
+    // Att taggade uid finns i users kontrolleras inte (en get per uid ryms inte i gränsen för dokumentläsningar).
+    // Sekreterare och justerare bevisar sin identitet när de godkänner (de måste vara inloggade som den uid:n och
+    // ha styrelsebehörighet), så ett protokoll med fel uid kan inte låsas. Omnämnanden i body (@[Namn](mention:uid))
+    // är vanlig text för reglerna, som bara begränsar längden.
+
+    function canViewProtocols() {
+      return signedIn() && exists(userDoc())
+        && get(userDoc()).data.permissions.hasAny(['board', 'superadmin']);
+    }
+
+    // Dokumentets 15 nycklar: meetingAt, location, body, attendees, todos, secretaryUid, secretaryName, adjusterUid,
+    // adjusterName, secretaryApprovedAt, adjusterApprovedAt, createdBy, createdAt, updatedBy, updatedAt.
+    // Reglerna kräver size() == 15 i stället för keys().hasOnly/hasAll([...]): create och innehållsändringen läser
+    // alla 15 (en saknad nyckel ger utvärderingsfel och nekad skrivning), så rätt antal betyder exakt rätt nycklar.
+    // Det sparar uttryck under taket. Håll antalet synkat om en nyckel läggs till.
+    function protocolKeyCount() {
+      return 15;
+    }
+
+    // Närvarande deltagare { uid, name } (frånvarande noteras inte). Samma knep per post: alla nycklar läses
+    // nedan, så size() == N betyder exakt rätt nycklar. matches() ger fel om värdet inte är en sträng och
+    // .uid m.fl. ger fel om posten inte är en map, vilket nekar skrivningen.
+    function validAttendee(a) {
+      return a.size() == 2
+        && a.uid.matches('[A-Za-z0-9_-]{1,128}')
+        && a.name.matches('(?s).{1,200}');
+    }
+
+    // Att göra { id, text, assigneeUid, assigneeName, done }: id är klientens eget stabila id (för att senare
+    // kunna lyftas ut till personliga att göra-listor), assigneeUid null = ingen ansvarig.
+    function validTodo(t) {
+      return t.size() == 5
+        && t.id.matches('[A-Za-z0-9_-]{1,64}')
+        && t.text.matches('(?s).{1,300}')
+        && (t.assigneeUid == null || t.assigneeUid.matches('[A-Za-z0-9_-]{1,128}'))
+        && t.assigneeName.matches('(?s).{0,200}')
+        && t.done is bool;
+    }
+
+    function validAttendees(l) {
+      let n = l.size();
+      return l is list && n <= 10
+        && (n < 1 || validAttendee(l[0]))
+        && (n < 2 || validAttendee(l[1]))
+        && (n < 3 || validAttendee(l[2]))
+        && (n < 4 || validAttendee(l[3]))
+        && (n < 5 || validAttendee(l[4]))
+        && (n < 6 || validAttendee(l[5]))
+        && (n < 7 || validAttendee(l[6]))
+        && (n < 8 || validAttendee(l[7]))
+        && (n < 9 || validAttendee(l[8]))
+        && (n < 10 || validAttendee(l[9]));
+    }
+
+    function validTodos(l) {
+      let n = l.size();
+      return l is list && n <= 8
+        && (n < 1 || validTodo(l[0]))
+        && (n < 2 || validTodo(l[1]))
+        && (n < 3 || validTodo(l[2]))
+        && (n < 4 || validTodo(l[3]))
+        && (n < 5 || validTodo(l[4]))
+        && (n < 6 || validTodo(l[5]))
+        && (n < 7 || validTodo(l[6]))
+        && (n < 8 || validTodo(l[7]));
+    }
+
+    // Sekreterare och justerare: uid eller null (inte utsedd än), aldrig samma person
+    function validProtocolContent(d) {
+      return d.meetingAt is timestamp
+        && d.location is string && d.location.size() <= 200
+        && d.body is string && d.body.size() <= 50000
+        && (d.secretaryUid == null || d.secretaryUid.matches('[A-Za-z0-9_-]{1,128}'))
+        && (d.adjusterUid == null || d.adjusterUid.matches('[A-Za-z0-9_-]{1,128}'))
+        && (d.secretaryUid == null || d.secretaryUid != d.adjusterUid)
+        && d.secretaryName.matches('(?s).{0,200}')
+        && d.adjusterName.matches('(?s).{0,200}')
+        && validAttendees(d.attendees)
+        && validTodos(d.todos);
+    }
+
+    function protocolLocked(d) {
+      return d.secretaryApprovedAt != null && d.adjusterApprovedAt != null;
+    }
+
+    // Innehållsändring: båda godkännandena nollställs i samma skrivning. Kontrollen av godkännandena står
+    // först, så att en godkännande-skrivning nekas här innan innehållet (det dyra) valideras.
+    function protocolContentUpdate() {
+      let after = request.resource.data;
+      return after.secretaryApprovedAt == null && after.adjusterApprovedAt == null
+        && after.size() == protocolKeyCount()
+        && !after.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt'])
+        && after.updatedBy == request.auth.uid
+        && after.updatedAt == request.time
+        && validProtocolContent(after);
+    }
+
+    // Godkännande eller tillbakadragande av egen del: bara den utsedda personen, bara det egna fältet, inget annat
+    // i dokumentet ändras (inte heller updatedBy/updatedAt). Godkännande = servertid, tillbakadragande = null.
+    function protocolApproval(field, approverUid) {
+      let before = resource.data;
+      let after = request.resource.data;
+      return approverUid != null
+        && approverUid == request.auth.uid
+        && before.secretaryUid != before.adjusterUid
+        && onlyChanges([field])
+        && ((before[field] == null && after[field] == request.time)
+          || (before[field] != null && after[field] == null));
+    }
+
+    match /protocols/{protocolId} {
+      allow read: if canViewProtocols();
+
+      // Nytt protokoll är alltid ett utkast utan godkännanden
+      allow create: if canViewProtocols()
+        && request.resource.data.size() == protocolKeyCount()
+        && request.resource.data.secretaryApprovedAt == null
+        && request.resource.data.adjusterApprovedAt == null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && validProtocolContent(request.resource.data);
+
+      // Låst protokoll ändras aldrig; rättelser görs som nytt protokoll
+      allow update: if canViewProtocols()
+        && !protocolLocked(resource.data)
+        // Innehållsändringen prövas först: den är den dyra, och står den sist får sekreterarens/justerarens egna
+        // ändringar betala för godkännandegrenarna också. En godkännande-skrivning nekas där på första raden.
+        && (protocolContentUpdate()
+          || protocolApproval('secretaryApprovedAt', resource.data.secretaryUid)
+          || protocolApproval('adjusterApprovedAt', resource.data.adjusterUid));
+
+      // Bara utkast utan något godkännande
+      allow delete: if canViewProtocols()
+        && resource.data.secretaryApprovedAt == null
+        && resource.data.adjusterApprovedAt == null;
+    }
+
     // ---- Bygge ---------------------------------------------------------------------
     // meta/build.lastBuildAt skrivs bara av Actions (Admin SDK). Editorn läser den för delningsknappen.
     match /meta/build {
