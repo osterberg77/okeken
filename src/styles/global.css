@@ -52,5 +52,5 @@
   @apply list-decimal pl-5;
 }
 .prose-eken img {
-  @apply rounded-[20px];
+  @apply h-auto max-w-full rounded-[20px];
 }

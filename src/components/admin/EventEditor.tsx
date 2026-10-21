@@ -13,6 +13,7 @@ import {
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
 import { uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files';
+import { loadLinkTargets, type LinkTarget } from '../../lib/firebase/link-targets';
 import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
 import { EVENT_TYPES, MAX_COURSE_FILES, type EventContent, type EventRecord } from '../../types/event';
@@ -21,6 +22,7 @@ import EventDetail from '../EventDetail';
 import AdminGate, { AdminPanel } from './AdminGate';
 import { ActionButton, Field, INPUT, QuickButton } from './AdminUi';
 import BuildStatus from './BuildStatus';
+import MarkdownField from './MarkdownField';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 
 export default function EventEditor() {
@@ -76,6 +78,10 @@ function Editor({ session }: { session: Session }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const loaded = useRef(false);
+  const [targets, setTargets] = useState<LinkTarget[] | null>(null);
+  useEffect(() => {
+    loadLinkTargets().then(setTargets).catch(() => setTargets([]));
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -428,9 +434,9 @@ function Editor({ session }: { session: Session }) {
           <Field
             label="Text"
             htmlFor="body"
-            hint="Tom rad ger nytt stycke. **fet text**, *kursiv*, [länktext](https://…) och - punktlistor fungerar."
+            hint="Tom rad ger nytt stycke. Knapparna ovan formaterar, länkar och infogar bilder från bildbanken."
           >
-            <textarea id="body" rows={12} value={draft.body} onChange={(e) => update({ body: e.target.value })} className={`${INPUT} min-h-[240px] leading-relaxed`} />
+            <MarkdownField id="body" rows={12} value={draft.body} onChange={(body) => update({ body })} targets={targets} allowImages={!courseOnly} />
           </Field>
 
           </fieldset>

@@ -4,7 +4,8 @@ rules_version = '2';
 // (länkarna har slumpat prefix och står inte på sidan förrän eventet publicerats). Bara publicerare,
 // styrelse, superadmin och banläggare får ladda upp, och bara nya filer: ingen skriver över eller raderar
 // (publicerade ögonblicksbilder pekar på filerna). Behörigheten läses från users/{uid} i Firestore.
-// Allt annat nekas. Regeltester: tests/rules/storage.test.ts
+// Bildbanken (image_bank/, beslut 0007) beskrivs vid sin regel nedan. Allt annat nekas.
+// Regeltester: tests/rules/storage.test.ts
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -33,6 +34,53 @@ service firebase.storage {
         && request.resource.size <= 10 * 1024 * 1024;
 
       allow update, delete: if false;
+    }
+
+    // ---- Bildbank (beslut 0007) ----------------------------------------------------------
+    // Platt mapp: image_bank/<imageId>-<original|web|thumbnail>.<jpg|png|webp>, där imageId är id för
+    // posten i Firestore (imageBank/{imageId}). Alla med länken får hämta (bilderna visas för besökare via
+    // nedladdnings-URL med token), ingen får lista. Bara publicerare, styrelse och superadmin får ladda upp
+    // och radera. Uppladdning bara av nya filer och bara innan posten skapats; radering bara när posten är
+    // borta, så att filer som en post (och publicerade sidor) pekar på inte kan tas bort eller ersättas.
+    // Högst två Firestore-dokument läses per anrop (users/{uid} och imageBank/{imageId}).
+
+    function canPublishImages() {
+      // get på saknat dokument ger null och därmed fel, vilket nekar
+      return request.auth != null
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.permissions
+          .hasAny(['publisher', 'board', 'superadmin']);
+    }
+
+    function validImageFileName(fileName) {
+      return fileName.matches('^[A-Za-z0-9]{1,64}-(original|web|thumbnail)[.](jpg|png|webp)$');
+    }
+
+    // Kräver giltigt filnamn först (id:t sätts in i Firestore-sökvägen)
+    function imagePostExists(fileName) {
+      return firestore.exists(/databases/(default)/documents/imageBank/$(fileName.split('-')[0]));
+    }
+
+    match /image_bank/{fileName} {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if resource == null
+        && validImageFileName(fileName)
+        // Ändelsen ska stämma med typen; svg, gif m.fl. nekas
+        && request.resource.contentType == {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}[fileName.split('[.]')[1]]
+        && request.resource.contentDisposition == null
+        && request.resource.contentEncoding == null
+        && request.resource.metadata.size() == 0
+        && request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024
+        && canPublishImages()
+        && !imagePostExists(fileName);
+
+      allow delete: if validImageFileName(fileName)
+        && canPublishImages()
+        && !imagePostExists(fileName);
+
+      allow update: if false;
     }
 
     match /{allPaths=**} {

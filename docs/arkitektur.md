@@ -28,7 +28,7 @@ Alla publika sidor (infosidor och varje event) är statiska HTML-filer med korre
 
 ## Bilder
 
-Bildbanken (Storage + `imageBank`) levererar tre storlekar per bild (thumb 800 px, web 1920 px, ev. 4K). Bilder i events och Markdown refererar `webUrl`; bygget lägger på `srcset` och lazy loading.
+Bildbanken (Storage + `imageBank`) levererar tre storlekar per bild (thumb 800 px, web 1920 px, ev. 4K). Bilder i events och Markdown refererar `webUrl`; bygget lägger på lazy loading (`srcset` återstår). Uppladdning sker i webbläsaren: filerna först, sedan Firestore-posten (reglerna kräver den ordningen); `renderMarkdown` renderar bara bilder från bildbankens Storage-adress. I emulatorläge (`PUBLIC_FIREBASE_EMULATORS=true`) byts värden till Storage-emulatorn bara vid visning; den lagrade adressen är alltid den kanoniska. Lokalt: starta emulatorer med en config utan hosting (port 5000 kan vara upptagen på Mac) och med Auth, Firestore 8180, Storage 9199 under `--project okeken`.
 
 ## Infosidor och länkar i editorn
 

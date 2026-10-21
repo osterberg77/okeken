@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
 import type { LinkTarget } from '../../lib/firebase/link-targets';
 import { unpublishedLinks } from '../../lib/firebase/link-targets';
+import type { ImageBankItem } from '../../types/image';
 import { INPUT } from './AdminUi';
+import ImagePicker from './ImagePicker';
 
 interface Props {
   id: string;
@@ -10,14 +12,17 @@ interface Props {
   /** Publicerade sidor och events att länka till; null medan de laddas */
   targets: LinkTarget[] | null;
   rows?: number;
+  /** Visa knappen Bild (bildbanken kräver publicerarbehörighet) */
+  allowImages?: boolean;
 }
 
 const CUSTOM_LINK = /^(https:\/\/|http:\/\/|mailto:|tel:)\S+$/i;
 
 /** Textfält för Markdown med formateringsknappar och länkväljare. Själva texten är ren Markdown. */
-export default function MarkdownField({ id, value, onChange, targets, rows = 14 }: Props) {
+export default function MarkdownField({ id, value, onChange, targets, rows = 14, allowImages = true }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [picker, setPicker] = useState(false);
+  const [imagePicker, setImagePicker] = useState(false);
   const warnings = useMemo(() => (targets ? unpublishedLinks(value, targets) : []), [value, targets]);
 
   /** Ersätter markeringen (eller infogar vid markören) och återställer markeringen efteråt */
@@ -65,6 +70,14 @@ export default function MarkdownField({ id, value, onChange, targets, rows = 14 
     setPicker(false);
   }
 
+  function insertImage(image: ImageBankItem) {
+    const alt = (image.description || image.name).replace(/[[\]\n\r]+/g, ' ').trim();
+    const before = value.slice(0, ref.current?.selectionStart ?? value.length);
+    const lead = before === '' || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+    replaceSelection(() => ({ text: `${lead}![${alt}](${image.webUrl})\n\n` }));
+    setImagePicker(false);
+  }
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-1.5" role="toolbar" aria-label="Formatering">
@@ -73,7 +86,10 @@ export default function MarkdownField({ id, value, onChange, targets, rows = 14 
         <ToolButton label="Rubrik" onClick={() => prefixLines('## ', 'Rubrik')}>Rubrik</ToolButton>
         <ToolButton label="Punktlista" onClick={() => prefixLines('- ', 'Punkt')}>Lista</ToolButton>
         <ToolButton label="Infoga länk" active={picker} onClick={() => setPicker((p) => !p)}>Länk</ToolButton>
+        {allowImages && <ToolButton label="Infoga bild" active={imagePicker} onClick={() => setImagePicker(true)}>Bild</ToolButton>}
       </div>
+
+      {imagePicker && <ImagePicker onPick={insertImage} onClose={() => setImagePicker(false)} />}
 
       {picker && <LinkPicker targets={targets} selected={() => {
         const ta = ref.current;

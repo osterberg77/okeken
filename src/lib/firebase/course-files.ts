@@ -1,15 +1,8 @@
-import { connectStorageEmulator, getStorage, ref, uploadBytes } from 'firebase/storage';
+import { ref, uploadBytes } from 'firebase/storage';
 import type { CourseFile } from '../../types/event';
-import { app } from './client';
+import { storage } from './storage';
 
 export const MAX_PDF_BYTES = 10 * 1024 * 1024;
-
-const storage = getStorage(app);
-const g = globalThis as { __okekenStorageEmulator?: boolean };
-if (import.meta.env.PUBLIC_FIREBASE_EMULATORS === 'true' && !g.__okekenStorageEmulator) {
-  g.__okekenStorageEmulator = true;
-  connectStorageEmulator(storage, '127.0.0.1', 9199);
-}
 
 /** Filnamn som passar storage.rules: ASCII, inga mellanslag */
 function safeName(name: string): string {

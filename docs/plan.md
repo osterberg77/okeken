@@ -66,10 +66,11 @@ Fast badge i hörnet för `UTKAST`, `SCHEMALAGD – publiceras <tid>`, `AVPUBLIC
 Coworken (`~/progg/coworken`) har en fungerande bildbank och ett mallverktyg. Slutsats: vettigt att återanvända **logiken och datamodellerna**, inte UI-koden rakt av (Coworken är React/Vite med eget CSS-system, detta projekt är Astro + Tailwind, så admin-UI skrivs om i samma anda). Claude Code behöver `~/progg/coworken/src` och `functions` tillagda som arbetskataloger i sessionen när arbetet påbörjas.
 
 **Bildbank (v1.1)**
-- Modell `ImageBankItem` (url, webUrl 1920 px, thumbnailUrl 800 px, valfri 4K om originalet >10 MB, byline, alt-text, `storagePaths`, `uploadedBy`), källa: `src/types/models/imageBank.ts`.
+- Modell `ImageBankItem` (url, webUrl 1920 px, thumbnailUrl 800 px, byline, alt-text, `storagePaths`, `uploadedBy`), källa: `src/types/models/imageBank.ts`. Här utan separat 4K-fält: ett original över 10 MB skalas ner till 3840 px och lagras som `original` (`src/types/image.ts`).
 - Uppladdning och skalning i webbläsaren (canvas, WebP) före uppladdning till Storage, källa: `src/firebase/firestore/imageBank.ts`, `src/utils/image.ts`.
 - Bildväljare (modal) som kan öppnas från editorn, källa: `ImageBankModal.tsx`; hanteringssida, källa: `AdminImageBankPage.tsx`.
 - Anpassning för OK Eken: åtkomst via behörighet `publisher` (Coworkens Storage-regel tillåter alla inloggade, vilket inte är OK här); `description` används som alt-text; bild-URL:er kommer från `webUrl`/`thumbnailUrl` med `srcset`.
+- **Status 2026-10-21:** säkerhetslagret klart (beslut 0007): regler för `imageBank` och Storage `image_bank/`, regeltester, typer i `src/types/image.ts`, schema i `datamodell.md`. **Bildbanks-UI klart, verifierat mot emulatorer (2026-10-21, ej mot produktion):** uppladdning med skalning (`src/lib/image-resize.ts`, `src/lib/firebase/image-bank.ts`), hanteringssida `/admin/bilder`, bildväljare (knappen Bild i `MarkdownField`, nu även i eventtexten), Markdown släpper bara igenom bildbankens adresser. *Kvar:* `srcset` vid bygget, och GDPR-policyn nedan innan bilder på barn läggs upp.
 - **Markdown:** bildväljaren infogar `![alt](webUrl)` i editorn. Vid build kan Astro lägga på `srcset`/lazy loading. Samma bilder används i events, sidor och mallar.
 
 **Mallar för SoMe-bilder (v1.2)**
@@ -101,7 +102,7 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 ### Att veta inför nästa session
 
 - Arbetssätt och kommandon: `CLAUDE.md`. Designspec är bindande: `skisser/kalender-och-kontrollsymboler.md`.
-- Regeltester: `npm run test:rules` (292 st). Lokalt mot emulatorer: `npm run emulators` + `npm run dev:emu`.
+- Regeltester: `npm run test:rules` (404 st). Lokalt mot emulatorer: `npm run emulators` + `npm run dev:emu`.
 - Deploykontot `github-deploy@okeken.iam.gserviceaccount.com` har roller för Hosting, regler, index och Firestore-läsning; Functions-deploy kräver fler roller (se steg 5).
 - Ospårade logotypfiler i `assets/logo/` (utom `lila-bakgrund.svg`) ska flyttas till arkivet av Erik, inte committas.
 
@@ -113,7 +114,7 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 
 ## GDPR
 
-- Resultat med namn och bilder på barn som publiceras öppet kräver en enkel policy om samtycke (före v1.1).
+- Resultat med namn och bilder på barn som publiceras öppet kräver en enkel policy om samtycke (före v1.1). Gäller även bildbanken (beslut 0007): bilder i bildbanken är publika för den som har länken.
 - Bli-medlem-formuläret (personnummer) kräver särskild hänsyn; förslag: länka till Idrottonline i stället för eget formulär.
 
 ## Övrigt beslutat från granskningen

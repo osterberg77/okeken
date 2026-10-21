@@ -140,3 +140,146 @@ describe('storage: läsning', () => {
     }
   });
 });
+
+// ---- Bildbank (beslut 0007) ----------------------------------------------------------------
+
+/** Unikt post-id per anrop (bara [A-Za-z0-9]) */
+const freshId = () => `t${Date.now()}x${n++}`;
+const img = (bytes = 100) => new Uint8Array(bytes).fill(7);
+const putImg = (s: ReturnType<typeof as>, path: string, contentType = 'image/webp', data: Uint8Array = img()) =>
+  uploadBytes(ref(s, path), data, { contentType });
+
+/** Post i Firestore och fil i Storage, skapade utan regler */
+const seedImage = async (id: string, withPost: boolean) => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    if (withPost) await setDoc(doc(ctx.firestore(), 'imageBank', id), { name: 'x' });
+    await uploadBytes(ref(ctx.storage(), `image_bank/${id}-web.webp`), img(), { contentType: 'image/webp' });
+  });
+  return `image_bank/${id}-web.webp`;
+};
+
+describe('storage: image_bank – uppladdning', () => {
+  for (const uid of ['publisher', 'board', 'super']) {
+    it(`${uid} kan ladda upp bilder`, async () => {
+      const id = freshId();
+      await assertSucceeds(putImg(as(uid), `image_bank/${id}-original.jpg`, 'image/jpeg'));
+      await assertSucceeds(putImg(as(uid), `image_bank/${id}-web.webp`, 'image/webp'));
+      await assertSucceeds(putImg(as(uid), `image_bank/${id}-thumbnail.png`, 'image/png'));
+    });
+  }
+  for (const uid of ['setter', 'member', 'nobody']) {
+    it(`${uid} kan inte ladda upp`, async () => {
+      await assertFails(putImg(as(uid), `image_bank/${freshId()}-web.webp`));
+    });
+  }
+  it('användare utan dokument och utloggade kan inte ladda upp', async () => {
+    await assertFails(putImg(ghost(), `image_bank/${freshId()}-web.webp`));
+    await assertFails(putImg(anon(), `image_bank/${freshId()}-web.webp`));
+  });
+  it('användare med trasig permissions-lista kan inte ladda upp', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'broken1'), { permissions: 'publisher' });
+      await setDoc(doc(ctx.firestore(), 'users', 'broken2'), { displayName: 'x' });
+    });
+    await assertFails(putImg(as('broken1'), `image_bank/${freshId()}-web.webp`));
+    await assertFails(putImg(as('broken2'), `image_bank/${freshId()}-web.webp`));
+  });
+  it('bara jpeg, png och webp, och typen ska stämma med ändelsen', async () => {
+    const id = freshId();
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.svg`, 'image/svg+xml'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.webp`, 'image/svg+xml'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.gif`, 'image/gif'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.webp`, 'image/gif'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.webp`, 'text/html'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.jpg`, 'image/png'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.png`, 'image/jpeg'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.jpeg`, 'image/jpeg'));
+    await assertFails(putImg(as('publisher'), `image_bank/${id}-web.html`, 'image/webp'));
+  });
+  it('högst 10 MB och inte tom', async () => {
+    await assertSucceeds(putImg(as('publisher'), `image_bank/${freshId()}-original.jpg`, 'image/jpeg', img(10 * 1024 * 1024)));
+    await assertFails(putImg(as('publisher'), `image_bank/${freshId()}-original.jpg`, 'image/jpeg', img(10 * 1024 * 1024 + 1)));
+    await assertFails(putImg(as('publisher'), `image_bank/${freshId()}-original.jpg`, 'image/jpeg', img(0)));
+  });
+  it('ogiltiga filnamn och sökvägar nekas', async () => {
+    const id = freshId();
+    for (const p of [
+      `image_bank/${id}.webp`,
+      `image_bank/${id}-4k.webp`,
+      `image_bank/${id}-web`,
+      `image_bank/${id}-web.webp.exe`,
+      `image_bank/${id}_web.webp`,
+      `image_bank/a-b-web.webp`,
+      `image_bank/-web.webp`,
+      `image_bank/${'x'.repeat(65)}-web.webp`,
+      `image_bank/sub/${id}-web.webp`,
+      `image_bank/${id}-web.webp/x.webp`,
+      `image_bank/${id} -web.webp`,
+      `images/${id}-web.webp`,
+      `${id}-web.webp`,
+      `courses/ev1/${id}-web.webp`,
+    ]) {
+      await assertFails(putImg(as('super'), p));
+    }
+  });
+  it('skriver inte över befintliga filer', async () => {
+    const path = await seedImage(freshId(), false);
+    for (const uid of ['publisher', 'board', 'super']) {
+      await assertFails(putImg(as(uid), path));
+    }
+  });
+  it('kan inte ladda upp filer till en befintlig post', async () => {
+    const id = freshId();
+    await seedImage(id, true);
+    await assertFails(putImg(as('super'), `image_bank/${id}-original.jpg`, 'image/jpeg'));
+    await assertFails(putImg(as('super'), `image_bank/${id}-thumbnail.webp`));
+  });
+  it('ingen extra metadata (contentDisposition, customMetadata, contentEncoding)', async () => {
+    const withMeta = (m: Record<string, unknown>) =>
+      uploadBytes(ref(as('publisher'), `image_bank/${freshId()}-web.webp`), img(), { contentType: 'image/webp', ...m });
+    await assertFails(withMeta({ contentDisposition: 'inline; filename="evil.html"' }));
+    await assertFails(withMeta({ contentEncoding: 'gzip' }));
+    await assertFails(withMeta({ customMetadata: { a: 'b' } }));
+  });
+  it('metadata på befintlig fil kan inte ändras', async () => {
+    const path = await seedImage(freshId(), false);
+    for (const uid of ['publisher', 'super']) {
+      await assertFails(updateMetadata(ref(as(uid), path), { contentType: 'text/html' }));
+    }
+  });
+});
+
+describe('storage: image_bank – läsning och radering', () => {
+  it('alla kan hämta bilder, även utloggade', async () => {
+    const path = await seedImage(freshId(), true);
+    await assertSucceeds(getBytes(ref(anon(), path)));
+    await assertSucceeds(getBytes(ref(as('nobody'), path)));
+  });
+  it('ingen kan lista bildbanken, inte ens superadmin', async () => {
+    for (const s of [anon(), as('nobody'), as('super')]) {
+      await assertFails(listAll(ref(s, 'image_bank')));
+    }
+  });
+  for (const uid of ['publisher', 'board', 'super']) {
+    it(`${uid} kan radera filer vars post är raderad`, async () => {
+      const path = await seedImage(freshId(), false);
+      await assertSucceeds(deleteObject(ref(as(uid), path)));
+    });
+  }
+  it('filer som en befintlig post pekar på kan inte raderas', async () => {
+    const path = await seedImage(freshId(), true);
+    for (const uid of ['publisher', 'board', 'super']) {
+      await assertFails(deleteObject(ref(as(uid), path)));
+    }
+  });
+  it('setter, member, nobody, utan dokument och utloggade kan inte radera', async () => {
+    const path = await seedImage(freshId(), false);
+    for (const s of [as('setter'), as('member'), as('nobody'), ghost(), anon()]) {
+      await assertFails(deleteObject(ref(s, path)));
+    }
+  });
+  it('bildbanksregeln ger ingen radering av banor eller andra sökvägar', async () => {
+    await assertFails(deleteObject(ref(as('super'), 'courses/ev1/existing-Bana.pdf')));
+    await assertFails(deleteObject(ref(as('super'), 'other/secret.txt')));
+  });
+});

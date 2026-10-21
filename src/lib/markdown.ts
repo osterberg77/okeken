@@ -6,6 +6,12 @@ import { Marked } from 'marked';
 const escapeHtml = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Bilder får bara komma från bildbanken (beslut 0007). I emulatorläge (aldrig i produktionsbygget) visas
+// filerna från Storage-emulatorn; Markdown-texten behåller den kanoniska adressen.
+const IMAGE_PREFIX = 'https://firebasestorage.googleapis.com/v0/b/okeken.firebasestorage.app/o/';
+const EMULATOR_IMAGE_PREFIX = 'http://127.0.0.1:9199/v0/b/okeken.firebasestorage.app/o/';
+const EMULATORS = import.meta.env?.PUBLIC_FIREBASE_EMULATORS === 'true';
+
 const SAFE_URL = /^(https?:|mailto:|tel:|\/(?!\/)|#)/i;
 
 const marked = new Marked({
@@ -23,9 +29,10 @@ const marked = new Marked({
       return `<a href="${escapeHtml(href)}"${titleAttr}${rel}>${text}</a>`;
     },
     image({ href, title, text }) {
-      if (!/^https:/i.test(href)) return escapeHtml(text);
+      if (!href.startsWith(IMAGE_PREFIX)) return escapeHtml(text);
+      const src = EMULATORS ? EMULATOR_IMAGE_PREFIX + href.slice(IMAGE_PREFIX.length) : href;
       const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-      return `<img src="${escapeHtml(href)}" alt="${escapeHtml(text)}"${titleAttr} loading="lazy">`;
+      return `<img src="${escapeHtml(src)}" alt="${escapeHtml(text)}"${titleAttr} loading="lazy">`;
     },
   },
 });

@@ -48,8 +48,22 @@ Samma publiceringsmodell som events: fälten på dokumentet är utkastet, `publi
 
 Bara aldrig publicerade utkast (`publishedAt == null`) får raderas; publicerade sidor avpubliceras i stället. Function `onPageWritten` startar bygget när det publicerade innehållet ändras.
 
-### `imageBank/{imageId}`
-`url`, `webUrl` (1920 px), `thumbnailUrl` (800 px), `fourKUrl?`, `name`, `byline?`, `description?` (alt-text), `storagePaths`, `size`, `type`, `uploadedBy`, `createdAt`. Modell hämtad från Coworken.
+### `imageBank/{imageId}` (bildbank, beslut 0007)
+En post per bild. Alla fält finns alltid. Bara publicerare, styrelse och superadmin får läsa, skapa, ändra och radera (inte banläggare). Efter skapandet får bara `name`, `byline` och `description` ändras. Regler och tester: `firestore.rules`, `tests/rules/imageBank.test.ts`. Typer och konstanter: `src/types/image.ts`.
+
+| Fält | Typ | Anm. |
+|---|---|---|
+| `name` | string | 1–200 tecken (förifylls med filnamnet) |
+| `byline` | string | Fotograf, högst 200 tecken; tom = saknas |
+| `description` | string | Alt-text, högst 300 tecken; tom = saknas |
+| `url`, `webUrl`, `thumbnailUrl` | string | Nedladdnings-URL (`getDownloadURL`) till original, webbversion (längsta sida 1920 px) och miniatyr (800 px). Måste vara exakt `https://firebasestorage.googleapis.com/v0/b/okeken.firebasestorage.app/o/image_bank%2F<imageId>-<variant>.<ext>?alt=media&token=<uuid>` och peka på samma fil som motsvarande `storagePaths`. Inga externa adresser |
+| `storagePaths` | `{ original, web, thumbnail }` | `image_bank/<imageId>-<original\|web\|thumbnail>.<jpg\|png\|webp>`, där `imageId` är postens eget id (bara `A–Z a–z 0–9`, högst 64 tecken). En post kan alltså inte peka på andra posters filer eller på `courses/` |
+| `size` | heltal | Den valda filens storlek i byte, 0–30 MB. Är den över 10 MB lagras originalet nedskalat (längsta sida 3840 px) |
+| `type` | `image/jpeg \| image/png \| image/webp` | Den valda filens typ |
+| `uploadedBy` | uid | Egen uid vid skapande |
+| `createdAt` | timestamp | Servertid vid skapande |
+
+Uppladdning i UI:t: ta fram id (`doc(collection(db, 'imageBank')).id`), skala i webbläsaren, ladda upp de tre filerna, skapa sedan posten. Radering: radera posten först, sedan filerna (Storage tillåter bara radering av filer som saknar post). Bilder infogas i Markdown som `![alt](webUrl)`; en raderad bild blir en trasig bild på publicerade sidor som använder den.
 
 ### `templates/{templateId}`
 `name`, `svgPath`, `svgUrl`, `fields[]` (`id`, `type: text|image`, `label`, `maxLength?`, `defaultValue?`, `fit?`), `createdBy`. SVG skrivs bara via en Cloud Function som sanitiserar.
@@ -65,11 +79,16 @@ Ordnad lista över menyalternativ (`label`, `href`, `children[]`). Tills vidare 
 
 ## Storage
 
+Regler och tester: `storage.rules`, `tests/rules/storage.test.ts`.
+
 ```
 courses/{eventId}/{filename}.pdf
-image_bank/{timestamp}_{filename}_{original|thumb|web|4k}
+image_bank/{imageId}-{original|web|thumbnail}.{jpg|png|webp}   # bildbanken, beslut 0007
 templates/{templateId}.svg   # skrivs endast av Cloud Function
 ```
+
+- `courses/`: alla får hämta, ingen får lista. Banläggare, publicerare, styrelse och superadmin laddar upp nya PDF:er (max 10 MB). Ingen överskrivning eller radering.
+- `image_bank/`: platt mapp. Alla får hämta (bilderna visas för besökare via token-URL), ingen får lista. Publicerare, styrelse och superadmin laddar upp nya filer (JPEG/PNG/WebP, ändelsen ska stämma med typen, max 10 MB) och bara så länge posten `imageBank/<imageId>` inte finns. Radering är tillåten bara när posten är borta. Ingen överskrivning och ingen ändring av metadata.
 
 ## Senare
 `attendance/{eventId}/entries/{id}` för närvaroregistrering (namn utan konto ska gå att registrera).

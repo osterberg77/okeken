@@ -110,6 +110,11 @@ export default function AccountMenu() {
               Sidor
             </a>
           )}
+          {canPublish(session.permissions) && (
+            <a href="/admin/bilder" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+              Bilder
+            </a>
+          )}
           {canManageUsers(session.permissions) && (
             <>
               <a href="/admin/anvandare" className="py-1.5 font-medium text-ink no-underline hover:text-accent">

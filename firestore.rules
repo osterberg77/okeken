@@ -278,6 +278,65 @@ service cloud.firestore {
       allow delete: if canPublish() && resource.data.publishedAt == null;
     }
 
+    // ---- Bildbank (beslut 0007) -------------------------------------------------------
+    // En post per bild med tre filer i Storage: image_bank/<imageId>-<original|web|thumbnail>.<jpg|png|webp>.
+    // Sökvägar och URL:er binds till postens eget id, så en post kan bara peka på sina egna filer i
+    // bildbankens mapp (inte courses/, inte andra posters filer, inte externa adresser/spårpixlar).
+    // Bara publicerare, styrelse och superadmin. Efter skapandet får bara name/byline/description ändras.
+
+    function imageBankKeys() {
+      return ['name', 'url', 'webUrl', 'thumbnailUrl', 'byline', 'description', 'storagePaths',
+        'size', 'type', 'uploadedBy', 'createdAt'];
+    }
+
+    function validImageMeta(d) {
+      return d.name is string && d.name.size() > 0 && d.name.size() <= 200
+        && d.byline is string && d.byline.size() <= 200
+        && d.description is string && d.description.size() <= 300;
+    }
+
+    // path: image_bank/<imageId>-<variant>.<ext>. url: bucketens nedladdningsadress för exakt den filen
+    // (Storage kodar '/' som %2F) med token från getDownloadURL och inget annat. imageId är redan kontrollerat
+    // till [A-Za-z0-9] och kan därför sättas in i regexen.
+    function validImageFile(url, path, imageId, variant) {
+      return path is string && path.size() <= 300
+        && path.matches('^image_bank/' + imageId + '-' + variant + '[.](jpg|png|webp)$')
+        && url is string && url.size() <= 1000
+        && url.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/okeken[.]firebasestorage[.]app/o/image_bank%2F'
+          + imageId + '-' + variant + '[.]' + path.split('[.]')[1]
+          + '[?]alt=media&token=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$');
+    }
+
+    match /imageBank/{imageId} {
+      allow read: if canPublish();
+
+      allow create: if imageId.matches('^[A-Za-z0-9]{1,64}$')
+        && canPublish()
+        && request.resource.data.keys().hasOnly(imageBankKeys())
+        && request.resource.data.keys().hasAll(imageBankKeys())
+        && validImageMeta(request.resource.data)
+        && request.resource.data.storagePaths is map
+        && request.resource.data.storagePaths.keys().hasOnly(['original', 'web', 'thumbnail'])
+        && request.resource.data.storagePaths.keys().hasAll(['original', 'web', 'thumbnail'])
+        && validImageFile(request.resource.data.url, request.resource.data.storagePaths.original, imageId, 'original')
+        && validImageFile(request.resource.data.webUrl, request.resource.data.storagePaths.web, imageId, 'web')
+        && validImageFile(request.resource.data.thumbnailUrl, request.resource.data.storagePaths.thumbnail, imageId, 'thumbnail')
+        // size och type gäller filen som användaren valde (kan vara större än det som lagras, se src/types/image.ts)
+        && request.resource.data.size is int
+        && request.resource.data.size >= 0 && request.resource.data.size <= 30 * 1024 * 1024
+        && request.resource.data.type in ['image/jpeg', 'image/png', 'image/webp']
+        && request.resource.data.uploadedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      // Bara metadata (namn, fotograf, alt-text); filer och URL:er är låsta
+      allow update: if canPublish()
+        && onlyChanges(['name', 'byline', 'description'])
+        && validImageMeta(request.resource.data);
+
+      // Radera posten först, sedan filerna (storage.rules tillåter bara radering av filer utan post)
+      allow delete: if canPublish();
+    }
+
     // ---- Bygge ---------------------------------------------------------------------
     // meta/build.lastBuildAt skrivs bara av Actions (Admin SDK). Editorn läser den för delningsknappen.
     match /meta/build {
