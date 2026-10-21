@@ -2,6 +2,7 @@
 // Lokalt: `gcloud auth application-default login`, eller FIRESTORE_EMULATOR_HOST mot emulatorn.
 // I CI: tjänstekontot via google-github-actions/auth.
 import { toPublicCourseFiles } from '../courses';
+import { toPublicImage } from '../event-image';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 
@@ -33,6 +34,7 @@ export async function loadPublishedEvents() {
         courseSetter: p.courseSetter || undefined,
         livelox: p.livelox || undefined,
         courseFiles: Array.isArray(p.courseFiles) && p.courseFiles.length ? toPublicCourseFiles(p.courseFiles) : undefined,
+        image: toPublicImage(p.image),
         body: p.body ?? '',
       },
     ];

@@ -50,7 +50,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 ## V1.2
 
 - **SoMe-bilder från mallar** (SVG-mallar med text-/bildfält, export till PNG).
-- Automatisk `og:image` per event från standardmall.
+- Automatisk `og:image` per event från standardmall (för events utan huvudbild; huvudbild finns sedan 2026-10-21).
 - Mallredigeraren när behovet finns.
 
 ## Publiceringsflöde
@@ -71,6 +71,7 @@ Coworken (`~/progg/coworken`) har en fungerande bildbank och ett mallverktyg. Sl
 - Bildväljare (modal) som kan öppnas från editorn, källa: `ImageBankModal.tsx`; hanteringssida, källa: `AdminImageBankPage.tsx`.
 - Anpassning för OK Eken: åtkomst via behörighet `publisher` (Coworkens Storage-regel tillåter alla inloggade, vilket inte är OK här); `description` används som alt-text; bild-URL:er kommer från `webUrl`/`thumbnailUrl` med `srcset`.
 - **Status 2026-10-21:** säkerhetslagret klart (beslut 0007): regler för `imageBank` och Storage `image_bank/`, regeltester, typer i `src/types/image.ts`, schema i `datamodell.md`. **Bildbanks-UI klart, verifierat mot emulatorer (2026-10-21, ej mot produktion):** uppladdning med skalning (`src/lib/image-resize.ts`, `src/lib/firebase/image-bank.ts`), hanteringssida `/admin/bilder`, bildväljare (knappen Bild i `MarkdownField`, nu även i eventtexten), Markdown släpper bara igenom bildbankens adresser. *Kvar:* `srcset` vid bygget, och GDPR-policyn nedan innan bilder på barn läggs upp.
+- **Huvudbild per event (2026-10-21, verifierad mot emulatorer, ej deployad):** fältet `image` på events (se `datamodell.md`), väljs ur bildbanken i editorn (sektion "Huvudbild", skrivskyddad för banläggare), visas till höger i eventkortet enligt designspecen (under texten på smalt kort) och blir `og:image`/`twitter:image` på eventsidan. Utan huvudbild sätts ingen `og:image` (logotypen finns bara som SVG). Den genererade mallbilden i v1.2 kan senare bli reserv när huvudbild saknas.
 - **Markdown:** bildväljaren infogar `![alt](webUrl)` i editorn. Vid build kan Astro lägga på `srcset`/lazy loading. Samma bilder används i events, sidor och mallar.
 
 **Mallar för SoMe-bilder (v1.2)**

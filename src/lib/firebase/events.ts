@@ -31,6 +31,10 @@ function contentToFirestore(c: EventContent) {
     courseSetter: c.courseSetter.trim(),
     livelox: c.livelox.trim(),
     courseFiles: c.courseFiles.map((f) => ({ name: f.name, storagePath: f.storagePath, label: f.label.trim() })),
+    // Alltid med (null = ingen bild): reglerna kräver att published.image är exakt utkastets
+    image: c.image
+      ? { imageId: c.image.imageId, url: c.image.url, thumbnailUrl: c.image.thumbnailUrl, alt: c.image.alt.trim() }
+      : null,
   };
 }
 
@@ -45,6 +49,7 @@ function contentFromFirestore(d: DocumentData): EventContent {
     courseSetter: d.courseSetter ?? '',
     livelox: d.livelox ?? '',
     courseFiles: Array.isArray(d.courseFiles) ? d.courseFiles : [],
+    image: d.image ?? null,
   };
 }
 

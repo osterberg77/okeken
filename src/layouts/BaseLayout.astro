@@ -11,9 +11,14 @@ interface Props {
   ogType?: 'website' | 'article';
   /** Admin- och inloggningssidor ska inte indexeras */
   noindex?: boolean;
+  /**
+   * Delningsbild (og:image): absolut https-adress till en JPEG/PNG/WebP, t.ex. eventets huvudbild (bildbankens
+   * webbversion, 1920 px). Utan bild sätts ingen og:image (logotypen finns bara som SVG, som Facebook inte visar).
+   */
+  ogImage?: { url: string; alt: string };
 }
 
-const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website', noindex = false } = Astro.props;
+const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website', noindex = false, ogImage } = Astro.props;
 // build.format 'file' ger '/event/x.html'; Hosting (cleanUrls) serverar '/event/x'
 const canonicalPath = Astro.url.pathname.replace(/(index)?\.html$/, '');
 const canonical = new URL(canonicalPath, Astro.site).href;
@@ -35,6 +40,11 @@ const canonical = new URL(canonicalPath, Astro.site).href;
     <meta property="og:title" content={ogTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    {ogImage && <meta property="og:image" content={ogImage.url} />}
+    {ogImage?.alt && <meta property="og:image:alt" content={ogImage.alt} />}
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+    {ogImage && <meta name="twitter:image" content={ogImage.url} />}
+    {ogImage?.alt && <meta name="twitter:image:alt" content={ogImage.alt} />}
   </head>
   <body class="bg-canvas font-sans text-[15px] leading-normal text-ink antialiased">
     {/* overflow-x-clip (inte overflow-hidden): klipper de dekorativa cirklarna i sidled men inte menyernas rullgardiner */}

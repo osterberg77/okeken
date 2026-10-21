@@ -8,6 +8,7 @@ import {
   formatKeyMedium,
   keyWeekdayShort,
 } from '../lib/time';
+import { bankImageSrc } from '../lib/markdown';
 import type { PublicEvent } from '../types/event';
 import CategoryChip from './CategoryChip';
 
@@ -19,10 +20,12 @@ interface Props {
   as?: 'h1' | 'h2';
   /** Absolut adress till eventsidan; visar delningsknapp när den finns */
   shareUrl?: string;
+  /** 'eager' när kortet är det första på sidan (eventsidan); annars laddas huvudbilden när den syns */
+  imageLoading?: 'eager' | 'lazy';
 }
 
-// Delas av eventsidan (statisk HTML), kalenderns detaljvy och – senare – adminpreview.
-export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl }: Props) {
+// Delas av eventsidan (statisk HTML), kalenderns detaljvy och adminpreview.
+export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl, imageLoading = 'lazy' }: Props) {
   const startDay = dayKey(event.startsAt);
   const endDay = dayKey(event.endsAt);
   const isPast = endDay < today;
@@ -36,7 +39,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
   }
 
   return (
-    <article className="flex min-w-0 flex-wrap overflow-hidden rounded-[28px] bg-white shadow-card">
+    <article className="@container flex min-w-0 flex-wrap overflow-hidden rounded-[28px] bg-white shadow-card">
       <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-[18px] px-6 pt-7 pb-8 sm:px-[38px] sm:pt-[34px] sm:pb-[38px]">
         <div className="flex flex-wrap items-center gap-2">
           <CategoryChip type={event.type} />
@@ -101,6 +104,21 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
           </div>
         )}
       </div>
+
+      {event.image && (
+        // Spec (docs/skisser): bild till höger, 300 px, radie 20 px, marginal 14 px, object-fit cover. Kortets bredd
+        // (containerfråga) avgör: smalt kort ger bilden i full bredd under texten (16:9). Ramen har alltid en
+        // bestämd storlek, så sidan hoppar inte när bilden laddas.
+        <div className="relative m-3.5 mt-0 aspect-[16/9] flex-[1_1_100%] overflow-hidden rounded-[20px] bg-period @min-[680px]:mt-3.5 @min-[680px]:ml-0 @min-[680px]:aspect-auto @min-[680px]:min-h-[280px] @min-[680px]:min-w-[240px] @min-[680px]:flex-[0_1_300px]">
+          <img
+            src={bankImageSrc(event.image.url)}
+            alt={event.image.alt}
+            loading={imageLoading}
+            decoding="async"
+            className="absolute inset-0 block h-full w-full object-cover"
+          />
+        </div>
+      )}
     </article>
   );
 }

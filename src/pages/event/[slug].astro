@@ -15,11 +15,11 @@ const { event } = Astro.props as { event: PublicEvent };
 const url = new URL(`/event/${event.slug}`, Astro.site).href;
 ---
 
-<BaseLayout title={`${event.title} – OK Eken`} ogTitle={event.title} description={event.excerpt} ogType="article">
+<BaseLayout title={`${event.title} – OK Eken`} ogTitle={event.title} description={event.excerpt} ogType="article" ogImage={event.image}>
   <main data-pagefind-body class="mx-auto max-w-[900px] px-4 pt-2 pb-12 sm:px-8">
     <a href="/" data-pagefind-ignore class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted no-underline hover:text-accent">
       <Icon name="arrowLeft" /> Till kalendern
     </a>
-    <EventDetail event={event} today={dayKey(new Date())} shareUrl={url} />
+    <EventDetail event={event} today={dayKey(new Date())} shareUrl={url} imageLoading="eager" />
   </main>
 </BaseLayout>

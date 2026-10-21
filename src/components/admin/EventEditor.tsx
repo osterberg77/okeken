@@ -13,15 +13,18 @@ import {
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
 import { deleteCourseFiles, uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files';
+import { displayUrl } from '../../lib/firebase/image-bank';
 import { loadLinkTargets, type LinkTarget } from '../../lib/firebase/link-targets';
 import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
-import { EVENT_TYPES, MAX_COURSE_FILES, type EventContent, type EventRecord } from '../../types/event';
+import { EVENT_TYPES, MAX_COURSE_FILES, MAX_IMAGE_ALT, type EventContent, type EventImage, type EventRecord } from '../../types/event';
+import type { ImageBankItem } from '../../types/image';
 import { canPublish, canViewEvents, type Session } from '../../types/user';
 import EventDetail from '../EventDetail';
 import AdminGate, { AdminPanel } from './AdminGate';
 import { ActionButton, Field, INPUT, QuickButton } from './AdminUi';
 import BuildStatus from './BuildStatus';
+import ImagePicker from './ImagePicker';
 import MarkdownField from './MarkdownField';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 
@@ -48,6 +51,7 @@ function newEventContent(): EventContent {
     courseSetter: '',
     livelox: '',
     courseFiles: [],
+    image: null,
   };
 }
 
@@ -61,6 +65,15 @@ const contentOf = (r: EventRecord): EventContent => ({
   courseSetter: r.courseSetter,
   livelox: r.livelox,
   courseFiles: r.courseFiles,
+  image: r.image,
+});
+
+/** Huvudbild från en bildbankspost; alt-texten förifylls med beskrivningen (annars namnet) */
+const eventImageFrom = (img: ImageBankItem): EventImage => ({
+  imageId: img.id,
+  url: img.webUrl,
+  thumbnailUrl: img.thumbnailUrl,
+  alt: (img.description.trim() || img.name.trim()).slice(0, MAX_IMAGE_ALT),
 });
 
 type Message = { kind: 'ok' | 'error'; text: string } | null;
@@ -77,6 +90,7 @@ function Editor({ session }: { session: Session }) {
   const [message, setMessage] = useState<Message>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
+  const [imagePicker, setImagePicker] = useState(false);
   const loaded = useRef(false);
   // Filer som laddats upp i den här vyn men kanske aldrig sparats på eventet (hook: måste ligga före tidiga return)
   const uploadedPaths = useRef(new Set<string>());
@@ -420,6 +434,13 @@ function Editor({ session }: { session: Session }) {
             </Field>
           </div>
 
+          <MainImageField
+            image={draft.image}
+            readOnly={courseOnly}
+            onPick={() => setImagePicker(true)}
+            onChange={(image) => update({ image })}
+          />
+
           </fieldset>
 
           <Field label="Banor (PDF)" htmlFor="courses" hint={`Högst ${MAX_COURSE_FILES} filer, 10 MB var. Ta bort en bana med knappen; filen raderas från servern när du sparat (en publicerad bana behålls tills ändringen publicerats).`}>
@@ -493,9 +514,21 @@ function Editor({ session }: { session: Session }) {
           <p className="m-0 text-xs font-semibold tracking-[.12em] text-subtle">FÖRHANDSVISNING – SÅ HÄR SER EVENTSIDAN UT</p>
           <EventDetail event={preview} today={dayKey(new Date())} />
           <p className="m-0 text-xs font-semibold tracking-[.12em] text-subtle">DELNING PÅ FACEBOOK</p>
-          <SharePreview title={preview.title} excerpt={preview.excerpt} />
+          <SharePreview title={preview.title} excerpt={preview.excerpt} image={draft.image} />
         </div>
       </div>
+
+      {imagePicker && !courseOnly && (
+        <ImagePicker
+          title="Välj huvudbild"
+          selectedId={draft.image?.imageId}
+          onPick={(img) => {
+            update({ image: eventImageFrom(img) });
+            setImagePicker(false);
+          }}
+          onClose={() => setImagePicker(false)}
+        />
+      )}
 
       <StatusBadge
         state={state}
@@ -505,8 +538,87 @@ function Editor({ session }: { session: Session }) {
   );
 }
 
-/** Ungefär som Facebooks länkkort (utan bild tills og:image finns, v1.2) */
-function SharePreview({ title, excerpt }: { title: string; excerpt: string }) {
+/**
+ * Huvudbild: förhandsvisning, välj/byt ur bildbanken, alt-text och ta bort. Ligger i fieldset:en som är
+ * avstängd för banläggare, så de ser bilden men kan inte ändra den (reglerna nekar det också).
+ */
+function MainImageField({
+  image, readOnly, onPick, onChange,
+}: { image: EventImage | null; readOnly: boolean; onPick: () => void; onChange: (image: EventImage | null) => void }) {
+  if (readOnly) {
+    return (
+      <Field label="Huvudbild">
+        {image ? (
+          <div className="flex flex-col gap-3 rounded-[22px] bg-period p-3 sm:flex-row sm:items-start">
+            <img src={displayUrl(image.thumbnailUrl)} alt="" width={800} height={450} className="aspect-[16/9] w-full flex-none rounded-2xl bg-white object-cover sm:w-48" />
+            <p className="m-0 min-w-0 flex-1 text-sm text-muted">Alt-text: {image.alt || '(saknas)'}</p>
+          </div>
+        ) : (
+          <p className="m-0 text-sm text-muted">Ingen huvudbild.</p>
+        )}
+      </Field>
+    );
+  }
+  return (
+    <Field
+      label="Huvudbild"
+      htmlFor={image ? 'image-alt' : undefined}
+      hint="Valfri. Visas i eventkortet och när eventet delas på Facebook. Välj en bild ur bildbanken."
+    >
+      {image ? (
+        <div className="flex flex-col gap-3 rounded-[22px] bg-period p-3 sm:flex-row sm:items-start">
+          <img
+            src={displayUrl(image.thumbnailUrl)}
+            alt=""
+            width={800}
+            height={450}
+            className="aspect-[16/9] w-full flex-none rounded-2xl bg-white object-cover sm:w-48"
+          />
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <label htmlFor="image-alt" className="text-sm font-semibold">Alt-text</label>
+            <input
+              id="image-alt"
+              value={image.alt}
+              maxLength={MAX_IMAGE_ALT}
+              onChange={(e) => onChange({ ...image, alt: e.target.value })}
+              placeholder="Beskriv bilden för den som inte ser den"
+              className={INPUT}
+            />
+            <div className="flex flex-wrap gap-2">
+              <QuickButton onClick={onPick}>Byt bild</QuickButton>
+              <button
+                type="button"
+                onClick={() => onChange(null)}
+                className="cursor-pointer rounded-full px-3 py-1.5 text-[13px] font-semibold text-[#A33A3A] hover:underline"
+              >
+                Ta bort bild
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <ActionButton onClick={onPick}>Välj bild</ActionButton>
+        </div>
+      )}
+    </Field>
+  );
+}
+
+/** Ungefär som Facebooks länkkort: stor bild ovanför texten när huvudbild finns, annars bara text */
+function SharePreview({ title, excerpt, image }: { title: string; excerpt: string; image: EventImage | null }) {
+  if (image) {
+    return (
+      <div className="max-w-[500px] overflow-hidden rounded-lg border border-[#dadde1] bg-[#f0f2f5] font-[system-ui]">
+        <img src={displayUrl(image.url)} alt="" width={1200} height={628} className="block aspect-[1.91/1] w-full bg-white object-cover" />
+        <div className="min-w-0 border-t border-[#dadde1] p-3">
+          <div className="text-xs text-[#65676b] uppercase">okeken.web.app</div>
+          <div className="truncate text-base font-semibold text-[#050505]">{title}</div>
+          <div className="line-clamp-2 text-sm text-[#65676b]">{excerpt || 'Första stycket i texten visas här.'}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex max-w-[500px] items-center gap-3 overflow-hidden rounded-lg border border-[#dadde1] bg-[#f0f2f5] p-3 font-[system-ui]">
       <img src="/logo.svg" alt="" className="h-16 w-14 flex-none object-contain" />

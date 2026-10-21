@@ -68,7 +68,7 @@ service cloud.firestore {
     }
 
     function eventKeys() {
-      return requiredEventKeys().concat(['courseFiles']);
+      return requiredEventKeys().concat(['courseFiles', 'image']);
     }
 
     // Storage-sökvägen ska ligga under courses/<eventId>/ och sluta på .pdf (filen laddas upp via storage.rules).
@@ -106,6 +106,26 @@ service cloud.firestore {
       return d.get('courseFiles', []);
     }
 
+    // Huvudbild (valfri, äldre events saknar fältet): null eller { imageId, url, thumbnailUrl, alt } ur bildbanken.
+    // url och thumbnailUrl måste vara bildbankens webb- respektive miniatyrfil (samma adressformat som imageBank-
+    // posterna, https och bucketen okeken.firebasestorage.app, inga externa adresser), alt högst 300 tecken.
+    // Fasta regexar i stället för att binda adresserna till imageId (som validImageFile gör): det sparar uttryck
+    // under taket på 1000 per anrop, och en felparad bild kan bara visas fel, inte peka utanför bildbanken.
+    // Att posten finns kontrolleras inte (en get till per anrop; en raderad bild ska inte låsa eventet).
+    // keys() ger fel om i inte är en map och matches() om värdet saknas eller inte är en sträng, vilket nekar skrivningen.
+    function eventImageOf(d) {
+      return d.get('image', null);
+    }
+
+    function validEventImage(i) {
+      return i == null
+        || (i.keys().hasOnly(['imageId', 'url', 'thumbnailUrl', 'alt'])
+          && i.alt.matches('(?s).{0,300}')
+          && i.imageId.matches('[A-Za-z0-9]{1,64}')
+          && i.url.matches('https://firebasestorage[.]googleapis[.]com/v0/b/okeken[.]firebasestorage[.]app/o/image_bank%2F[A-Za-z0-9]{1,64}-web[.](jpg|png|webp)[?]alt=media&token=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}')
+          && i.thumbnailUrl.matches('https://firebasestorage[.]googleapis[.]com/v0/b/okeken[.]firebasestorage[.]app/o/image_bank%2F[A-Za-z0-9]{1,64}-thumbnail[.](jpg|png|webp)[?]alt=media&token=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'));
+    }
+
     function validEventContent(d, eventId) {
       return d.type in ['training', 'competition', 'meeting', 'info', 'happening']
         && d.title is string && d.title.size() > 0 && d.title.size() <= 200
@@ -116,14 +136,15 @@ service cloud.firestore {
         && d.body is string && d.body.size() <= 20000
         && d.courseSetter is string && d.courseSetter.size() <= 200
         && d.livelox is string && d.livelox.size() <= 500
-        && validCourseFiles(courseFilesOf(d), eventId);
+        && validCourseFiles(courseFilesOf(d), eventId)
+        && validEventImage(eventImageOf(d));
     }
 
     function eventSnapshot(d) {
       return {
         'type': d.type, 'title': d.title, 'startsAt': d.startsAt, 'endsAt': d.endsAt,
         'location': d.location, 'body': d.body, 'courseSetter': d.courseSetter, 'livelox': d.livelox,
-        'courseFiles': courseFilesOf(d)
+        'courseFiles': courseFilesOf(d), 'image': eventImageOf(d)
       };
     }
 
@@ -192,7 +213,7 @@ service cloud.firestore {
             && validSlug(request.resource.data.slug))
         // Adressen låses vid första publiceringen (delade länkar ska fortsätta fungera)
         && (resource.data.publishedAt == null || request.resource.data.slug == resource.data.slug)
-        // Innehållet (med upp till 8 banor) är dyrast och kontrolleras sist, så att en skrivning som ändå nekas
+        // Innehållet (med upp till 8 banor och huvudbild) är dyrast och kontrolleras sist, så att en skrivning som ändå nekas
         // här inte förbrukar uttryckstaket innan banläggarregeln nedan prövas
         && validEventContent(request.resource.data, eventId);
 

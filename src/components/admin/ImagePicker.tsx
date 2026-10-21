@@ -5,8 +5,20 @@ import { INPUT } from './AdminUi';
 import { filterImages } from './ImageList';
 import ImageUploader from './ImageUploader';
 
-/** Modal för att välja (eller ladda upp) en bild att infoga i Markdown */
-export default function ImagePicker({ onPick, onClose }: { onPick: (image: ImageBankItem) => void; onClose: () => void }) {
+/**
+ * Modal för att välja (eller ladda upp) en bild ur bildbanken. Returnerar den valda bilden via onPick; anroparen
+ * bestämmer vad som händer (MarkdownField infogar Markdown, EventEditor sätter huvudbild).
+ */
+export default function ImagePicker({
+  onPick, onClose, title = 'Välj bild', selectedId,
+}: {
+  onPick: (image: ImageBankItem) => void;
+  onClose: () => void;
+  /** Rubrik och tillgängligt namn på dialogen */
+  title?: string;
+  /** Markerar den bild som redan är vald */
+  selectedId?: string;
+}) {
   const [images, setImages] = useState<ImageBankItem[] | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
@@ -25,12 +37,12 @@ export default function ImagePicker({ onPick, onClose }: { onPick: (image: Image
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Välj bild"
+        aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[92vh] w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-t-[28px] bg-white p-5 shadow-card sm:rounded-[28px] sm:p-7"
       >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="m-0 font-display text-2xl font-bold">Välj bild</h2>
+          <h2 className="m-0 font-display text-2xl font-bold">{title}</h2>
           <button type="button" onClick={onClose} className="cursor-pointer text-sm font-semibold text-muted hover:text-accent">Stäng</button>
         </div>
 
@@ -53,7 +65,10 @@ export default function ImagePicker({ onPick, onClose }: { onPick: (image: Image
               <button
                 type="button"
                 onClick={() => onPick(img)}
-                className="flex w-full cursor-pointer flex-col gap-2 rounded-[22px] bg-period p-2.5 text-left hover:bg-pastel"
+                aria-current={img.id === selectedId || undefined}
+                className={`flex w-full cursor-pointer flex-col gap-2 rounded-[22px] p-2.5 text-left hover:bg-pastel ${
+                  img.id === selectedId ? 'bg-pastel ring-2 ring-accent' : 'bg-period'
+                }`}
               >
                 <img src={displayUrl(img.thumbnailUrl)} alt={img.description} loading="lazy" className="aspect-[4/3] w-full rounded-2xl bg-white object-cover" />
                 <span className="truncate px-1 text-sm font-semibold">{img.name}</span>

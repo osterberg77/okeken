@@ -34,7 +34,7 @@ function has(p)  { return request.auth != null && p in perms(); }
 - `superadmin` får ändra `permissions` fritt.
 - `board` får bara lägga till/ta bort `member`, `course_setter`, `publisher`; skillnaden mellan före och efter (`diff`) får inte röra `board`/`superadmin`.
 - Storage-regler läser samma dokument via `firestore.get()`.
-- `course_setter` (beslut 0006): läsa `events` och uppdatera bara `courseFiles` (+ `updatedBy`/`updatedAt`). På ett publicerat event får samma skrivning sätta `published.courseFiles` till exakt utkastets lista; allt annat i `published`, samt `publishedAt`, `status` och `slug`, måste vara oförändrat. Ingen åtkomst till `pages`, `menu` eller `meta/build`. Tester: `tests/rules/events.test.ts` ("banläggare").
+- `course_setter` (beslut 0006): läsa `events` och uppdatera bara `courseFiles` (+ `updatedBy`/`updatedAt`). På ett publicerat event får samma skrivning sätta `published.courseFiles` till exakt utkastets lista; allt annat i `published` (även huvudbilden `image`), samt `publishedAt`, `status` och `slug`, måste vara oförändrat. Ingen åtkomst till `pages`, `menu` eller `meta/build`. Tester: `tests/rules/events.test.ts` ("banläggare").
 - `pages` (infosidor): bara `publisher`, `board`, `superadmin`, samma regler som events (`tests/rules/pages.test.ts`).
 - `menu/main` (huvudmenyn, beslut 0008): bara `publisher`, `board`, `superadmin` får läsa, spara utkast och publicera. Banläggare, medlemmar och besökare har ingen åtkomst (bygget läser med Admin SDK). Ingen får radera dokumentet. Tester: `tests/rules/menu.test.ts`.
 - `imageBank` och Storage `image_bank/` (beslut 0007): bara `publisher`, `board`, `superadmin` får läsa, ladda upp, ändra metadata (namn, fotograf, alt-text) och radera. Banläggare och medlemmar har ingen åtkomst. Filerna kan hämtas av alla med länken men inte listas. Tester: `tests/rules/imageBank.test.ts`, `tests/rules/storage.test.ts`.
@@ -43,4 +43,4 @@ function has(p)  { return request.auth != null && p in perms(); }
 
 ## UI för banläggare och infosidor
 
-`canViewEvents` (`src/types/user.ts`) släpper in publicerare, styrelse, superadmin och banläggare på `/admin/events`. Banläggare ser editorn med alla fält utom banorna skrivskyddade och sparar bara `courseFiles` (plus `published.courseFiles` på publicerade events). `/admin/sidor` och `/admin/sida` kräver `canPublish`, alltså inte banläggare. Detsamma gäller den kommande menyvyn.
+`canViewEvents` (`src/types/user.ts`) släpper in publicerare, styrelse, superadmin och banläggare på `/admin/events`. Banläggare ser editorn med alla fält utom banorna skrivskyddade (huvudbilden visas utan knappar) och sparar bara `courseFiles` (plus `published.courseFiles` på publicerade events). `/admin/sidor` och `/admin/sida` kräver `canPublish`, alltså inte banläggare. Detsamma gäller den kommande menyvyn.

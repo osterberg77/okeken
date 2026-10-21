@@ -16,6 +16,7 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
       courseSetter: data.courseSetter,
       livelox: data.livelox,
       courseFiles: data.courseFiles,
+      image: data.image,
       bodyHtml: renderMarkdown(data.body),
       excerpt: toExcerpt(data.body),
     }))

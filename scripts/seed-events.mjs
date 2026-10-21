@@ -35,6 +35,7 @@ for (const file of (await readdir(DIR)).filter((f) => f.endsWith('.md')).sort())
     courseSetter: fm.courseSetter ?? '',
     livelox: fm.livelox ?? '',
     courseFiles: [],
+    image: null,
   };
   await ref.set({
     ...content,

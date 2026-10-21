@@ -56,6 +56,7 @@ const content = () => ({
   courseSetter: '',
   livelox: '',
   courseFiles: [],
+  image: null,
 });
 
 const draftDoc = () => ({
@@ -210,8 +211,8 @@ describe('events: create', () => {
   });
 
   it('saknad nyckel nekas', async () => {
-    // courseFiles är valfri (events skapade före PDF-banor saknar den)
-    for (const key of Object.keys(newEvent()).filter((k) => k !== 'courseFiles')) {
+    // courseFiles och image är valfria (events skapade före PDF-banor/huvudbild saknar dem)
+    for (const key of Object.keys(newEvent()).filter((k) => k !== 'courseFiles' && k !== 'image')) {
       const data: Record<string, unknown> = newEvent();
       delete data[key];
       await assertFails(setDoc(ev(as('publisher'), `m-${key}`), data));
@@ -685,5 +686,140 @@ describe('events: banläggare (courseFiles)', () => {
     await assertSucceeds(syncFiles('pub1', [file('pub1')], {}, 'both'));
     await assertSucceeds(syncFiles('pub1', files('pub1', 8), {}, 'both'));
     await assertSucceeds(save('pub1', { title: 'Ny' }, 'both'));
+  });
+});
+
+describe('events: huvudbild (image)', () => {
+  const TOKEN = '0b1c2d3e-4f50-4617-8293-a4b5c6d7e8f9';
+  const bankUrl = (imageId: string, variant: string, ext = 'jpg', bucket = 'okeken.firebasestorage.app') =>
+    `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/image_bank%2F${imageId}-${variant}.${ext}?alt=media&token=${TOKEN}`;
+  const image = (over: Record<string, unknown> = {}, imageId = 'Img123abc') => ({
+    imageId,
+    url: bankUrl(imageId, 'web'),
+    thumbnailUrl: bankUrl(imageId, 'thumbnail'),
+    alt: 'Löpare vid kontroll 31',
+    ...over,
+  });
+  // pub1 har redan adressen 'tisdagstraning' (låst)
+  const publish = (id: string, c: Record<string, unknown>, uid = 'publisher') =>
+    save(id, { ...c, status: 'published', slug: id === 'pub1' ? 'tisdagstraning' : `med-bild-${id}`, published: c, publishedAt: serverTimestamp() }, uid);
+
+  it('publicerare kan sätta, publicera och ta bort huvudbild', async () => {
+    await assertSucceeds(save('draft1', { image: image() }));
+    await assertSucceeds(save('draft1', { image: image({ alt: '' }) }));
+    await assertSucceeds(save('draft1', { image: image({}, 'a'.repeat(64)) }));
+    await assertSucceeds(save('draft1', { image: image({ url: bankUrl('Img123abc', 'web', 'webp') }) }));
+    await assertSucceeds(save('draft1', { image: null }));
+    const c = { ...content(), image: image() };
+    await assertSucceeds(publish('draft2', c));
+    await assertSucceeds(publish('pub1', { ...content(), image: null }));
+  });
+  it('nytt event med bild får skapas', async () => {
+    await assertSucceeds(setDoc(ev(as('publisher'), 'nytt'), newEvent('publisher', { image: image() })));
+    await assertFails(setDoc(ev(as('publisher'), 'nytt2'), newEvent('publisher', { image: image({ url: 'https://evil.example/x.jpg' }) })));
+  });
+  it('event utan image-fält (äldre) kan sparas och publiceras', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const { image: _omit, ...legacy } = draftDoc() as Record<string, unknown>;
+      await setDoc(doc(ctx.firestore(), 'events', 'legacy'), legacy);
+    });
+    await assertSucceeds(save('legacy', { title: 'Ny titel' }));
+    await assertSucceeds(publish('legacy', { ...content(), title: 'Ny titel' }));
+  });
+  it('publicerad bild måste vara samma som utkastets', async () => {
+    const c = { ...content(), image: image() };
+    await assertFails(
+      save('draft2', { ...c, status: 'published', slug: 'x', published: { ...c, image: null }, publishedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      save('draft2', { ...c, status: 'published', slug: 'x', published: { ...c, image: image({ alt: 'Annan' }) }, publishedAt: serverTimestamp() }),
+    );
+    // Snapshot utan image-nyckel nekas (klienten skriver alltid image, null om bild saknas)
+    const { image: _omit, ...noImage } = content() as Record<string, unknown>;
+    await assertFails(
+      save('draft1', { status: 'published', slug: 'x', published: noImage, publishedAt: serverTimestamp() }),
+    );
+  });
+  it('ogiltiga bilder nekas', async () => {
+    const bad: Record<string, unknown>[] = [
+      { url: 'https://evil.example/x.jpg' },
+      { url: 'http://firebasestorage.googleapis.com/v0/b/okeken.firebasestorage.app/o/image_bank%2FImg123abc-web.jpg?alt=media&token=' + TOKEN },
+      { url: bankUrl('Img123abc', 'web', 'jpg', 'annan.firebasestorage.app') },
+      { url: bankUrl('Img123abc', 'web', 'jpg', 'okeken.appspot.com') },
+      { url: bankUrl('Img123abc', 'original') },
+      { url: bankUrl('Img123abc', 'web', 'svg') },
+      { url: bankUrl('Img123abc', 'web') + '&x=1' },
+      { url: 'http://127.0.0.1:9199/v0/b/okeken.firebasestorage.app/o/image_bank%2FImg123abc-web.jpg?alt=media&token=' + TOKEN },
+      { url: 'https://firebasestorage.googleapis.com/v0/b/okeken.firebasestorage.app/o/courses%2Fdraft1%2Fa.pdf?alt=media' },
+      { thumbnailUrl: bankUrl('Img123abc', 'web') },
+      { thumbnailUrl: 'https://evil.example/pixel.gif' },
+      { imageId: 'bad/id' },
+      { imageId: '' },
+      { imageId: 'a'.repeat(65) },
+      { alt: 'x'.repeat(301) },
+      { alt: 5 },
+      { alt: null },
+      { url: 7 },
+      { extra: 'x' },
+    ];
+    for (const over of bad) await assertFails(save('draft1', { image: image(over) }));
+    await assertFails(save('draft1', { image: 'https://evil.example/x.jpg' }));
+    await assertFails(save('draft1', { image: [] }));
+    await assertFails(save('draft1', { image: {} }));
+    const { alt: _a, ...noAlt } = image();
+    await assertFails(save('draft1', { image: noAlt }));
+    const { thumbnailUrl: _t, ...noThumb } = image();
+    await assertFails(save('draft1', { image: noThumb }));
+  });
+  it('alt-text: gränsvärden', async () => {
+    await assertSucceeds(save('draft1', { image: image({ alt: 'å'.repeat(300) }) }));
+    await assertSucceeds(save('draft1', { image: image({ alt: 'rad\nbrytning' }) }));
+    await assertFails(save('draft1', { image: image({ alt: 'å'.repeat(301) }) }));
+  });
+  // Bevakar taket på 1000 uttryck per anrop: värsta fallet (alla fält maxade, 8 banor, bild). Mätt 2026-10-21:
+  // ca 4 extra bildkontroller ryms innan taket nås, alltså liten marginal för nya fält i eventet.
+  it('publicera bild + 8 banor med maxlängder ryms under uttryckstaket', async () => {
+    const big = Array.from({ length: 8 }, (_, i) => ({
+      name: 'x'.repeat(200),
+      label: 'y'.repeat(200),
+      storagePath: `courses/draft2/${i}${'a'.repeat(195)}.pdf`,
+    }));
+    const c = {
+      ...content(),
+      title: 't'.repeat(200),
+      body: 'b'.repeat(20000),
+      location: { name: 'n'.repeat(200), mapUrl: 'https://m.example/' + 'm'.repeat(480) },
+      courseSetter: 's'.repeat(200),
+      livelox: 'https://l.example/' + 'l'.repeat(480),
+      courseFiles: big,
+      image: image({ alt: 'a'.repeat(300) }, 'Z'.repeat(64)),
+    };
+    await assertSucceeds(
+      save('draft2', { ...c, status: 'published', slug: 'x'.repeat(120), published: c, publishedAt: serverTimestamp() }),
+    );
+    // Samma event publicerat igen (published ändras, alla jämförelser körs på nytt)
+    await assertSucceeds(
+      save('draft2', { ...c, title: 'u'.repeat(200), published: { ...c, title: 'u'.repeat(200) }, publishedAt: serverTimestamp() }),
+    );
+  });
+  it('banläggare får inte ändra bilden, varken i utkastet eller i published', async () => {
+    const f = [{ name: 'A.pdf', storagePath: 'courses/pub1/f0-A.pdf', label: 'A' }];
+    await assertFails(save('pub1', { image: image() }, 'setter'));
+    await assertFails(save('draft1', { image: image() }, 'setter'));
+    await assertFails(save('pub1', { courseFiles: f, image: image() }, 'setter'));
+    await assertFails(save('pub1', { courseFiles: f, published: { ...content(), courseFiles: f, image: image() } }, 'setter'));
+    await assertFails(save('pub1', { image: deleteField() }, 'setter'));
+    // Banor på ett event som har bild går fortfarande bra (bilden orörd)
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'events', 'pubImg'), {
+        ...publishedDoc(), image: image(), published: { ...content(), image: image() },
+      });
+    });
+    const g = [{ name: 'A.pdf', storagePath: 'courses/pubImg/f0-A.pdf', label: 'A' }];
+    await assertSucceeds(save('pubImg', { courseFiles: g, published: { ...content(), image: image(), courseFiles: g } }, 'setter'));
+    await assertFails(save('pubImg', { courseFiles: g, published: { ...content(), image: null, courseFiles: g } }, 'setter'));
+  });
+  it('övriga roller kan inte sätta bild', async () => {
+    for (const uid of ['member', 'nobody']) await assertFails(save('draft1', { image: image() }, uid));
   });
 });

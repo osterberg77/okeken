@@ -12,6 +12,12 @@ const IMAGE_PREFIX = 'https://firebasestorage.googleapis.com/v0/b/okeken.firebas
 const EMULATOR_IMAGE_PREFIX = 'http://127.0.0.1:9199/v0/b/okeken.firebasestorage.app/o/';
 const EMULATORS = import.meta.env?.PUBLIC_FIREBASE_EMULATORS === 'true';
 
+/** Sant för adresser i bildbankens Storage-bucket (de enda bilder som visas) */
+export const isBankImageUrl = (url: string) => url.startsWith(IMAGE_PREFIX);
+
+/** Adressen som `src` ska ha: i emulatorläge Storage-emulatorn, annars den kanoniska adressen oförändrad */
+export const bankImageSrc = (url: string) => (EMULATORS ? EMULATOR_IMAGE_PREFIX + url.slice(IMAGE_PREFIX.length) : url);
+
 const SAFE_URL = /^(https?:|mailto:|tel:|\/(?!\/)|#)/i;
 
 const marked = new Marked({
@@ -29,8 +35,8 @@ const marked = new Marked({
       return `<a href="${escapeHtml(href)}"${titleAttr}${rel}>${text}</a>`;
     },
     image({ href, title, text }) {
-      if (!href.startsWith(IMAGE_PREFIX)) return escapeHtml(text);
-      const src = EMULATORS ? EMULATOR_IMAGE_PREFIX + href.slice(IMAGE_PREFIX.length) : href;
+      if (!isBankImageUrl(href)) return escapeHtml(text);
+      const src = bankImageSrc(href);
       const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
       return `<img src="${escapeHtml(src)}" alt="${escapeHtml(text)}"${titleAttr} loading="lazy">`;
     },

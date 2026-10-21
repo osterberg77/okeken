@@ -14,6 +14,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `location` | `{ name, mapUrl }` | Strängar; tom sträng = saknas. `mapUrl` = länk till Google Maps e.d. |
 | `body` | string (markdown) | |
 | `courseFiles` | `[{ name, storagePath, label }]` | PDF-banor, max 8, valfritt fält (äldre events saknar det). `name` 1–200 tecken, `label` 0–200. `storagePath` är `courses/<eventId>/<uuid>-<namn>.pdf` och måste ligga under eventets egen mapp; filnamnen är unika (skriv aldrig över), så att `published`-snapshoten inte påverkas av ändringar i utkastet. Publik nedladdning via `src/lib/courses.ts`; Storage tillåter `get` men inte `list`. Får ändras av banläggare, se nedan |
+| `image` | `{ imageId, url, thumbnailUrl, alt } \| null` | Huvudbild ur bildbanken, valfritt fält (äldre events saknar det; klienten skriver alltid `null` eller en map). `url` = bildbankspostens `webUrl` (1920 px, används på eventsidan och som `og:image`), `thumbnailUrl` = postens miniatyr (editorn). Båda måste ha bildbankens adressformat (`https://firebasestorage.googleapis.com/v0/b/okeken.firebasestorage.app/o/image_bank%2F<id>-web\|thumbnail.<jpg\|png\|webp>?alt=media&token=<uuid>`); reglerna binder dem inte till `imageId` (sparar uttryck) och kontrollerar inte att posten finns. `alt` 0–300 tecken, förifylls med bildens beskrivning (annars namn) och kan ändras per event. Adresserna kopieras vid val, så raderas bilden ur bildbanken blir den trasig på sajten. Ingår i `published`. Får inte ändras av banläggare |
 | `livelox` | string | Länk till Livelox (tom = saknas) |
 | `courseSetter` | string | Banläggarens namn (fritext; tom = saknas) |
 | `source` | `manual \| seed \| eventor` | |
@@ -21,7 +22,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `slug` | string \| null | Stabil adress, t.ex. `2026-10-21-tisdagstraning`. Sätts vid första publiceringen (`<startdatum>-<titel>`, `-2` vid krock) och låses därefter |
 | `status` | `draft \| scheduled \| published \| unpublished` | Styr synlighet |
 | `publishAt` | timestamp? | Schemalagd publicering (status `scheduled`) |
-| `published` | objekt? | **Snapshot** av innehållet som är live (title, body, tider, plats, courseFiles m.m.). "Publicera" kopierar utkastet hit. **Bygget läser bara detta fält.** Utkastet är fälten på dokumentet i övrigt |
+| `published` | objekt? | **Snapshot** av innehållet som är live (title, body, tider, plats, courseFiles, image m.m.; `image` alltid med, `null` om bild saknas). "Publicera" kopierar utkastet hit. **Bygget läser bara detta fält.** Utkastet är fälten på dokumentet i övrigt |
 | `publishedAt` | timestamp? | Sätts vid Publicera. Delningsknappen jämför `meta/build.lastBuildAt` mot detta (inte `updatedAt`, som ändras vid varje sparat utkast) |
 | `createdBy`, `createdAt`, `updatedAt` | | |
 

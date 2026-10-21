@@ -12,6 +12,24 @@ export interface CourseFile {
 
 export const MAX_COURSE_FILES = 8;
 
+/**
+ * Huvudbild ur bildbanken (visas i eventkortet och som og:image vid delning). Adresserna kopieras från
+ * bildbanksposten när bilden väljs, så eventet påverkas inte om posten senare ändras. Raderas bilden ur
+ * bildbanken blir den trasig på sajten (som bilder i Markdown, beslut 0007).
+ */
+export interface EventImage {
+  /** Bildbankspostens id (för editorn; reglerna binder inte adresserna till det) */
+  imageId: string;
+  /** Bildbankens webUrl (längsta sida 1920 px) */
+  url: string;
+  /** Bildbankens thumbnailUrl (800 px), för editorn */
+  thumbnailUrl: string;
+  /** Alt-text, högst 300 tecken. Förifylls med bildens beskrivning (eller namn) och kan ändras per event */
+  alt: string;
+}
+
+export const MAX_IMAGE_ALT = 300;
+
 /** Redigerbart innehåll i ett event. Tomma strängar betyder "saknas" (alla fält finns alltid, se firestore.rules). */
 export interface EventContent {
   type: EventType;
@@ -23,6 +41,8 @@ export interface EventContent {
   courseSetter: string;
   livelox: string;
   courseFiles: CourseFile[];
+  /** Valfri huvudbild; null = ingen (äldre events saknar fältet i Firestore) */
+  image: EventImage | null;
 }
 
 /**
@@ -61,6 +81,8 @@ export interface PublicEvent {
   courseSetter?: string;
   livelox?: string;
   courseFiles?: { label: string; url: string }[];
+  /** Huvudbild: kanonisk Storage-adress (webbversionen) och alt-text */
+  image?: { url: string; alt: string };
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;
