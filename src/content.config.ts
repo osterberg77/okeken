@@ -1,5 +1,6 @@
 import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
+import { loadSelectedEventorEvents } from './lib/server/eventor-events';
 import { loadPublishedEvents } from './lib/server/published-events';
 import { loadPublishedPages } from './lib/server/published-pages';
 import { loadPublishedMenu } from './lib/server/published-menu';
@@ -52,4 +53,17 @@ const menu = defineCollection({
   }),
 });
 
-export const collections = { events, pages, menu };
+// Valda tävlingar ur Eventor-spegeln. Visas bara i kalendern och länkar till Eventor (ingen egen sida).
+const eventorEvents = defineCollection({
+  loader: loadSelectedEventorEvents,
+  schema: z.object({
+    name: z.string(),
+    startsAt: z.coerce.date(),
+    endsAt: z.coerce.date(),
+    allDay: z.boolean(),
+    organiserName: z.string().optional(),
+    url: z.url(),
+  }),
+});
+
+export const collections = { events, pages, menu, eventorEvents };

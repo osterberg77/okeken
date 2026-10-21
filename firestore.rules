@@ -607,6 +607,41 @@ service cloud.firestore {
         && resource.data.adjusterApprovedAt == null;
     }
 
+    // ---- Eventor-spegel ----------------------------------------------------------------
+    // eventorEvents är en spegel av Eventor (beslut: ingen egen event-post). Eventor-fälten skrivs bara av
+    // synkskriptet (Admin SDK); publicerare får bara kryssa i/ur `selected`, vilket styr om tävlingen visas i kalendern.
+    match /eventorEvents/{eventId} {
+      allow read: if canPublish();
+      allow create, delete: if false;
+      allow update: if canPublish()
+        && onlyChanges(['selected', 'selectedBy', 'selectedAt'])
+        && request.resource.data.selected is bool
+        && request.resource.data.selectedBy == request.auth.uid
+        && request.resource.data.selectedAt == request.time;
+    }
+
+    // Urvalsregler för synken. Styrelse och superadmin ändrar, publicerare läser.
+    match /settings/eventor {
+      allow read: if canPublish();
+      allow write: if (has('board') || has('superadmin'))
+        && request.resource.data.keys().hasOnly(['ownOrganisationId', 'organisationIds', 'classificationIds',
+          'disciplineIds', 'monthsAhead', 'updatedBy', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['ownOrganisationId', 'organisationIds', 'classificationIds',
+          'disciplineIds', 'monthsAhead', 'updatedBy', 'updatedAt'])
+        && request.resource.data.ownOrganisationId is int
+        && request.resource.data.organisationIds is list
+        && request.resource.data.organisationIds.size() >= 1 && request.resource.data.organisationIds.size() <= 10
+        && request.resource.data.classificationIds is list
+        && request.resource.data.classificationIds.size() <= 6
+        && request.resource.data.classificationIds.toSet().hasOnly([0, 1, 2, 3, 4, 5])
+        && request.resource.data.disciplineIds is list
+        && request.resource.data.disciplineIds.size() <= 10
+        && request.resource.data.monthsAhead is int
+        && request.resource.data.monthsAhead >= 1 && request.resource.data.monthsAhead <= 24
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+    }
+
     // ---- Bygge ---------------------------------------------------------------------
     // meta/build.lastBuildAt skrivs bara av Actions (Admin SDK). Editorn läser den för delningsknappen.
     match /meta/build {

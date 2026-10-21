@@ -86,6 +86,12 @@ export interface PublicEvent {
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;
+  /** Tävling från Eventor: kalenderposten länkar hit (Eventor) i stället för till en egen eventsida */
+  externalUrl?: string;
+  /** Eventor anger bara datum (ingen tid): visa då ingen tid i listan */
+  allDay?: boolean;
+  /** Arrangörens namn (Eventor-tävlingar) */
+  organiser?: string;
   /** Bara för inloggade publicerare i kalendern: eventet är inte (helt) live. Saknas för vanliga publika events. */
   state?: 'draft' | 'changed' | 'unpublished';
   /** Eventets id i admin, när `state` är satt */

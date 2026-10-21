@@ -25,6 +25,7 @@ const GROUPS: GroupDef[] = [
     allowed: canPublish,
     links: [
       { href: '/admin/events', label: 'Events', description: 'Träningar, tävlingar och annat i kalendern' },
+      { href: '/admin/eventor', label: 'Eventor', description: 'Välj vilka tävlingar från Eventor som visas i kalendern' },
       { href: '/admin/sidor', label: 'Sidor', description: 'Infosidor som Om klubben och Bli medlem' },
       { href: '/admin/meny', label: 'Meny', description: 'Ordning och undermenyer i huvudmenyn' },
       { href: '/admin/bilder', label: 'Bilder', description: 'Bildbanken som används i sidor och events' },

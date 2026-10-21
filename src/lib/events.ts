@@ -22,3 +22,21 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
     }))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
+
+/** Egna publicerade events plus valda Eventor-tävlingar, sorterade på starttid. Bara för kalendern. */
+export async function getCalendarEvents(): Promise<PublicEvent[]> {
+  const own = await getPublicEvents();
+  const eventor: PublicEvent[] = (await getCollection('eventorEvents')).map(({ id, data }) => ({
+    slug: `eventor-${id}`,
+    type: 'competition',
+    title: data.name,
+    startsAt: data.startsAt.toISOString(),
+    endsAt: data.endsAt.toISOString(),
+    allDay: data.allDay,
+    bodyHtml: '',
+    excerpt: '',
+    externalUrl: data.url,
+    organiser: data.organiserName,
+  }));
+  return [...own, ...eventor].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+}

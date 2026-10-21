@@ -24,7 +24,7 @@ Alla publika sidor (infosidor och varje event) är statiska HTML-filer med korre
 - **Schemalagd publicering:** event får `status: scheduled` + `publishAt`. En schemalagd Function (var 5–15:e minut) sätter `published` när tiden passerat och triggar rebuild.
 - **Delningsknapp:** aktiveras när `meta/build.lastBuildAt` är senare än eventets `publishedAt`, så att ingen delar en länk innan förhandsvisningen finns (Facebook cachar annars en tom förhandsvisning).
 - **Köa, inte avbryta:** Actions använder `concurrency: { group: deploy, cancel-in-progress: false }`. GitHub behåller bara en väntande körning per grupp och en nyare ersätter den äldre. Eftersom bygget hämtar data när det startar kommer snabba ändringar med i samma bygge. Ingen egen debounce behövs. Alla ändringar som påverkar publicerat innehåll (inkl. resultat) startar ett bygge.
-- **Skyddsnät:** nattligt fullbygge (cron) som också drar in Eventor-ändringar.
+- **Skyddsnät:** nattligt fullbygge (cron). Eventor hämtas manuellt, inte i nattbygget.
 
 ## Bilder
 

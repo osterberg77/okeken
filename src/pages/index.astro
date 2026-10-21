@@ -1,10 +1,10 @@
 ---
 import Calendar from '../components/Calendar';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPublicEvents } from '../lib/events';
+import { getCalendarEvents } from '../lib/events';
 import { dayKey } from '../lib/time';
 
-const events = await getPublicEvents();
+const events = await getCalendarEvents();
 const siteUrl = Astro.site!.origin;
 ---
 

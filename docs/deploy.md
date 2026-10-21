@@ -4,7 +4,7 @@
 - GitHub Actions:
   - **PR:** build + preview-kanal på Firebase Hosting.
   - **Push till `main`:** build + deploy till Firebase Hosting (`firebase-tools` eller `FirebaseExtended/action-hosting-deploy`), samt deploy av Firestore/Storage-regler och Functions.
-- Secrets i GitHub: `FIREBASE_SERVICE_ACCOUNT` m.fl. Eventor-nyckeln ligger som GitHub Secret (synken körs i Actions). Hemligheter som bara Functions behöver (t.ex. GitHub-token för `repository_dispatch`) i Secret Manager.
+- Secrets i GitHub: `FIREBASE_SERVICE_ACCOUNT` m.fl. Hemligheter som bara Functions behöver ligger i Secret Manager: GitHub-token för `repository_dispatch` och Eventor-nyckeln `EVENTOR_API_KEY` (hämtningen körs i en Cloud Function, se eventor.md; sätts med `firebase functions:secrets:set EVENTOR_API_KEY`) i Secret Manager.
 - **Deploy-workflown** körs vid push till `main`, manuellt, via `repository_dispatch` (`content-published`, skickas av Function `onEventWritten` i `functions/`) och nattligt (cron). Den deployar regler + Functions, bygger, deployar Hosting och skriver `meta/build.lastBuildAt`.
 - Function-hemlighet: `GITHUB_DISPATCH_TOKEN` (Secret Manager, `firebase functions:secrets:set`).
 - Workflow-filer i `.github/workflows/` (läggs till vid scaffolding).

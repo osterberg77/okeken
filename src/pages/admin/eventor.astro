@@ -1,0 +1,10 @@
+---
+import EventorList from '../../components/admin/EventorList';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Eventor – OK Eken" noindex>
+  <main class="mx-auto max-w-[1240px] px-4 pt-6 pb-16 sm:px-8">
+    <EventorList client:only="react" />
+  </main>
+</BaseLayout>

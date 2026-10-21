@@ -43,7 +43,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 ## V1.1
 
 - Logga resultat.
-- Eventor: nattlig synk, urval av tävlingar speglas i kalendern.
+- Eventor: manuell hämtning, urval av tävlingar speglas i kalendern (se eventor.md).
 - **Schemalagd publicering** (`publishAt`, schemalagd Function).
 - Enklare bildbank: uppladdning med automatisk skalning, bildväljare i editorn, bilder i Markdown.
 
@@ -85,7 +85,7 @@ Coworken (`~/progg/coworken`) har en fungerande bildbank och ett mallverktyg. Sl
 
 ## Eventor (v1.1)
 
-API-nyckel som GitHub Secret `EVENTOR_API_KEY` (aldrig i repot). Det nattliga bygget börjar med ett synksteg som hämtar tävlingar (`/api/events`, header `ApiKey`) och skriver dem till Firestore (`source: eventor`); publicerare väljer vilka som visas. Knappen "Synka nu" kör samma workflow manuellt. Detaljer i `eventor.md`.
+Spegel av utvalda tävlingar: `eventorEvents` i Firestore (inte events), manuell hämtning via knappen på `/admin/eventor` (Cloud Function med nyckeln som Firebase-hemlighet), publicerare kryssar i vilka som visas i kalendern, urvalsregler i `settings/eventor`. Kalenderposten länkar till Eventor. Detaljer i `eventor.md`.
 
 ## Byggordning (v1) och status
 
