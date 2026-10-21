@@ -102,6 +102,11 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 
 Justeringar efter första användartestet (2026-10-21): listans ordning när man väljer en dag bakåt, månadsväljare vid månadsrubriken och filtret Information. Se "Avsteg" i `skisser/kalender-och-kontrollsymboler.md`.
 
+### Att göra före release: tajta till reglerna
+
+- **Storage-uppladdning är tillfälligt slapp** (2026-10-21): `courses/` kräver bara inloggad + PDF + ≤ 10 MB, `image_bank/` bara inloggad + bildtyp + ≤ 10 MB. Uppladdning nekades med 403 i produktion av okänd orsak (IAM-rollen `firestoreServiceAgent` är redan tillagd, se `deploy.md`). Före release: ta tillbaka rollkontrollen (`canUploadCourses()`, `canPublishImages()`), filnamnsmönster, `!imagePostExists`, och metadatakontrollerna, hitta vilket villkor som felar i produktion, och slå på `describe.skip` i `tests/rules/storage.test.ts`. Strikt variant: commit `e247536`.
+- Överskrivningstesterna för Storage går inte att köra i emulatorn (den räknar överskrivning som create); skyddet bygger på att Storage-`create` inte gäller befintliga filer.
+
 ### Att veta inför nästa session
 
 - Arbetssätt och kommandon: `CLAUDE.md`. Designspec är bindande: `skisser/kalender-och-kontrollsymboler.md`.
