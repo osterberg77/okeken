@@ -78,6 +78,8 @@ function Editor({ session }: { session: Session }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const loaded = useRef(false);
+  // Filer som laddats upp i den här vyn men kanske aldrig sparats på eventet (hook: måste ligga före tidiga return)
+  const uploadedPaths = useRef(new Set<string>());
   const [targets, setTargets] = useState<LinkTarget[] | null>(null);
   useEffect(() => {
     loadLinkTargets().then(setTargets).catch(() => setTargets([]));
@@ -162,9 +164,6 @@ function Editor({ session }: { session: Session }) {
       setBusy(null);
     }
   }
-
-  // Filer som laddats upp i den här vyn men kanske aldrig sparats på eventet
-  const uploadedPaths = useRef(new Set<string>());
 
   /**
    * Raderar ur Storage de banfiler som varken utkastet eller den publicerade versionen längre pekar på.
