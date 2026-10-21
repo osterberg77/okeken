@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { rememberedSignIn } from '../lib/firebase/flags';
-import { canManageUsers, canPublish, canViewEvents, type Session } from '../types/user';
+import type { Session } from '../types/user';
+import { hasAdminAccess } from '../lib/admin-nav';
 import PermissionTag from './PermissionTag';
 
 // Firebase laddas bara för den som varit inloggad på den här enheten,
@@ -99,31 +100,11 @@ export default function AccountMenu() {
               </span>
             )}
           </div>
-          {(canViewEvents(session.permissions) || canManageUsers(session.permissions)) && <div className="h-px bg-line" />}
-          {canViewEvents(session.permissions) && (
-            <a href="/admin/events" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
-              {canPublish(session.permissions) ? 'Events' : 'Banor på events'}
-            </a>
-          )}
-          {canPublish(session.permissions) && (
-            <a href="/admin/sidor" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
-              Sidor
-            </a>
-          )}
-          {canPublish(session.permissions) && (
-            <a href="/admin/meny" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
-              Meny
-            </a>
-          )}
-          {canPublish(session.permissions) && (
-            <a href="/admin/bilder" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
-              Bilder
-            </a>
-          )}
-          {canManageUsers(session.permissions) && (
+          {hasAdminAccess(session.permissions) && (
             <>
-              <a href="/admin/anvandare" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
-                Användare och behörigheter
+              <div className="h-px bg-line" />
+              <a href="/admin" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+                Administration
               </a>
             </>
           )}
