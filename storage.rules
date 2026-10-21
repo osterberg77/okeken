@@ -1,8 +1,40 @@
 rules_version = '2';
 
-// Deny-all baseline. Riktiga regler kommer i steg 3 i docs/plan.md.
+// PDF-banor: courses/<eventId>/<slumpat>-<namn>.pdf. Alla med länken får hämta filen men ingen får lista
+// (länkarna har slumpat prefix och står inte på sidan förrän eventet publicerats). Bara publicerare,
+// styrelse, superadmin och banläggare får ladda upp, och bara nya filer: ingen skriver över eller raderar
+// (publicerade ögonblicksbilder pekar på filerna). Behörigheten läses från users/{uid} i Firestore.
+// Allt annat nekas. Regeltester: tests/rules/storage.test.ts
 service firebase.storage {
   match /b/{bucket}/o {
+
+    function canUploadCourses() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.permissions
+          .hasAny(['course_setter', 'publisher', 'board', 'superadmin']);
+    }
+
+    match /courses/{eventId}/{fileName} {
+      // get men inte list: den som saknar länken ska inte kunna räkna upp filerna (banor kan vara hemliga före tävling)
+      allow get: if true;
+      allow list: if false;
+
+      // resource == null: bara nya filer, aldrig överskrivning (även om en emulator/plattform räknar den som create)
+      allow create: if resource == null
+        && canUploadCourses()
+        && eventId.matches('^[A-Za-z0-9_-]{1,64}$')
+        && fileName.matches('^[A-Za-z0-9][A-Za-z0-9._-]{0,119}[.]pdf$')
+        && request.resource.contentType == 'application/pdf'
+        && request.resource.contentDisposition == null
+        && request.resource.contentEncoding == null
+        && request.resource.metadata.size() == 0
+        && request.resource.size > 0
+        && request.resource.size <= 10 * 1024 * 1024;
+
+      allow update, delete: if false;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

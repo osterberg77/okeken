@@ -1,4 +1,5 @@
 import type { EventContent, PublicEvent } from '../types/event';
+import { toPublicCourseFiles } from './courses';
 import { renderMarkdown, toExcerpt } from './markdown';
 
 /** Utkast/innehåll i publik form, för adminpreview och för utkast i kalendern. */
@@ -12,6 +13,7 @@ export function toPreview(c: EventContent, slug: string | null): PublicEvent {
     location: c.location.name.trim() ? { name: c.location.name.trim(), mapUrl: c.location.mapUrl.trim() || undefined } : undefined,
     courseSetter: c.courseSetter.trim() || undefined,
     livelox: c.livelox.trim() || undefined,
+    courseFiles: c.courseFiles.length ? toPublicCourseFiles(c.courseFiles) : undefined,
     bodyHtml: renderMarkdown(c.body),
     excerpt: toExcerpt(c.body),
   };

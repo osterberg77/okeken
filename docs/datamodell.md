@@ -13,7 +13,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `endsAt` | timestamp | T.ex. tisdagsträning, banor ute till söndag |
 | `location` | `{ name, mapUrl }` | Strängar; tom sträng = saknas. `mapUrl` = länk till Google Maps e.d. |
 | `body` | string (markdown) | |
-| `courseFiles` | `[{ name, storagePath, label }]` | PDF-banor. Unika filnamn i Storage (skriv aldrig över), så att `published`-snapshoten inte påverkas av ändringar i utkastet |
+| `courseFiles` | `[{ name, storagePath, label }]` | PDF-banor, max 8, valfritt fält (äldre events saknar det). `storagePath` är `courses/<eventId>/<uuid>-<namn>.pdf`; filnamnen är unika (skriv aldrig över), så att `published`-snapshoten inte påverkas av ändringar i utkastet. Publik nedladdning via `src/lib/courses.ts`; Storage tillåter `get` men inte `list` |
 | `livelox` | string | Länk till Livelox (tom = saknas) |
 | `courseSetter` | string | Banläggarens namn (fritext; tom = saknas) |
 | `source` | `manual \| seed \| eventor` | |

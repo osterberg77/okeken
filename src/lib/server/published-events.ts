@@ -1,6 +1,7 @@
 // Körs bara i bygget (Astro content loader). Läser publicerade ögonblicksbilder med Admin SDK.
 // Lokalt: `gcloud auth application-default login`, eller FIRESTORE_EMULATOR_HOST mot emulatorn.
 // I CI: tjänstekontot via google-github-actions/auth.
+import { toPublicCourseFiles } from '../courses';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 
@@ -31,6 +32,7 @@ export async function loadPublishedEvents() {
         location: p.location?.name ? { name: p.location.name, mapUrl: p.location.mapUrl || undefined } : undefined,
         courseSetter: p.courseSetter || undefined,
         livelox: p.livelox || undefined,
+        courseFiles: Array.isArray(p.courseFiles) && p.courseFiles.length ? toPublicCourseFiles(p.courseFiles) : undefined,
         body: p.body ?? '',
       },
     ];

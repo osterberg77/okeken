@@ -1,6 +1,17 @@
 export const EVENT_TYPES = ['training', 'competition', 'meeting', 'info', 'happening'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
+/** PDF-bana i Storage. `storagePath` är unik (slumpad) och skrivs aldrig över. */
+export interface CourseFile {
+  /** Ursprungligt filnamn */
+  name: string;
+  storagePath: string;
+  /** Text på nedladdningslänken, t.ex. "Bana A" */
+  label: string;
+}
+
+export const MAX_COURSE_FILES = 8;
+
 /** Redigerbart innehåll i ett event. Tomma strängar betyder "saknas" (alla fält finns alltid, se firestore.rules). */
 export interface EventContent {
   type: EventType;
@@ -11,6 +22,7 @@ export interface EventContent {
   body: string;
   courseSetter: string;
   livelox: string;
+  courseFiles: CourseFile[];
 }
 
 /**
@@ -48,6 +60,7 @@ export interface PublicEvent {
   location?: EventLocation;
   courseSetter?: string;
   livelox?: string;
+  courseFiles?: { label: string; url: string }[];
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;

@@ -60,13 +60,52 @@ service cloud.firestore {
         && get(userDoc()).data.permissions.hasAny(['publisher', 'board', 'superadmin']);
     }
 
-    function eventKeys() {
+    // courseFiles är valfri på dokumentet (events skapade före PDF-banor saknar den) men får finnas.
+    function requiredEventKeys() {
       return ['type', 'title', 'startsAt', 'endsAt', 'location', 'body', 'courseSetter', 'livelox',
         'status', 'slug', 'published', 'publishedAt', 'source',
         'createdBy', 'createdAt', 'updatedBy', 'updatedAt'];
     }
 
-    function validEventContent(d) {
+    function eventKeys() {
+      return requiredEventKeys().concat(['courseFiles']);
+    }
+
+    // Storage-sökvägen ska ligga under courses/ och sluta på .pdf (filen laddas upp via storage.rules)
+    function validCourseFile(f, prefix) {
+      return f is map
+        && f.keys().hasOnly(['name', 'storagePath', 'label'])
+        && f.name is string && f.name.size() > 0 && f.name.size() <= 200
+        && f.label is string && f.label.size() <= 200
+        && f.storagePath is string && f.storagePath.size() <= 300
+        && f.storagePath.matches(prefix + '[A-Za-z0-9][A-Za-z0-9._-]*[.]pdf$');
+    }
+
+    // Saknad nyckel i f ger utvärderingsfel och därmed nekad skrivning (täcks av test). hasAll utelämnad: rules har ett
+    // tak på antal uttryck per anrop och 8 filer ryms inte med den.
+    // Rules saknar loopar: kontrollera varje plats för sig. Gränsen är 8 (MAX_COURSE_FILES).
+    function validCourseFiles(l, eventId) {
+      let prefix = '^courses/' + eventId + '/';
+      return validCourseFilesIn(l, prefix);
+    }
+
+    function validCourseFilesIn(l, prefix) {
+      return l is list && l.size() <= 8
+        && (l.size() < 1 || validCourseFile(l[0], prefix))
+        && (l.size() < 2 || validCourseFile(l[1], prefix))
+        && (l.size() < 3 || validCourseFile(l[2], prefix))
+        && (l.size() < 4 || validCourseFile(l[3], prefix))
+        && (l.size() < 5 || validCourseFile(l[4], prefix))
+        && (l.size() < 6 || validCourseFile(l[5], prefix))
+        && (l.size() < 7 || validCourseFile(l[6], prefix))
+        && (l.size() < 8 || validCourseFile(l[7], prefix));
+    }
+
+    function courseFilesOf(d) {
+      return d.get('courseFiles', []);
+    }
+
+    function validEventContent(d, eventId) {
       return d.type in ['training', 'competition', 'meeting', 'info', 'happening']
         && d.title is string && d.title.size() > 0 && d.title.size() <= 200
         && d.startsAt is timestamp && d.endsAt is timestamp && d.endsAt >= d.startsAt
@@ -75,13 +114,15 @@ service cloud.firestore {
         && d.location.mapUrl is string && d.location.mapUrl.size() <= 500
         && d.body is string && d.body.size() <= 20000
         && d.courseSetter is string && d.courseSetter.size() <= 200
-        && d.livelox is string && d.livelox.size() <= 500;
+        && d.livelox is string && d.livelox.size() <= 500
+        && validCourseFiles(courseFilesOf(d), eventId);
     }
 
     function eventSnapshot(d) {
       return {
         'type': d.type, 'title': d.title, 'startsAt': d.startsAt, 'endsAt': d.endsAt,
-        'location': d.location, 'body': d.body, 'courseSetter': d.courseSetter, 'livelox': d.livelox
+        'location': d.location, 'body': d.body, 'courseSetter': d.courseSetter, 'livelox': d.livelox,
+        'courseFiles': courseFilesOf(d)
       };
     }
 
@@ -94,8 +135,8 @@ service cloud.firestore {
 
       allow create: if canPublish()
         && request.resource.data.keys().hasOnly(eventKeys())
-        && request.resource.data.keys().hasAll(eventKeys())
-        && validEventContent(request.resource.data)
+        && request.resource.data.keys().hasAll(requiredEventKeys())
+        && validEventContent(request.resource.data, eventId)
         && request.resource.data.status == 'draft'
         && request.resource.data.slug == null
         && request.resource.data.published == null
@@ -108,8 +149,8 @@ service cloud.firestore {
 
       allow update: if canPublish()
         && request.resource.data.keys().hasOnly(eventKeys())
-        && request.resource.data.keys().hasAll(eventKeys())
-        && validEventContent(request.resource.data)
+        && request.resource.data.keys().hasAll(requiredEventKeys())
+        && validEventContent(request.resource.data, eventId)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt', 'source'])
         && request.resource.data.updatedBy == request.auth.uid
         && request.resource.data.updatedAt == request.time

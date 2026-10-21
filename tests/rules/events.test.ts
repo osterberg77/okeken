@@ -54,6 +54,7 @@ const content = () => ({
   body: 'Hej',
   courseSetter: '',
   livelox: '',
+  courseFiles: [],
 });
 
 const draftDoc = () => ({
@@ -208,7 +209,8 @@ describe('events: create', () => {
   });
 
   it('saknad nyckel nekas', async () => {
-    for (const key of Object.keys(newEvent())) {
+    // courseFiles är valfri (events skapade före PDF-banor saknar den)
+    for (const key of Object.keys(newEvent()).filter((k) => k !== 'courseFiles')) {
       const data: Record<string, unknown> = newEvent();
       delete data[key];
       await assertFails(setDoc(ev(as('publisher'), `m-${key}`), data));
@@ -434,6 +436,74 @@ describe('meta/build', () => {
   it('ingen kan skriva från klienten, inte ens superadmin', async () => {
     for (const db of [as('publisher'), as('board'), as('super'), as('member'), anon()]) {
       await assertFails(setDoc(build(db), { lastBuildAt: serverTimestamp() }));
+    }
+  });
+});
+
+describe('events: courseFiles (PDF-banor)', () => {
+  const file = (over: Record<string, unknown> = {}, id = 'draft1') => ({
+    name: 'Bana A.pdf',
+    storagePath: `courses/${id}/0b1c2d3e-Bana-A.pdf`,
+    label: 'Bana A',
+    ...over,
+  });
+
+  it('publicerare kan spara och publicera banor', async () => {
+    await assertSucceeds(save('draft1', { courseFiles: [file(), file({ storagePath: 'courses/draft1/x-B.pdf' })] }));
+    const c = { ...content(), courseFiles: [file({}, 'draft2')] };
+    await assertSucceeds(
+      save('draft2', { ...c, status: 'published', slug: 'med-bana', published: c, publishedAt: serverTimestamp() }),
+    );
+  });
+  it('publicerade banor måste vara samma som utkastet', async () => {
+    const c = { ...content(), courseFiles: [file({}, 'draft2')] };
+    await assertFails(
+      save('draft2', { ...c, status: 'published', slug: 'med-bana', published: content(), publishedAt: serverTimestamp() }),
+    );
+  });
+  it('event utan courseFiles (skapade före funktionen) kan sparas och publiceras', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const { courseFiles: _omit, ...legacy } = draftDoc() as Record<string, unknown>;
+      await setDoc(doc(ctx.firestore(), 'events', 'legacy'), legacy);
+    });
+    await assertSucceeds(save('legacy', { title: 'Ny titel' }));
+    const c = { ...content(), title: 'Ny titel', courseFiles: [] };
+    await assertSucceeds(
+      save('legacy', { ...c, status: 'published', slug: 'gammalt', published: c, publishedAt: serverTimestamp() }),
+    );
+  });
+  it('nytt event utan courseFiles får skapas', async () => {
+    const { courseFiles: _omit, ...c } = newEvent() as Record<string, unknown>;
+    await assertSucceeds(setDoc(ev(as('publisher'), 'nytt'), c));
+  });
+  it('ogiltiga banor nekas', async () => {
+    await assertFails(save('draft1', { courseFiles: 'bana.pdf' }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: 'courses/draft1/bana.exe' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: 'images/draft1/bana.pdf' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: 'courses/../secret/bana.pdf' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: 'https://evil.example/bana.pdf' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ extra: 'x' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ name: '' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ label: 5 })] }));
+    await assertFails(save('draft1', { courseFiles: [file(), 'text'] }));
+    await assertFails(save('draft1', { courseFiles: null }));
+    await assertFails(save('draft1', { courseFiles: [{ name: 'a.pdf', storagePath: 'courses/draft1/a.pdf' }] }));
+    await assertFails(save('draft1', { courseFiles: [{ name: 'a.pdf', label: 'A' }] }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: 'courses/draft1/..pdf' })] }));
+  });
+  it('banor måste ligga under eventets egen mapp', async () => {
+    await assertFails(save('draft1', { courseFiles: [file({}, 'draft2')] }));
+    await assertSucceeds(save('draft1', { courseFiles: [file({}, 'draft1')] }));
+  });
+  it('högst 8 banor, och sjätte-åttonde kontrolleras också', async () => {
+    const many = (n: number) => Array.from({ length: n }, (_, i) => file({ storagePath: `courses/draft1/f${i}.pdf` }));
+    await assertSucceeds(save('draft1', { courseFiles: many(8) }));
+    await assertFails(save('draft1', { courseFiles: many(9) }));
+    await assertFails(save('draft1', { courseFiles: [...many(7), file({ storagePath: 'courses/draft1/x.exe' })] }));
+  });
+  it('övriga roller kan inte skriva banor', async () => {
+    for (const uid of ['member', 'setter', 'nobody']) {
+      await assertFails(save('draft1', { courseFiles: [file()] }, uid));
     }
   });
 });

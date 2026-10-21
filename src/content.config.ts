@@ -18,6 +18,7 @@ const events = defineCollection({
       .optional(),
     courseSetter: z.string().optional(),
     livelox: z.url().optional(),
+    courseFiles: z.array(z.object({ label: z.string(), url: z.url() })).optional(),
     body: z.string(),
   }),
 });

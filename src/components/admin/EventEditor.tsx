@@ -11,9 +11,10 @@ import {
   watchBuild,
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
+import { uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files';
 import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
-import { EVENT_TYPES, type EventContent, type EventRecord } from '../../types/event';
+import { EVENT_TYPES, MAX_COURSE_FILES, type EventContent, type EventRecord } from '../../types/event';
 import { canPublish, type Session } from '../../types/user';
 import EventDetail from '../EventDetail';
 import AdminGate, { AdminPanel } from './AdminGate';
@@ -42,6 +43,7 @@ function newEventContent(): EventContent {
     body: '',
     courseSetter: '',
     livelox: '',
+    courseFiles: [],
   };
 }
 
@@ -54,6 +56,7 @@ const contentOf = (r: EventRecord): EventContent => ({
   body: r.body,
   courseSetter: r.courseSetter,
   livelox: r.livelox,
+  courseFiles: r.courseFiles,
 });
 
 type Message = { kind: 'ok' | 'error'; text: string } | null;
@@ -153,6 +156,27 @@ function Editor({ session }: { session: Session }) {
     history.replaceState(null, '', `?id=${newId}`);
     return newId;
   }
+
+  const onUploadFiles = (files: FileList | null) => {
+    const list = Array.from(files ?? []);
+    if (list.length === 0) return;
+    const tooMany = draft.courseFiles.length + list.length > MAX_COURSE_FILES;
+    const bad = list.find((f) => f.type !== 'application/pdf' || f.size > MAX_PDF_BYTES);
+    if (tooMany || bad) {
+      setMessage({
+        kind: 'error',
+        text: tooMany ? `Max ${MAX_COURSE_FILES} banor per event.` : `${bad!.name}: bara PDF-filer, högst ${MAX_PDF_BYTES / 1024 / 1024} MB.`,
+      });
+      return;
+    }
+    return run('upload', async () => {
+      const eventId = id ?? (await persist(draft));
+      const uploaded = [];
+      for (const f of list) uploaded.push(await uploadCourseFile(eventId, f));
+      update({ courseFiles: [...draft.courseFiles, ...uploaded] });
+      return 'Uppladdat. Spara utkastet för att behålla banorna.';
+    });
+  };
 
   const onSave = () => run('save', async () => {
     await persist(draft);
@@ -329,6 +353,42 @@ function Editor({ session }: { session: Session }) {
               <input id="livelox" type="url" value={draft.livelox} onChange={(e) => update({ livelox: e.target.value })} placeholder="https://www.livelox.com/…" className={INPUT} />
             </Field>
           </div>
+
+          <Field label="Banor (PDF)" htmlFor="courses" hint={`Högst ${MAX_COURSE_FILES} filer, 10 MB var. Filer kan inte ersättas eller tas bort från lagringen, men du kan ta bort dem från eventet.`}>
+            {draft.courseFiles.length > 0 && (
+              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                {draft.courseFiles.map((f, i) => (
+                  <li key={f.storagePath} className="flex items-center gap-2">
+                    <input
+                      aria-label={`Namn på ${f.name}`}
+                      value={f.label}
+                      onChange={(e) => update({ courseFiles: draft.courseFiles.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
+                      className={INPUT}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => update({ courseFiles: draft.courseFiles.filter((_, j) => j !== i) })}
+                      className="flex-none cursor-pointer rounded-full px-3 py-2 text-sm font-semibold text-[#A33A3A] hover:underline"
+                    >
+                      Ta bort
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <input
+              id="courses"
+              type="file"
+              accept="application/pdf"
+              multiple
+              disabled={!!busy}
+              onChange={(e) => {
+                onUploadFiles(e.target.files);
+                e.target.value = '';
+              }}
+              className="text-sm"
+            />
+          </Field>
 
           <Field
             label="Text"

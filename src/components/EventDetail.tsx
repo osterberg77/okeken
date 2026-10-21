@@ -60,6 +60,27 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
 
         <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />
 
+        {event.courseFiles && event.courseFiles.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <h3 className="m-0 font-display text-lg font-bold">Banor</h3>
+            <ul className="m-0 flex list-none flex-wrap gap-2.5 p-0">
+              {event.courseFiles.map((f) => (
+                <li key={f.url}>
+                  <a
+                    href={f.url}
+                    target="_blank"
+                    rel="noopener"
+                    data-file={f.label}
+                    className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-ink/18 bg-white px-5 py-[11px] text-sm font-semibold text-ink no-underline hover:border-accent hover:text-accent"
+                  >
+                    {f.label} <span className="text-xs font-medium text-subtle">PDF</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {actions.length > 0 && (
           <div className="flex flex-wrap gap-2.5 pt-1">
             {actions.map((a, i) => (

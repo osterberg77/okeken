@@ -30,6 +30,7 @@ function contentToFirestore(c: EventContent) {
     body: c.body,
     courseSetter: c.courseSetter.trim(),
     livelox: c.livelox.trim(),
+    courseFiles: c.courseFiles.map((f) => ({ name: f.name, storagePath: f.storagePath, label: f.label.trim() })),
   };
 }
 
@@ -43,6 +44,7 @@ function contentFromFirestore(d: DocumentData): EventContent {
     body: d.body ?? '',
     courseSetter: d.courseSetter ?? '',
     livelox: d.livelox ?? '',
+    courseFiles: Array.isArray(d.courseFiles) ? d.courseFiles : [],
   };
 }
 
