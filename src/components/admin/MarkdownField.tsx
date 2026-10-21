@@ -2,6 +2,7 @@ import { lazy, Suspense, useMemo } from 'react';
 import type { LinkTarget } from '../../lib/firebase/link-targets';
 import { unpublishedLinks } from '../../lib/firebase/link-targets';
 import { INPUT } from './AdminUi';
+import type { MentionCandidate } from './MarkdownEditor';
 
 // Tiptap laddas som egen chunk först när ett textfält visas (bara i admin).
 const MarkdownEditor = lazy(() => import('./MarkdownEditor'));
@@ -15,16 +16,18 @@ interface Props {
   rows?: number;
   /** Visa knappen Bild (bildbanken kräver publicerarbehörighet) */
   allowImages?: boolean;
+  /** Personer som kan omnämnas med @ (styrelsens protokoll). Utan prop beter sig editorn som vanligt. */
+  mentionCandidates?: MentionCandidate[];
 }
 
 /** Visuell editor för Markdown (Tiptap). Lagrad text är ren Markdown. */
-export default function MarkdownField({ id, value, onChange, targets, rows = 14, allowImages = true }: Props) {
+export default function MarkdownField({ id, value, onChange, targets, rows = 14, allowImages = true, mentionCandidates }: Props) {
   const warnings = useMemo(() => (targets ? unpublishedLinks(value, targets) : []), [value, targets]);
 
   return (
     <div className="flex flex-col gap-2">
       <Suspense fallback={<div className={`${INPUT} text-muted`} style={{ minHeight: rows * 20 }}>Laddar editorn…</div>}>
-        <MarkdownEditor id={id} value={value} onChange={onChange} targets={targets} rows={rows} allowImages={allowImages} />
+        <MarkdownEditor id={id} value={value} onChange={onChange} targets={targets} rows={rows} allowImages={allowImages} mentionCandidates={mentionCandidates} />
       </Suspense>
 
       {warnings.length > 0 && (

@@ -52,7 +52,7 @@ export default function ImagePicker({
           type="search"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          placeholder="Sök på namn, fotograf eller beskrivning"
+          placeholder="Sök bland bilderna"
           aria-label="Sök bild"
           className={INPUT}
         />
