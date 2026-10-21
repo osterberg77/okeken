@@ -27,8 +27,5 @@ export function toPagePreview(c: PageContent, slug: string | null): PublicPage {
     title: c.title.trim() || 'Titel saknas',
     bodyHtml: renderMarkdown(c.body),
     excerpt: toExcerpt(c.body),
-    inMenu: c.inMenu,
-    menuOrder: c.menuOrder,
-    menuLabel: c.menuLabel,
   };
 }

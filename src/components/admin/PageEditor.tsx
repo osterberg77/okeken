@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { watchMenu } from '../../lib/firebase/menu';
 import {
   checkNewSlug,
   createPage,
@@ -13,10 +14,11 @@ import {
   watchPage,
 } from '../../lib/firebase/pages';
 import { loadLinkTargets, type LinkTarget } from '../../lib/firebase/link-targets';
+import { menuPageIds } from '../../lib/menu-edit';
 import { toPagePreview } from '../../lib/preview';
 import { slugify } from '../../lib/slug';
 import { formatTime } from '../../lib/time';
-import { MAX_MENU_LABEL, MAX_MENU_ORDER, MAX_PAGE_BODY, type PageContent, type PageRecord } from '../../types/page';
+import { MAX_PAGE_BODY, type PageContent, type PageRecord } from '../../types/page';
 import { canPublish, type Session } from '../../types/user';
 import PageDetail from '../PageDetail';
 import { ActionButton, Field, INPUT } from './AdminUi';
@@ -33,14 +35,11 @@ export default function PageEditor() {
   );
 }
 
-const emptyPage = (): PageContent => ({ title: '', body: '', inMenu: false, menuOrder: 10, menuLabel: '' });
+const emptyPage = (): PageContent => ({ title: '', body: '' });
 
 const contentOf = (r: PageRecord): PageContent => ({
   title: r.title,
   body: r.body,
-  inMenu: r.inMenu,
-  menuOrder: r.menuOrder,
-  menuLabel: r.menuLabel,
 });
 
 type Message = { kind: 'ok' | 'error'; text: string } | null;
@@ -56,7 +55,16 @@ function Editor({ session }: { session: Session }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [targets, setTargets] = useState<LinkTarget[] | null>(null);
+  const [inMenu, setInMenu] = useState<boolean | null>(null);
   const loaded = useRef(false);
+
+  useEffect(() => {
+    if (!id) return;
+    return watchMenu(
+      (m) => setInMenu(menuPageIds(m?.items ?? []).has(id)),
+      () => setInMenu(null),
+    );
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -109,13 +117,9 @@ function Editor({ session }: { session: Session }) {
   const addressProblem = record?.slug ? null : draft.title.trim() ? slugProblem(proposedSlug) : null;
   const problem = !draft.title.trim()
     ? 'Ge sidan en titel.'
-    : draft.menuLabel.trim().length > MAX_MENU_LABEL
-      ? `Menytexten får vara högst ${MAX_MENU_LABEL} tecken.`
-      : !Number.isInteger(draft.menuOrder) || draft.menuOrder < 0 || draft.menuOrder > MAX_MENU_ORDER
-        ? `Ordningen i menyn ska vara ett heltal mellan 0 och ${MAX_MENU_ORDER}.`
-        : draft.body.length > MAX_PAGE_BODY
-          ? `Texten är för lång (högst ${MAX_PAGE_BODY} tecken).`
-          : null;
+    : draft.body.length > MAX_PAGE_BODY
+      ? `Texten är för lång (högst ${MAX_PAGE_BODY} tecken).`
+      : null;
 
   const update = (patch: Partial<PageContent>) => {
     setDraft((d) => (d ? { ...d, ...patch } : d));
@@ -259,22 +263,12 @@ function Editor({ session }: { session: Session }) {
             <MarkdownField id="body" value={draft.body} onChange={(body) => update({ body })} targets={targets} />
           </Field>
 
-          <div className="flex flex-col gap-4 rounded-2xl bg-period p-4">
-            <label className="flex cursor-pointer items-center gap-3 text-[15px] font-semibold">
-              <input type="checkbox" checked={draft.inMenu} onChange={(e) => update({ inMenu: e.target.checked })} className="h-5 w-5 accent-[#8A4B9E]" />
-              Visa i menyn
-            </label>
-            {draft.inMenu && (
-              <div className="grid gap-4 sm:grid-cols-[1fr_140px]">
-                <Field label="Text i menyn" htmlFor="menuLabel" hint="Tom = titeln. Kort är bäst, högst 40 tecken.">
-                  <input id="menuLabel" value={draft.menuLabel} maxLength={MAX_MENU_LABEL + 20} onChange={(e) => update({ menuLabel: e.target.value })} placeholder={draft.title || 'Titel'} className={INPUT} />
-                </Field>
-                <Field label="Ordning" htmlFor="menuOrder" hint="Lägst först.">
-                  <input id="menuOrder" type="number" min={0} max={MAX_MENU_ORDER} step={1} value={draft.menuOrder} onChange={(e) => update({ menuOrder: Math.round(Number(e.target.value)) })} className={INPUT} />
-                </Field>
-              </div>
-            )}
-          </div>
+          {id && inMenu !== null && (
+            <p className="m-0 text-sm text-muted">
+              I menyn: <strong>{inMenu ? 'ja' : 'nej'}</strong> →{' '}
+              <a href="/admin/meny" className="font-semibold text-accent">Hantera menyn</a>
+            </p>
+          )}
 
           {id && neverPublished && (
             <div className="border-t border-line pt-4">

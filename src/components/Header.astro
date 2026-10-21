@@ -1,27 +1,48 @@
 ---
-import { getMenuPages } from '../lib/pages';
+import { getMenu } from '../lib/menu';
+import type { MenuLink } from '../types/menu';
 import AccountMenu from './AccountMenu';
 
 // Mått enligt docs/skisser/kalender-och-kontrollsymboler.md (desktop); nedskalat på mobil.
 const path = Astro.url.pathname.replace(/(index)?\.html$/, '').replace(/(.)\/$/, '$1');
 
-// Kalender + publicerade infosidor med "Visa i menyn". Tills det finns några sådana sidor pekar
-// Om oss och Bli medlem på gamla sajten, så att sajten inte tappar länkar.
-const menuPages = await getMenuPages();
-const links =
-  menuPages.length > 0
+// Kalender + publicerad meny (menu/main, beslut 0008). Tills menyn publicerats med minst en publicerad sida
+// pekar Om oss och Bli medlem på gamla sajten, så att sajten inte tappar länkar.
+// Undermenyer: <details> (fungerar utan JS, name gör att bara en är öppen åt gången); skriptet nedan lägger
+// till Escape, klick utanför och aria-expanded.
+interface NavItem {
+  label: string;
+  href: string | null;
+  children: (MenuLink & { active: boolean })[];
+  active: boolean;
+}
+
+const menu = await getMenu();
+const calendar: NavItem = { href: '/', label: 'Kalender', children: [], active: path === '/' || path.startsWith('/event') };
+const items: NavItem[] =
+  menu.length > 0
     ? [
-        { href: '/', label: 'Kalender', active: path === '/' || path.startsWith('/event') },
-        ...menuPages.map((p) => ({ href: p.href, label: p.label, active: path === p.href })),
+        calendar,
+        ...menu.map((m) => {
+          const children = m.children.map((c) => ({ ...c, active: path === c.href }));
+          return { ...m, children, active: path === m.href || children.some((c) => c.active) };
+        }),
       ]
     : [
-        { href: '/', label: 'Kalender', active: path === '/' || path.startsWith('/event') },
-        { href: 'https://www.okeken.se/om-ok-eken', label: 'Om oss', active: false },
-        { href: 'https://www.okeken.se/bli-medlem', label: 'Bli medlem', active: false },
+        calendar,
+        { href: 'https://www.okeken.se/om-ok-eken', label: 'Om oss', children: [], active: false },
+        { href: 'https://www.okeken.se/bli-medlem', label: 'Bli medlem', children: [], active: false },
       ];
+
+const text = 'whitespace-nowrap text-[15px] leading-[1.2] no-underline sm:text-[30px]';
+const pill = 'rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent';
+const tone = (active: boolean) =>
+  active ? 'bg-white font-semibold text-ink shadow-[0_1px_3px_rgba(43,40,56,.08)]' : 'font-medium text-muted hover:text-ink';
+const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden';
 ---
 
-<header class="relative z-[5]">
+{/* z-20: över kalenderpanelen (z-10) så att undermenyer och profilmenyn hamnar ovanpå den */}
+<header class="relative z-20">
   <div class="mx-auto flex max-w-[1240px] flex-wrap items-start gap-3 px-4 pt-4 pb-2 sm:gap-5 sm:px-8 sm:pt-[22px]">
     <a href="/" aria-label="OK Eken Åtvidaberg – startsida" class="block">
       <img
@@ -32,20 +53,95 @@ const links =
         class="block h-auto w-[64px] drop-shadow-[0_14px_18px_rgba(43,40,56,.18)] sm:w-[138px]"
       />
     </a>
-    <nav aria-label="Huvudmeny" class="order-last -mt-1 flex w-full flex-wrap gap-0 sm:order-none sm:mt-[23px] sm:ml-6 sm:w-auto sm:flex-1 sm:gap-1">
+    <nav
+      aria-label="Huvudmeny"
+      class="relative order-last -mt-1 flex w-full flex-wrap gap-0 sm:order-none sm:mt-[23px] sm:ml-6 sm:w-auto sm:flex-1 sm:gap-1"
+    >
       {
-        links.map((l) => (
-          <a
-            href={l.href}
-            aria-current={l.active ? 'page' : undefined}
-            class:list={[
-              'whitespace-nowrap rounded-full px-2.5 py-1.5 text-[15px] leading-[1.2] no-underline sm:px-6 sm:py-2.5 sm:text-[30px]',
-              l.active ? 'bg-white font-semibold text-ink shadow-[0_1px_3px_rgba(43,40,56,.08)]' : 'font-medium text-muted hover:text-ink',
-            ]}
-          >
-            {l.label}
-          </a>
-        ))
+        items.map((item, i) => {
+          if (item.children.length === 0) {
+            return (
+              <a
+                href={item.href!}
+                aria-current={item.active ? 'page' : undefined}
+                class:list={[text, pill, tone(item.active), 'px-2.5 py-1.5 sm:px-6 sm:py-2.5']}
+              >
+                {item.label}
+              </a>
+            );
+          }
+          const id = `undermeny-${i}`;
+          const chevron = (
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              class="h-3.5 w-3.5 shrink-0 text-accent transition-transform group-open/sub:rotate-180 sm:h-[22px] sm:w-[22px]"
+            >
+              <path d="m4 6 4 4 4-4" />
+            </svg>
+          );
+          const panel = (
+            <ul
+              id={id}
+              data-submenu-panel
+              class="absolute top-full right-0 left-0 z-20 mt-1.5 flex list-none flex-col gap-0.5 rounded-[22px] bg-white p-2 shadow-[0_24px_48px_-20px_rgba(43,40,56,.45),0_2px_8px_rgba(43,40,56,.08)] sm:right-auto sm:mt-2 sm:w-max sm:max-w-[min(360px,calc(100vw-32px))] sm:min-w-[240px]"
+            >
+              {item.children.map((c) => (
+                <li>
+                  <a
+                    href={c.href}
+                    aria-current={c.active ? 'page' : undefined}
+                    class:list={[
+                      'block rounded-[14px] px-4 py-2.5 text-[15px] leading-[1.3] no-underline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:text-[17px]',
+                      c.active ? 'bg-pastel font-semibold text-accent' : 'font-medium text-ink hover:bg-pastel hover:text-accent',
+                    ]}
+                  >
+                    {c.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          );
+          // Med egen sida: texten är en länk och chevronen en egen knapp. Rubrik utan sida: hela pillen är knappen.
+          return item.href ? (
+            <div class:list={['flex items-center sm:relative', pill, tone(item.active)]}>
+              <a
+                href={item.href}
+                aria-current={path === item.href ? 'page' : undefined}
+                class:list={[text, pill, 'py-1.5 pr-1 pl-2.5 text-inherit sm:py-2.5 sm:pr-1.5 sm:pl-6']}
+              >
+                {item.label}
+              </a>
+              <details name="huvudmeny" data-submenu class="group/sub">
+                <summary
+                  aria-label={`Visa undermeny för ${item.label}`}
+                  aria-controls={id}
+                  class:list={[summaryBase, pill, 'h-[30px] pr-2.5 pl-1 sm:h-[56px] sm:pr-5 sm:pl-1.5']}
+                >
+                  {chevron}
+                </summary>
+                {panel}
+              </details>
+            </div>
+          ) : (
+            <details name="huvudmeny" data-submenu class="group/sub sm:relative">
+              <summary
+                aria-controls={id}
+                aria-current={item.active ? 'true' : undefined}
+                class:list={[summaryBase, text, pill, tone(item.active), 'gap-1 px-2.5 py-1.5 sm:gap-2 sm:px-6 sm:py-2.5']}
+              >
+                {item.label}
+                {chevron}
+              </summary>
+              {panel}
+            </details>
+          );
+        })
       }
     </nav>
     <div class="mt-2 ml-auto flex items-center gap-1 sm:mt-[21px] sm:gap-2">
@@ -64,3 +160,36 @@ const links =
     </div>
   </div>
 </header>
+
+<script>
+  // Förbättring ovanpå <details>: aria-expanded, Escape återför fokus, stäng vid klick/fokus utanför,
+  // och vänd rullgardinen åt vänster om den annars skulle gå utanför skärmen.
+  const menus = [...document.querySelectorAll<HTMLDetailsElement>('details[data-submenu]')];
+  for (const d of menus) {
+    const summary = d.querySelector('summary')!;
+    const panel = d.querySelector<HTMLElement>('[data-submenu-panel]')!;
+    const sync = () => {
+      summary.setAttribute('aria-expanded', String(d.open));
+      panel.style.left = panel.style.right = '';
+      if (d.open && matchMedia('(min-width: 640px)').matches && panel.getBoundingClientRect().right > innerWidth - 16) {
+        panel.style.left = 'auto';
+        panel.style.right = '0';
+      }
+    };
+    sync();
+    d.addEventListener('toggle', sync);
+    d.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && d.open) {
+        d.open = false;
+        summary.focus();
+      }
+    });
+    d.addEventListener('focusout', (e) => {
+      const next = e.relatedTarget as Node | null;
+      if (next && !d.contains(next)) d.open = false;
+    });
+  }
+  document.addEventListener('click', (e) => {
+    for (const d of menus) if (d.open && !d.contains(e.target as Node)) d.open = false;
+  });
+</script>

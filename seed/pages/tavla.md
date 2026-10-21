@@ -1,8 +1,5 @@
 ---
 title: Tävla
-inMenu: false
-menuLabel: ''
-menuOrder: 0
 ---
 ## Avgifter
 

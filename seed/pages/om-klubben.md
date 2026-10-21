@@ -1,8 +1,5 @@
 ---
 title: Om klubben
-inMenu: true
-menuLabel: Om oss
-menuOrder: 10
 ---
 OK Eken Åtvidaberg bildades 1958 av medlemmar från Åtvidabergs IF, SGU GoIF och Björsäters SK. Grundarna träffades på Sandelius konditori, eftersom intresset för orientering var stort och man länge hade diskuterat hur sporten kunde utvecklas.
 

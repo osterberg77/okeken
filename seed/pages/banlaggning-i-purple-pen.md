@@ -1,8 +1,5 @@
 ---
 title: Banläggning i Purple Pen
-inMenu: false
-menuLabel: ''
-menuOrder: 0
 ---
 1. **Installera:** ladda ner Purple Pen från [purplepen.golde.org](https://purplepen.golde.org/).
 2. **Skapa tävling:** *Skapa en ny tävling…* och gå igenom guiden (allt går att ändra senare). Ange namn och välj kartfil (OCAD/OCD fungerar bäst, PDF går också). För träningar används vanligtvis skala 1:7500. Välj pappersstorlek och spara helst i samma mapp som kartan. Behåll IOF-standarder och kontrollnumrering (börjar vanligtvis på 31).

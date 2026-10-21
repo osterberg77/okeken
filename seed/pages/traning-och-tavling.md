@@ -1,8 +1,5 @@
 ---
 title: Träning och tävling
-inMenu: true
-menuLabel: Träning & tävling
-menuOrder: 30
 ---
 ## Tisdagsträning
 

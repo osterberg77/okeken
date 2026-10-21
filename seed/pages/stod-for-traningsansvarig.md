@@ -1,8 +1,5 @@
 ---
 title: Stöd för träningsansvarig
-inMenu: false
-menuLabel: ''
-menuOrder: 0
 ---
 Rutiner för den som ansvarar för en tisdagsträning.
 

@@ -37,7 +37,7 @@ Vem har ansvar vilken vecka, synligt i kalendern och med påminnelse. Gamla sajt
 **Fråga:** "Hur planerar ni idag vem som är träningsansvarig och banläggare (kalkylblad, WhatsApp)? Vore det bra att det syntes i kalendern?"
 
 ## 6. Dokumentarkiv
-Eken-Nytt, protokoll, årsmötesunderlag, stadgar som sökbara PDF:er. Kan ligga i Storage med samma behörighetsmodell som banor, med publika och bara-medlemmar-mappar. Kostnad: liten–medel. Fråga om vad som ska vara publikt.
+Eken-Nytt, protokoll, årsmötesunderlag, stadgar som sökbara PDF:er. Kan ligga i Storage med samma behörighetsmodell som banor, med publika och bara-medlemmar-mappar. Kostnad: liten–medel. Fråga om vad som ska vara publikt. Se även punkt 11 för styrelsens protokoll.
 
 **Fråga:** "Vilka dokument vill ni ska finnas på sajten, och vilka ska bara medlemmar kunna se?"
 
@@ -58,6 +58,24 @@ Logotyper och länkar i sidfoten eller på egen sida. Kostnad: liten.
 
 ## 10. Medlemsområde
 Innehåll som bara inloggade medlemmar ser (t.ex. kontaktlistor, interna dokument). Allt statiskt prerenderas och är publikt per definition (ADR 0004), så detta kräver en annan teknik och blir därför en större förändring. Rekommendation: undvik, lägg känsligt material utanför sajten.
+
+## 11. Styrelsens protokollarkiv
+Arkiv över styrelseprotokoll, skrivna och godkända direkt på sajten (kompletterar punkt 6, som gäller uppladdade PDF:er).
+
+**Så skulle det fungera**
+- **Nytt protokoll från mall.** Inför ett möte skapar man ett nytt protokoll och väljer "Hämta mall från", med senaste protokollet som förval. Alla rubriker förs över (utan innehåll).
+- **Att göra.** En sektion längst ner med punkter som olika personer ska göra till nästa möte (ansvarig + text).
+- **Punkter från föregående protokoll.** När man skapar nästa protokoll frågar sajten om "Att göra" ska lyftas över som "Punkter från föregående protokoll" överst i det nya.
+- **Sekreterare och justeringsman.** Man taggar vem som är sekreterare och justeringsman. De två godkänner protokollet i efterhand, och då **låses** det. Fram tills dess kan alla med styrelsebehörighet redigera.
+
+**Teknik och säkerhet (utkast)**
+- Protokoll är internt och får aldrig prerenderas eller hamna i publikt bygge (ADR 0004). De ligger i en egen Firestore-collection och visas bara i admin, klientsida bakom inloggning, med regler för rollen `board` i `firestore.rules` och regeltest mot emulatorn.
+- Låsningen måste ligga i reglerna, inte bara i UI:t: efter godkännande nekas all ändring av dokumentet. Godkännande får bara göras av den som är utsedd till sekreterare respektive justeringsman, och redigering bara när status är utkast.
+- Statusflöde: *utkast* → *godkänt av sekreterare* + *godkänt av justeringsman* → *låst*. Använd `StatusBadge` i alla vyer.
+- Återanvänder Markdown-editorn och `src/lib/markdown.ts`. Rättelser efter låsning bör ske som ett nytt protokoll eller en tillagd anteckning, inte genom att låsa upp.
+- Kostnad: medel.
+
+**Frågor till styrelsen:** "Vilka rubriker har ni i ett vanligt protokoll? Ska 'Att göra' kunna bockas av? Ska gamla protokoll från Wix/Drive läggas in som PDF i arkivet? Vem får läsa arkivet: hela styrelsen eller alla medlemmar?"
 
 ## Hur vi använder listan
 1. Erik väljer en fråga och postar den i WhatsApp-gruppen (börja med "🤖 AI-byggaren:" om Claude postar, se `CLAUDE.md`).

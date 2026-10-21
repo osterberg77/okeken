@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
 import { loadPublishedEvents } from './lib/server/published-events';
 import { loadPublishedPages } from './lib/server/published-pages';
+import { loadPublishedMenu } from './lib/server/published-menu';
 
 // Publicerade events från Firestore (bara `published`-ögonblicksbilden, se docs/datamodell.md).
 const events = defineCollection({
@@ -28,13 +29,26 @@ const events = defineCollection({
 const pages = defineCollection({
   loader: loadPublishedPages,
   schema: z.object({
+    pageId: z.string(),
     slug: z.string(),
     title: z.string(),
     body: z.string(),
-    inMenu: z.boolean(),
-    menuOrder: z.number().int(),
-    menuLabel: z.string(),
   }),
 });
 
-export const collections = { events, pages };
+// Publicerad huvudmeny (menu/main.published, beslut 0008): en post med id 'main', eller ingen om menyn
+// aldrig publicerats. Sidorna slås upp i src/lib/menu.ts.
+const menu = defineCollection({
+  loader: loadPublishedMenu,
+  schema: z.object({
+    items: z.array(
+      z.object({
+        label: z.string(),
+        pageId: z.string().nullable(),
+        children: z.array(z.string()),
+      }),
+    ),
+  }),
+});
+
+export const collections = { events, pages, menu };

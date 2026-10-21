@@ -1,8 +1,5 @@
 ---
 title: Bli medlem
-inMenu: true
-menuLabel: Bli medlem
-menuOrder: 20
 ---
 Det finns inga krav på deltagande eller nivå, och alla är välkomna. Nybörjare rekommenderas att först delta i tisdagsträningarna för en snabb introduktion.
 

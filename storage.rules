@@ -21,9 +21,11 @@ service firebase.storage {
       allow get: if true;
       allow list: if false;
 
-      // resource == null: bara nya filer, aldrig överskrivning (även om en emulator/plattform räknar den som create)
-      allow create: if resource == null
-        && canUploadCourses()
+      // Bara nya filer: i produktion gäller 'create' inte befintliga objekt (överskrivning är 'update', som nekas nedan).
+      // OBS: referera inte till `resource` här (`resource == null` gav "Null value error" i Rules-tjänsten och nekade
+      // uppladdning av nya filer) och `request.method` finns inte i Storage-regler. Emulatorn räknar en överskrivning
+      // som create, så överskrivningsskyddet kan inte testas där.
+      allow create: if canUploadCourses()
         && eventId.matches('^[A-Za-z0-9_-]{1,64}$')
         && fileName.matches('^[A-Za-z0-9][A-Za-z0-9._-]{0,119}[.]pdf$')
         && request.resource.contentType == 'application/pdf'
@@ -64,8 +66,8 @@ service firebase.storage {
       allow get: if true;
       allow list: if false;
 
-      allow create: if resource == null
-        && validImageFileName(fileName)
+      // Bara nya filer, se kommentaren vid courses/ ovan (ingen referens till `resource`)
+      allow create: if validImageFileName(fileName)
         // Ändelsen ska stämma med typen; svg, gif m.fl. nekas
         && request.resource.contentType == {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}[fileName.split('[.]')[1]]
         && request.resource.contentDisposition == null

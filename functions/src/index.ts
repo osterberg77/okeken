@@ -23,17 +23,24 @@ function liveState(data: FirebaseFirestore.DocumentData | undefined) {
 
 type Snapshot = { data(): FirebaseFirestore.DocumentData | undefined } | undefined;
 
+/** Det besökarna ser av ett event/en sida: bara publicerade dokument syns */
+function visibleContent(s: Snapshot) {
+  const state = liveState(s?.data());
+  return state?.status === 'published' ? state : null;
+}
+
+/** Det besökarna ser av menyn (menu/main): bara `published`. Utkastet (`items`) ska inte starta bygge */
+function visibleMenu(s: Snapshot) {
+  return s?.data()?.published ?? null;
+}
+
 /**
  * Startar bygget om det publicerade innehållet ändrats (publicera, ändra, avpublicera, radera).
- * Gemensam för events och infosidor: båda har samma status/slug/published-modell.
+ * Gemensam för events, infosidor och menyn. Sidornas slug och titel ingår i menyn (beslut 0008), så en sida
+ * som publiceras eller avpubliceras startar bygget via onPageWritten och menyn byggs om med den.
  */
-async function requestBuildIfLiveChanged(
-  before: Snapshot,
-  after: Snapshot,
-  payload: Record<string, string>,
-) {
-  const visible = (s: ReturnType<typeof liveState>) => (s?.status === 'published' ? s : null);
-  if (JSON.stringify(visible(liveState(before?.data()))) === JSON.stringify(visible(liveState(after?.data())))) return;
+async function requestBuildIfChanged(before: unknown, after: unknown, payload: Record<string, string>) {
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
 
   // Adminvyn jämför requestedAt med lastBuildAt för att visa "bygger" (gul) eller "fel" (röd)
   await getFirestore().doc('meta/build').set({ requestedAt: FieldValue.serverTimestamp() }, { merge: true });
@@ -57,10 +64,24 @@ async function requestBuildIfLiveChanged(
 
 export const onEventWritten = onDocumentWritten(
   { document: 'events/{eventId}', secrets: [GITHUB_TOKEN] },
-  (event) => requestBuildIfLiveChanged(event.data?.before, event.data?.after, { eventId: event.params.eventId }),
+  (event) =>
+    requestBuildIfChanged(visibleContent(event.data?.before), visibleContent(event.data?.after), {
+      eventId: event.params.eventId,
+    }),
 );
 
 export const onPageWritten = onDocumentWritten(
   { document: 'pages/{pageId}', secrets: [GITHUB_TOKEN] },
-  (event) => requestBuildIfLiveChanged(event.data?.before, event.data?.after, { pageId: event.params.pageId }),
+  (event) =>
+    requestBuildIfChanged(visibleContent(event.data?.before), visibleContent(event.data?.after), {
+      pageId: event.params.pageId,
+    }),
+);
+
+export const onMenuWritten = onDocumentWritten(
+  { document: 'menu/{menuId}', secrets: [GITHUB_TOKEN] },
+  (event) =>
+    requestBuildIfChanged(visibleMenu(event.data?.before), visibleMenu(event.data?.after), {
+      menuId: event.params.menuId,
+    }),
 );

@@ -47,9 +47,6 @@ const OLD = Timestamp.fromDate(new Date('2026-01-01T00:00:00Z'));
 const content = () => ({
   title: 'Om klubben',
   body: '# Om klubben\n\nHej',
-  inMenu: true,
-  menuOrder: 10,
-  menuLabel: '',
 });
 
 const draftDoc = () => ({
@@ -170,13 +167,10 @@ describe('pages: create', () => {
     ['title inte sträng', { title: 5 }],
     ['body över 50000 tecken', { body: 'x'.repeat(50001) }],
     ['body inte sträng', { body: null }],
-    ['inMenu inte bool', { inMenu: 'ja' }],
-    ['menuOrder negativ', { menuOrder: -1 }],
-    ['menuOrder över 999', { menuOrder: 1000 }],
-    ['menuOrder decimaltal', { menuOrder: 1.5 }],
-    ['menuOrder sträng', { menuOrder: '1' }],
-    ['menuLabel över 40 tecken', { menuLabel: 'x'.repeat(41) }],
-    ['menuLabel null', { menuLabel: null }],
+    // Menyfälten flyttades till menu/main (beslut 0008)
+    ['inMenu (borttaget fält)', { inMenu: true }],
+    ['menuOrder (borttaget fält)', { menuOrder: 10 }],
+    ['menuLabel (borttaget fält)', { menuLabel: '' }],
     ['source (finns inte för sidor)', { source: 'manual' }],
     ['okänt fält', { extra: 1 }],
   ];
@@ -193,13 +187,10 @@ describe('pages: create', () => {
         newPage('publisher', {
           title: 'x'.repeat(200),
           body: 'x'.repeat(50000),
-          menuOrder: 999,
-          menuLabel: 'x'.repeat(40),
-          inMenu: false,
         }),
       ),
     );
-    await assertSucceeds(setDoc(pg(as('publisher'), 'edge0'), newPage('publisher', { menuOrder: 0, body: '' })));
+    await assertSucceeds(setDoc(pg(as('publisher'), 'edge0'), newPage('publisher', { body: '' })));
   });
 
   it('saknad nyckel nekas', async () => {
@@ -213,7 +204,7 @@ describe('pages: create', () => {
 
 describe('pages: update - utkast', () => {
   it('spara utkastfält tillåts', async () => {
-    await assertSucceeds(save('draft1', { title: 'Bli medlem', body: 'Text', menuOrder: 20, inMenu: false }));
+    await assertSucceeds(save('draft1', { title: 'Bli medlem', body: 'Text' }));
   });
   it('board och superadmin kan uppdatera', async () => {
     await assertSucceeds(save('draft1', { title: 'B' }, 'board'));
@@ -237,14 +228,16 @@ describe('pages: update - utkast', () => {
   });
   it('ogiltigt innehåll nekas', async () => {
     await assertFails(save('draft1', { title: '' }));
-    await assertFails(save('draft1', { menuOrder: 1000 }));
-    await assertFails(save('draft1', { menuOrder: -5 }));
-    await assertFails(save('draft1', { menuOrder: 2.5 }));
-    await assertFails(save('draft1', { menuLabel: 'x'.repeat(41) }));
+    await assertFails(save('draft1', { body: 'x'.repeat(50001) }));
   });
   it('okänt fält nekas', async () => {
     await assertFails(save('draft1', { extra: 1 }));
     await assertFails(save('draft1', { source: 'manual' }));
+  });
+  it('gamla menyfält nekas (beslut 0008)', async () => {
+    await assertFails(save('draft1', { inMenu: true }));
+    await assertFails(save('draft1', { menuOrder: 10 }));
+    await assertFails(save('draft1', { menuLabel: 'Om oss' }));
   });
   it('draft med slug eller published nekas', async () => {
     await assertFails(save('draft1', { slug: 'abc' }));
@@ -260,7 +253,7 @@ describe('pages: update - publicering', () => {
     await assertSucceeds(publish());
   });
   it('publicera med ändrade utkastfält tillåts om snapshot matchar', async () => {
-    await assertSucceeds(publish({ menuLabel: 'Om oss', published: { ...content(), menuLabel: 'Om oss' } }));
+    await assertSucceeds(publish({ title: 'Om oss', published: { ...content(), title: 'Om oss' } }));
   });
   it('board och superadmin kan publicera', async () => {
     await assertSucceeds(publish({}, 'draft1', 'board'));
@@ -273,13 +266,11 @@ describe('pages: update - publicering', () => {
   it('snapshot som skiljer sig från utkastet nekas', async () => {
     await assertFails(publish({ published: { ...content(), title: 'Annan' } }));
     await assertFails(publish({ published: { ...content(), body: 'Annan' } }));
-    await assertFails(publish({ published: { ...content(), inMenu: false } }));
-    await assertFails(publish({ published: { ...content(), menuOrder: 11 } }));
-    await assertFails(publish({ published: { ...content(), menuLabel: 'Smyg' } }));
   });
   it('snapshot med extra eller saknade fält nekas', async () => {
     await assertFails(publish({ published: { ...content(), extra: 1 } }));
-    const { menuLabel: _m, ...partial } = content();
+    await assertFails(publish({ published: { ...content(), inMenu: true } }));
+    const { body: _b, ...partial } = content();
     await assertFails(publish({ published: partial }));
   });
   it('publishedAt som inte är serverTimestamp nekas', async () => {
@@ -310,7 +301,7 @@ describe('pages: update - publicering', () => {
 
 describe('pages: update - efter publicering', () => {
   it('redigera utkast och behålla gammal published tillåts', async () => {
-    await assertSucceeds(save('pub1', { title: 'Ändrad', body: 'Ändrad text', menuOrder: 3 }));
+    await assertSucceeds(save('pub1', { title: 'Ändrad', body: 'Ändrad text' }));
   });
   it('ändra slug efter publicering nekas', async () => {
     await assertFails(save('pub1', { slug: 'ny-adress' }));

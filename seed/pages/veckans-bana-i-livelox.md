@@ -1,8 +1,5 @@
 ---
 title: Veckans bana i Livelox
-inMenu: false
-menuLabel: ''
-menuOrder: 0
 ---
 Så lägger du upp veckans bana i Livelox.
 

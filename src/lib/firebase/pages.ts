@@ -24,9 +24,6 @@ function contentToFirestore(c: PageContent) {
   return {
     title: c.title.trim(),
     body: c.body,
-    inMenu: c.inMenu,
-    menuOrder: c.menuOrder,
-    menuLabel: c.menuLabel.trim(),
   };
 }
 
@@ -34,9 +31,6 @@ function contentFromFirestore(d: DocumentData): PageContent {
   return {
     title: d.title ?? '',
     body: d.body ?? '',
-    inMenu: d.inMenu === true,
-    menuOrder: typeof d.menuOrder === 'number' ? d.menuOrder : 0,
-    menuLabel: d.menuLabel ?? '',
   };
 }
 

@@ -208,24 +208,20 @@ service cloud.firestore {
     // Samma publiceringsmönster som events: utkastet är fälten på dokumentet, `published` är det som är live.
     // Bara publicerare, styrelse och superadmin har åtkomst (inte banläggare).
 
+    // Menyplacering ligger i menu/main (beslut 0008), inte på sidorna.
     function pageKeys() {
-      return ['title', 'body', 'inMenu', 'menuOrder', 'menuLabel',
+      return ['title', 'body',
         'status', 'slug', 'published', 'publishedAt',
         'createdBy', 'createdAt', 'updatedBy', 'updatedAt'];
     }
 
     function validPageContent(d) {
       return d.title is string && d.title.size() > 0 && d.title.size() <= 200
-        && d.body is string && d.body.size() <= 50000
-        && d.inMenu is bool
-        && d.menuOrder is int && d.menuOrder >= 0 && d.menuOrder <= 999
-        && d.menuLabel is string && d.menuLabel.size() <= 40;
+        && d.body is string && d.body.size() <= 50000;
     }
 
     function pageSnapshot(d) {
-      return {
-        'title': d.title, 'body': d.body, 'inMenu': d.inMenu, 'menuOrder': d.menuOrder, 'menuLabel': d.menuLabel
-      };
+      return { 'title': d.title, 'body': d.body };
     }
 
     // Sidor serveras på /<slug> och får inte krocka med sajtens egna adresser.
@@ -276,6 +272,104 @@ service cloud.firestore {
 
       // Bara aldrig publicerade utkast får raderas; publicerade avpubliceras i stället
       allow delete: if canPublish() && resource.data.publishedAt == null;
+    }
+
+    // ---- Huvudmeny (beslut 0008) -------------------------------------------------------
+    // Ett dokument, menu/main. `items` är utkastet, `published` = { items } är det som är live (bygget läser
+    // bara det). Ingen status: "Publicera" kopierar utkastet till `published` i samma skrivning. Kalendern är
+    // fast första post och lagras inte. Bara publicerare, styrelse och superadmin (inte banläggare).
+    //
+    // items: högst 8 poster { label, pageId, children }, label 1–40 tecken, pageId = id i pages eller null
+    // (rubrik utan egen sida). children: högst 8 sid-id:n (strängar), ingen tredje nivå. En sida får förekomma högst
+    // en gång i hela menyn. Att sidan finns och är publicerad kan reglerna inte kontrollera (för många get);
+    // bygget hoppar tyst över sådana poster och adminvyn varnar.
+    //
+    // Rules saknar loopar: posterna kontrolleras plats för plats, som validCourseFiles, medan alla sid-id:n
+    // valideras tillsammans med en regex. Barnen är därför strängar, inte { pageId }-mappar: en kontroll per
+    // barn i en full meny (8 × 8) slog i taket på 1000 uttryck per anrop. Testerna "full meny" i
+    // tests/rules/menu.test.ts bevakar taket.
+
+    // Sid-id:n kontrolleras i validMenuPages. Saknad nyckel ger utvärderingsfel och därmed nekad skrivning (keys() ger fel om i inte är en map).
+    function validMenuItem(i) {
+      return i.keys().hasOnly(['label', 'pageId', 'children'])
+        && i.label.matches('(?s).{1,40}')
+        && (i.pageId == null || i.pageId is string)
+        && i.children is list && i.children.size() <= 8;
+    }
+
+    // Postens alla sid-id:n
+    function menuItemPages(i) {
+      return i.pageId == null ? i.children : i.children.concat([i.pageId]);
+    }
+
+    function menuPages(l) {
+      return (l.size() < 1 ? [] : menuItemPages(l[0]))
+        .concat(l.size() < 2 ? [] : menuItemPages(l[1]))
+        .concat(l.size() < 3 ? [] : menuItemPages(l[2]))
+        .concat(l.size() < 4 ? [] : menuItemPages(l[3]))
+        .concat(l.size() < 5 ? [] : menuItemPages(l[4]))
+        .concat(l.size() < 6 ? [] : menuItemPages(l[5]))
+        .concat(l.size() < 7 ? [] : menuItemPages(l[6]))
+        .concat(l.size() < 8 ? [] : menuItemPages(l[7]));
+    }
+
+    // Varje sid-id 1–128 tecken av A–Z a–z 0–9 _ - och ingen sida två gånger, kontrollerat på en gång.
+    // join() gör om tal/null till text, så split-resultatet jämförs med originalet: det skiljer sig om ett
+    // element inte är en sträng eller själv innehåller ett kommatecken.
+    function validMenuPages(l) {
+      let all = menuPages(l);
+      let joined = all.join(',');
+      return all.size() == 0
+        || (joined.matches('^[A-Za-z0-9_-]{1,128}(,[A-Za-z0-9_-]{1,128})*$')
+          && joined.split(',') == all
+          && all.toSet().size() == all.size());
+    }
+
+    function validMenuItems(l) {
+      return l is list && l.size() <= 8
+        && (l.size() < 1 || validMenuItem(l[0]))
+        && (l.size() < 2 || validMenuItem(l[1]))
+        && (l.size() < 3 || validMenuItem(l[2]))
+        && (l.size() < 4 || validMenuItem(l[3]))
+        && (l.size() < 5 || validMenuItem(l[4]))
+        && (l.size() < 6 || validMenuItem(l[5]))
+        && (l.size() < 7 || validMenuItem(l[6]))
+        && (l.size() < 8 || validMenuItem(l[7]))
+        && validMenuPages(l);
+    }
+
+    function menuKeys() {
+      return ['items', 'published', 'publishedAt', 'updatedBy', 'updatedAt'];
+    }
+
+    match /menu/main {
+      allow read: if canPublish();
+
+      // Första sparningen skapar dokumentet, som utkast eller direkt publicerat
+      allow create: if canPublish()
+        && request.resource.data.keys().hasOnly(menuKeys())
+        && request.resource.data.keys().hasAll(menuKeys())
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        && ((request.resource.data.published == null && request.resource.data.publishedAt == null)
+          || (request.resource.data.published == { 'items': request.resource.data.items }
+            && request.resource.data.publishedAt == request.time))
+        && validMenuItems(request.resource.data.items);
+
+      allow update: if canPublish()
+        && request.resource.data.keys().hasOnly(menuKeys())
+        && request.resource.data.keys().hasAll(menuKeys())
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        // Publicering: ögonblicksbilden ska vara exakt utkastet i samma skrivning (null går inte att återställa;
+        // en tom meny publiceras som { items: [] })
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['published', 'publishedAt'])
+          || (request.resource.data.published == { 'items': request.resource.data.items }
+            && request.resource.data.publishedAt == request.time))
+        && validMenuItems(request.resource.data.items);
+
+      // Menyn töms genom att publicera en tom lista, inte genom radering (som skulle gå live utan publicering)
+      allow delete: if false;
     }
 
     // ---- Bildbank (beslut 0007) -------------------------------------------------------

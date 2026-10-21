@@ -31,22 +31,21 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 Enkel digital variant av dagens papperslistor: `name`, `course?` (bana), `time?`, `note?`, `createdBy`. Ingen import. Visas som tabell på eventsidan (byggs statiskt).
 
 ### `pages/{pageId}` (infosidor i Markdown)
-Samma publiceringsmodell som events: fälten på dokumentet är utkastet, `published` är den exakta kopian som är live. Alla fält finns alltid. Bara publicerare, styrelse och superadmin får läsa och skriva (inte banläggare). Regler och tester: `firestore.rules`, `tests/rules/pages.test.ts`. Typer: `src/types/page.ts`; bygget läser via `src/lib/server/published-pages.ts` och `src/lib/pages.ts` (`getPublicPages`, `getMenuPages`).
+Samma publiceringsmodell som events: fälten på dokumentet är utkastet, `published` är den exakta kopian som är live. Alla fält finns alltid. Bara publicerare, styrelse och superadmin får läsa och skriva (inte banläggare). Regler och tester: `firestore.rules`, `tests/rules/pages.test.ts`. Typer: `src/types/page.ts`; bygget läser via `src/lib/server/published-pages.ts` och `src/lib/pages.ts` (`getPublicPages`). Var sidan visas i menyn styrs av `menu/main`, inte av sidan (beslut 0008).
 
 | Fält | Typ | Anm. |
 |---|---|---|
 | `title` | string | 1–200 tecken |
 | `body` | string (markdown) | Högst 50 000 tecken. Bilder infogas som `![alt](webUrl)` från bildbanken (v1.1) |
-| `inMenu` | bool | Visas i huvudmenyn |
-| `menuOrder` | heltal 0–999 | Sortering i menyn, lägst först; lika värde sorteras på titel |
-| `menuLabel` | string | Högst 40 tecken; tom = använd `title` |
 | `status` | `draft \| published \| unpublished` | `draft` bara för aldrig publicerade (då är `slug` och `published` null) |
 | `slug` | string \| null | Sidan serveras på `/<slug>`. Samma format som events (`a-z0-9` och bindestreck, max 120). Sätts vid första publiceringen och låses därefter (menyn och andra sidor länkar dit). Får inte vara reserverad: `event`, `admin`, `sok`, `logga-in`, `pagefind`, `api`, `assets`, `404`, `index`, `kalender`, `traningskalender` (listan finns i både `firestore.rules` och `src/lib/slug.ts`, håll dem synkade). Reglerna kan inte garantera unika slugs mellan sidor: editorn ska kontrollera det, och vid krock behåller bygget den först skapade sidan |
-| `published` | objekt? | Snapshot `{ title, body, inMenu, menuOrder, menuLabel }`, exakt lika med utkastet i samma skrivning. **Bygget läser bara detta fält** |
+| `published` | objekt? | Snapshot `{ title, body }`, exakt lika med utkastet i samma skrivning. **Bygget läser bara detta fält** |
 | `publishedAt` | timestamp? | Sätts (serverTid) vid varje publicering |
 | `createdBy`, `createdAt`, `updatedBy`, `updatedAt` | | Sätts till egen uid och servertid |
 
-Bara aldrig publicerade utkast (`publishedAt == null`) får raderas; publicerade sidor avpubliceras i stället. Function `onPageWritten` startar bygget när det publicerade innehållet ändras.
+Bara aldrig publicerade utkast (`publishedAt == null`) får raderas; publicerade sidor avpubliceras i stället. Function `onPageWritten` startar bygget när det publicerade innehållet ändras (det bygger också om menyn, som visar sidornas titel och adress).
+
+Fälten `inMenu`, `menuOrder` och `menuLabel` fanns till och med 2026-10-21 och flyttades till `menu/main` med `scripts/migrate-menu.mjs`. Reglerna nekar dem nu, så en sida som inte migrerats kan inte sparas förrän skriptet körts.
 
 ### `imageBank/{imageId}` (bildbank, beslut 0007)
 En post per bild. Alla fält finns alltid. Bara publicerare, styrelse och superadmin får läsa, skapa, ändra och radera (inte banläggare). Efter skapandet får bara `name`, `byline` och `description` ändras. Regler och tester: `firestore.rules`, `tests/rules/imageBank.test.ts`. Typer och konstanter: `src/types/image.ts`.
@@ -68,8 +67,20 @@ Uppladdning i UI:t: ta fram id (`doc(collection(db, 'imageBank')).id`), skala i 
 ### `templates/{templateId}`
 `name`, `svgPath`, `svgUrl`, `fields[]` (`id`, `type: text|image`, `label`, `maxLength?`, `defaultValue?`, `fit?`), `createdBy`. SVG skrivs bara via en Cloud Function som sanitiserar.
 
-### `menu/main` (ej byggt)
-Ordnad lista över menyalternativ (`label`, `href`, `children[]`). Tills vidare styrs menyn av `inMenu`/`menuOrder`/`menuLabel` på `pages`; `menu/main` behövs bara om undermenyer eller externa länkar blir aktuella.
+### `menu/main` (huvudmenyn, beslut 0008)
+Ett enda dokument. Samma publiceringsmönster som events/sidor men utan status: `items` är utkastet, `published` är den exakta kopian som är live. Kalendern (startsidan) är fast första post och lagras inte. Bara publicerare, styrelse och superadmin får läsa och skriva (inte banläggare); dokumentet kan inte raderas. Regler och tester: `firestore.rules`, `tests/rules/menu.test.ts`. Typer och gränser: `src/types/menu.ts`. Bygget läser via `src/lib/server/published-menu.ts` och `src/lib/menu.ts` (`getMenu`); uppslagningen av sidor ligger i den rena funktionen `resolveMenu` (`src/lib/menu-resolve.ts`) som adminvyn kan återanvända för förhandsvisning och varningar.
+
+| Fält | Typ | Anm. |
+|---|---|---|
+| `items` | lista | Utkastet, högst 8 poster `{ label, pageId, children }` |
+| `items[].label` | string | Text i menyn, 1–40 tecken |
+| `items[].pageId` | string \| null | Dokument-id i `pages` (inte slug). `null` = rubrik utan egen sida |
+| `items[].children` | lista av string | Undermeny: högst 8 dokument-id i `pages`. Texten är sidans titel. Ingen tredje nivå |
+| `published` | `{ items }` \| null | Exakt lika med utkastet i samma skrivning. `null` tills menyn publicerats första gången; kan inte återställas till `null` (en tom meny publiceras som `{ items: [] }`). **Bygget läser bara detta fält** |
+| `publishedAt` | timestamp? | Servertid vid varje publicering |
+| `updatedBy`, `updatedAt` | | Egen uid och servertid vid varje skrivning |
+
+Id-format: 1–128 tecken `A–Z a–z 0–9 _ -`. En sida får förekomma högst en gång i hela menyn (som post eller undersida); reglerna kontrollerar det. Att sidan finns och är publicerad kan reglerna inte kontrollera: bygget hoppar tyst över sidor som inte är publicerade (en post vars egen sida saknas visas som rubrik om den har publicerade undersidor) och skriver en varning i byggloggen; adminvyn ska visa samma varningar (`resolveMenu`). En rubrik utan synliga undersidor visas inte. Är menyn aldrig publicerad, eller innehåller den ingen publicerad sida, visar headern platshållarna Om oss/Bli medlem (gamla sajten). Function `onMenuWritten` startar bygget när `published` ändras.
 
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.

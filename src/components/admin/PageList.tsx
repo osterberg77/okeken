@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { watchMenu } from '../../lib/firebase/menu';
 import { pageState, watchPages } from '../../lib/firebase/pages';
+import { menuPageIds } from '../../lib/menu-edit';
+import type { MenuRecord } from '../../types/menu';
 import type { PageRecord } from '../../types/page';
 import { canPublish } from '../../types/user';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
@@ -17,7 +20,10 @@ export default function PageList() {
 function Pages() {
   const [pages, setPages] = useState<PageRecord[] | null>(null);
   const [error, setError] = useState('');
+  const [menu, setMenu] = useState<MenuRecord | null | undefined>(undefined);
   useEffect(() => watchPages(setPages, () => setError('Kunde inte läsa sidor.')), []);
+  useEffect(() => watchMenu(setMenu, () => setMenu(undefined)), []);
+  const inMenu = menu === undefined ? null : menuPageIds(menu?.items ?? []);
 
   return (
     <AdminPanel>
@@ -27,6 +33,12 @@ function Pages() {
           <p className="mt-2 text-muted">Infosidor som Om klubben och Bli medlem. Ändringar syns på sajten när de publicerats.</p>
         </div>
         <BuildStatus />
+        <a
+          href="/admin/meny"
+          className="rounded-full border-[1.5px] border-ink/18 bg-white px-5 py-[11px] text-sm font-semibold text-ink no-underline hover:border-accent hover:text-accent"
+        >
+          Hantera menyn
+        </a>
         <a
           href="/admin/sida"
           className="rounded-full bg-accent px-6 py-[13px] text-sm font-semibold text-white no-underline shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110"
@@ -50,8 +62,8 @@ function Pages() {
               <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex flex-wrap items-center gap-2">
                   <StatusLabel state={pageState(p)} />
-                  {p.published?.inMenu && (
-                    <span className="rounded-full bg-white px-2.5 py-[3px] text-xs font-semibold text-muted">I menyn</span>
+                  {inMenu && !inMenu.has(p.id) && (
+                    <span className="inline-flex items-center rounded-full border border-ink/15 bg-white px-2.5 py-[3px] text-xs font-semibold text-muted">Ej i menyn</span>
                   )}
                 </span>
                 <span className="truncate font-display text-[17px] font-semibold">{p.title || '(utan titel)'}</span>

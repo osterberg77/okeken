@@ -111,6 +111,11 @@ export default function AccountMenu() {
             </a>
           )}
           {canPublish(session.permissions) && (
+            <a href="/admin/meny" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+              Meny
+            </a>
+          )}
+          {canPublish(session.permissions) && (
             <a href="/admin/bilder" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
               Bilder
             </a>

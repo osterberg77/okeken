@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "label": "Om oss", "pageId": "om-klubben", "children": [] },
+    { "label": "Bli medlem", "pageId": "bli-medlem", "children": [] },
+    { "label": "Träning & tävling", "pageId": "traning-och-tavling", "children": [] }
+  ]
+}

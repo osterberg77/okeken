@@ -38,12 +38,11 @@ export async function loadPublishedPages() {
     return [
       {
         id: slug,
+        // Dokument-id: menyn (menu/main) pekar på sidor med det, inte med slug
+        pageId: d.id,
         slug,
         title: p.title as string,
         body: (p.body as string) ?? '',
-        inMenu: p.inMenu === true,
-        menuOrder: typeof p.menuOrder === 'number' ? p.menuOrder : 0,
-        menuLabel: (p.menuLabel as string) ?? '',
       },
     ];
   });

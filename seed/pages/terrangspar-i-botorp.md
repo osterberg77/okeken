@@ -1,8 +1,5 @@
 ---
 title: Terrängspår i Botorp
-inMenu: false
-menuLabel: ''
-menuOrder: 0
 ---
 Tre markerade terränglöpningsspår i Botorp, nära OK Ekens tidigare klubbstuga i Södra Botorp. Alla spår startar vid vändplanen vid den gamla banvallen strax norr om Södra Botorp.
 

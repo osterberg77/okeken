@@ -43,7 +43,7 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 
 ## Arbetssätt och modellval
 
-Orkestrera själv och delegera med subagenter där det sparar tid eller kontext. Riktlinjer:
+Orkestrera själv och delegera med subagenter där det sparar tid eller kontext. **Enklare fixar och små ändringar (en eller ett par filer, tydlig orsak, t.ex. z-index, texter, små buggar, regelrader) görs direkt i huvudsessionen utan subagent**: en agent startar utan kontext och kostar mer än den sparar. Använd agenter för större, avgränsade delar, parallellt arbete eller när säkerhetsgranskning kräver en oberoende part. Riktlinjer:
 
 | Uppgift | Modell |
 |---|---|

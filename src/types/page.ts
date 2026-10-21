@@ -3,16 +3,11 @@ export interface PageContent {
   title: string;
   /** Markdown, högst 50 000 tecken */
   body: string;
-  inMenu: boolean;
-  /** Heltal 0–999, lägst först i menyn */
-  menuOrder: number;
-  /** Text i menyn, högst 40 tecken. Tom = använd `title` */
-  menuLabel: string;
 }
 
+/** Var en sida visas i menyn bestäms av `menu/main` (src/types/menu.ts, beslut 0008), inte av sidan. */
+
 export const MAX_PAGE_BODY = 50000;
-export const MAX_MENU_LABEL = 40;
-export const MAX_MENU_ORDER = 999;
 
 /**
  * - draft: aldrig publicerad
@@ -31,21 +26,11 @@ export interface PageRecord extends PageContent {
   updatedAt: Date | null;
 }
 
-/** Publicerad sida i serialiserbar form – det som bygget skickar till sidor och meny. */
+/** Publicerad sida i serialiserbar form – det som bygget skickar till sidorna. */
 export interface PublicPage {
   slug: string;
   title: string;
   bodyHtml: string;
   /** Kort klartext för Open Graph */
   excerpt: string;
-  inMenu: boolean;
-  menuOrder: number;
-  menuLabel: string;
-}
-
-/** Menypost för en infosida */
-export interface MenuPage {
-  slug: string;
-  href: string;
-  label: string;
 }
