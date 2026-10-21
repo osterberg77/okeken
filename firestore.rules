@@ -130,6 +130,13 @@ service cloud.firestore {
       allow delete: if canPublish() && resource.data.publishedAt == null;
     }
 
+    // ---- Bygge ---------------------------------------------------------------------
+    // meta/build.lastBuildAt skrivs bara av Actions (Admin SDK). Editorn läser den för delningsknappen.
+    match /meta/build {
+      allow read: if canPublish();
+      allow write: if false;
+    }
+
     // ---- Användare ---------------------------------------------------------------
 
     match /users/{uid} {

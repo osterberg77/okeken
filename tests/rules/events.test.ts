@@ -417,3 +417,23 @@ describe('events: delete', () => {
     await assertFails(deleteDoc(ev(anon(), 'draft1')));
   });
 });
+
+describe('meta/build', () => {
+  const build = (db: ReturnType<typeof as>) => doc(db, 'meta', 'build');
+
+  it('publicerare, styrelse och superadmin kan läsa', async () => {
+    for (const uid of ['publisher', 'board', 'super']) {
+      await assertSucceeds(getDoc(build(as(uid))));
+    }
+  });
+  it('övriga kan inte läsa', async () => {
+    for (const db of [as('member'), as('setter'), as('nobody'), ghost(), anon()]) {
+      await assertFails(getDoc(build(db)));
+    }
+  });
+  it('ingen kan skriva från klienten, inte ens superadmin', async () => {
+    for (const db of [as('publisher'), as('board'), as('super'), as('member'), anon()]) {
+      await assertFails(setDoc(build(db), { lastBuildAt: serverTimestamp() }));
+    }
+  });
+});

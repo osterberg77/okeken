@@ -8,3 +8,4 @@ _to_delete/
 .astro/
 firebase-debug*.log
 *-debug.log
+functions/lib/

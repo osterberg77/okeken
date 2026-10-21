@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Skickas av Cloud Function när publicerat innehåll ändrats
+  repository_dispatch:
+    types: [content-published]
+  # Nattligt skyddsbygge (03:15 UTC)
+  schedule:
+    - cron: '15 3 * * *'
 
 concurrency:
   group: deploy
@@ -27,7 +33,7 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_OKEKEN }}
-      - run: npx firebase deploy --only firestore:rules,firestore:indexes,storage --project okeken --non-interactive
+      - run: npx firebase deploy --only firestore:rules,firestore:indexes,storage,functions --project okeken --non-interactive
 
   deploy:
     needs: rules
@@ -43,6 +49,9 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_OKEKEN }}
+      # Starttiden skrivs till meta/build efter deploy (se scripts/write-build-time.mjs)
+      - id: started
+        run: echo "at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - run: npm run build
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -50,3 +59,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_OKEKEN }}
           projectId: okeken
           channelId: live
+      - run: node scripts/write-build-time.mjs "${{ steps.started.outputs.at }}"

@@ -3,7 +3,11 @@
     "public": "dist",
     "cleanUrls": true,
     "trailingSlash": false,
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   },
   "firestore": {
     "rules": "firestore.rules",
@@ -16,11 +20,31 @@
     }
   ],
   "emulators": {
-    "auth": { "port": 9099 },
-    "firestore": { "port": 8180 },
-    "storage": { "port": 9199 },
-    "hosting": { "port": 5000 },
-    "ui": { "enabled": true },
+    "auth": {
+      "port": 9099
+    },
+    "firestore": {
+      "port": 8180
+    },
+    "storage": {
+      "port": 9199
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true
+    },
     "singleProjectMode": true
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" ci",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
 }

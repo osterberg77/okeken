@@ -8,6 +8,7 @@ import {
   saveEvent,
   unpublishEvent,
   watchEvent,
+  watchLastBuild,
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
 import { renderMarkdown, toExcerpt } from '../../lib/markdown';
@@ -101,6 +102,9 @@ function Editor({ session }: { session: Session }) {
     );
   }, [id]);
 
+  const [lastBuild, setLastBuild] = useState<Date | null>(null);
+  useEffect(() => watchLastBuild(setLastBuild), []);
+
   const dirty = !!draft && (!saved || !sameContent(draft, saved));
 
   useEffect(() => {
@@ -126,6 +130,8 @@ function Editor({ session }: { session: Session }) {
   const state = record ? eventState(record, draft) : 'draft';
   const isPublished = record?.status === 'published';
   const neverPublished = !record?.publishedAt;
+  // Delning först när bygget som innehåller publiceringen är live (annars cachar Facebook en tom förhandsvisning)
+  const siteReady = !!record?.publishedAt && !!lastBuild && lastBuild > record.publishedAt;
   const problem = !draft.title.trim()
     ? 'Ge eventet en titel.'
     : draft.endsAt < draft.startsAt
@@ -205,6 +211,20 @@ function Editor({ session }: { session: Session }) {
             <a href={`/event/${record.slug}`} target="_blank" rel="noopener" className="px-2 text-sm font-semibold text-accent no-underline hover:underline">
               Visa på sajten ↗
             </a>
+          )}
+          {isPublished && record?.slug && (
+            siteReady ? (
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${location.origin}/event/${record.slug}`)}`}
+                target="_blank"
+                rel="noopener"
+                className="px-2 text-sm font-semibold text-accent no-underline hover:underline"
+              >
+                Dela på Facebook ↗
+              </a>
+            ) : (
+              <span className="px-2 text-[13px] text-subtle">Sajten byggs om (1–2 min) – delning aktiveras då</span>
+            )
           )}
           {isPublished && (
             <ActionButton onClick={onUnpublish} disabled={!!busy} busy={busy === 'unpublish'}>Avpublicera</ActionButton>

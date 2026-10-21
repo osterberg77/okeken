@@ -38,6 +38,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 9. Sök (Pagefind).
 10. Enkel delningsknapp (förifylld text och länk, aktiv först när bygget är klart).
 11. Omdirigeringar från gamla Wix-adresser (utgå från `gamla-sajten/content/data/redirects.json` i arkivet → `firebase.json`).
+12. **Besöksstatistik** från dag ett (se "Besöksstatistik" nedan): minst besökare per event, varifrån de kommer och antal nedladdningar.
 
 ## V1.1
 
@@ -91,7 +92,8 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 2. ✅ Layout enligt `skisser/kalender-och-kontrollsymboler.md`: header, footer, kalender med kontrollsymboler, aktivitetslista, detaljvy, eventsidor med Open Graph. *Kvar:* infosidorna (Om oss, Bli medlem länkar tills vidare till gamla sajten; innehållet tas fram av Erik).
 3. ✅ Inloggning (lösenord med bekräftelsemejl, Google, e-postlänk), `users` + regler + tester, `/admin/anvandare`, `scripts/set-permissions.mjs`. Erik (osterbergsab@gmail.com) är superadmin.
 4. ✅ Events i Firestore (utkast + `published`-ögonblicksbild), regler + tester, `/admin/events` och editor med preview, Facebook-kortpreview och `StatusBadge`. Seed-eventen importerade. Bygget läser Firestore via Admin SDK. *Kvar:* redigerbara infosidor (`pages`, samma mönster) när innehållet finns; utkast/statusetiketter i publika kalendern för inloggade.
-5. **← Nästa.** Publiceringspipeline: Cloud Function vid publicering/avpublicering → `repository_dispatch` → Actions bygger och deployar → skriver `meta/build.lastBuildAt`; delningsknappen aktiv först när `lastBuildAt > publishedAt`; nattligt skyddsbygge (cron). Behöver: `functions/`, GitHub-token i Secret Manager, deploy av Functions i CI. Tills dess: Actions → Deploy → "Run workflow" efter publicering.
+5. ✅ (kod klar, väntar på engångsuppsättning nedan) Publiceringspipeline: Function `onEventWritten` (`functions/`) skickar `repository_dispatch` (`content-published`) när publicerat innehåll ändras; Deploy-workflown triggas också av nattlig cron (03:15 UTC), bygger, deployar och skriver `meta/build.lastBuildAt` (byggets *starttid*) via `scripts/write-build-time.mjs`. Editorn visar "byggs om" och aktiverar "Dela på Facebook" först när `lastBuildAt > publishedAt`. Regel + test för `meta/build`.
+   **Engångsuppsättning (Erik):** (1) skapa en fine-grained GitHub-token för `osterberg77/okeken` med *Contents: read & write* (krävs för repository_dispatch) och lägg den som secret: `firebase functions:secrets:set GITHUB_DISPATCH_TOKEN --project okeken`; (2) ge `github-deploy@okeken.iam.gserviceaccount.com` rollerna *Cloud Functions Admin*, *Service Account User*, *Cloud Build Editor*, *Artifact Registry Writer*, *Secret Manager Viewer* (och *Eventarc Admin* vid fel första gången); aktivera API:erna Cloud Functions, Cloud Build, Eventarc, Artifact Registry, Cloud Run; (3) kontrollera att tjänstekontot får skriva Firestore (`meta/build`, t.ex. *Cloud Datastore User*). Första deployen av en Firestore-triggad Function kan kräva ett omförsök.
 6. Kalendern: finjustering (t.ex. inloggade ser utkast med statusetikett).
 7. PDF-banor (Storage-regler + uppladdning i editorn, `courseFiles`).
 8. Pagefind-sök, omdirigeringar från Wix (`firebase.json`), finjustering, lansering (DNS för okeken.se på Loopia).
@@ -99,8 +101,8 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 ### Att veta inför nästa session
 
 - Arbetssätt och kommandon: `CLAUDE.md`. Designspec är bindande: `skisser/kalender-och-kontrollsymboler.md`.
-- Regeltester: `npm run test:rules` (142 st). Lokalt mot emulatorer: `npm run emulators` + `npm run dev:emu`.
-- Deploykontot `github-deploy@okeken.iam.gserviceaccount.com` har roller för Hosting, regler, index och Firestore-läsning; Functions-deploy kräver fler roller i steg 5.
+- Regeltester: `npm run test:rules` (145 st). Lokalt mot emulatorer: `npm run emulators` + `npm run dev:emu`.
+- Deploykontot `github-deploy@okeken.iam.gserviceaccount.com` har roller för Hosting, regler, index och Firestore-läsning; Functions-deploy kräver fler roller (se steg 5).
 - Ospårade logotypfiler i `assets/logo/` (utom `lila-bakgrund.svg`) ska flyttas till arkivet av Erik, inte committas.
 
 ## Flytt från Wix
@@ -119,6 +121,16 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 - Stabila event-adresser: `/event/<datum>-<slug>`, låses efter första publicering.
 - Inloggning: e-post + lösenord (med bekräftelsemejl), Google eller e-postlänk utan lösenord.
 
+## Besöksstatistik
+
+**Behov:** besökare per träning/event (varje event har egen adress), varifrån de kommer (referenser, land) och antal nedladdningar av filer. Mer behövs inte. Gratis, cookiefritt (ingen cookiebanner), ingen statistik i admin/preview.
+
+**Beslut: något från v1, valet mellan två vägar avgörs senare.**
+- **Väg A – Umami Cloud (gratis):** ett script-tag i layouten på publika sidor. Sidvisningar per adress, referenser och land ingår. Nedladdningar loggas som händelser (`data-umami-event="download"` + filnamn på länken). Gratisnivån enligt tredjepartskälla: 100 000 händelser/mån, 1 sajt, 6 månaders historik (kontrollera på Umamis prissida). Dashboard hos Umami.
+- **Väg B – egen räknare (v1.1):** litet klientskript → Cloud Function (`/api/hit` via Hosting) → dagliga räknare i Firestore (`stats/{datum}/pages/{slug}`), botfiltrering på User-Agent, land från IP på servern (IP sparas inte), dagligt roterande hash för unika besökare. Fördel: statistiken visas direkt i admin på varje event ("142 visningar, 31 nedladdningar") och ligger i egen databas. Nackdel: egen kod att underhålla, botbrus, enklare analys.
+- **Plan:** börja med väg A i v1 (en rad i layouten) så att siffror finns från dag ett. Utvärdera väg B inför v1.1 och byt om den ger tillräckligt mervärde (byte är billigt: ett script mot en egen endpoint). Behåll i båda fallen samma händelsenamn: `pageview`, `download` (med `file`) och `share`.
+- Lägg en rad om statistiken i integritetstexten.
+
 ## Startinnehåll
 
 Rådata från gamla sajten (sidtexter, JSON-data, 107 nedladdade PDF:er, privata kontakter) ligger **utanför repot** i `Projects/okeken/gamla-sajten/` (arkiv, se dess `content/README.md`). Det som bedöms ha framtida värde väljs ut och läggs i `seed/` i repot (Markdown/JSON) respektive Storage vid migrering. Logotyper i `assets/logo/`. Äldre underlag i `docs/underlag/`.
@@ -131,3 +143,4 @@ Rådata från gamla sajten (sidtexter, JSON-data, 107 nedladdade PDF:er, privata
 - Egen färgprofil eller fortsatt lila + grön? Nyhetsbrevstjänst idag?
 - Vilken logotypvariant i headern (`lila-bakgrund` eller `gron-gul`)?
 - Bli medlem: länka till Idrottonline eller eget formulär?
+- Statistik: Umami Cloud hela vägen, eller egen räknare i v1.1? (avgörs efter att vi sett vad Umami räcker till)

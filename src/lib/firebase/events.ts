@@ -87,6 +87,15 @@ export function watchEvent(id: string, callback: (event: EventRecord | null) => 
   );
 }
 
+/** När senaste bygget startade (meta/build.lastBuildAt); null tills första bygget skrivit den. */
+export function watchLastBuild(callback: (at: Date | null) => void): () => void {
+  return onSnapshot(
+    doc(db, 'meta', 'build'),
+    (snap) => callback(snap.exists() ? (snap.get('lastBuildAt') as Timestamp).toDate() : null),
+    () => callback(null),
+  );
+}
+
 const stamp = (uid: string) => ({ updatedBy: uid, updatedAt: serverTimestamp() });
 
 export async function createEvent(content: EventContent, uid: string): Promise<string> {
