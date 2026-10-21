@@ -12,7 +12,7 @@ import {
   watchBuild,
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
-import { uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files';
+import { deleteCourseFiles, uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files';
 import { loadLinkTargets, type LinkTarget } from '../../lib/firebase/link-targets';
 import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
@@ -163,6 +163,27 @@ function Editor({ session }: { session: Session }) {
     }
   }
 
+  // Filer som laddats upp i den här vyn men kanske aldrig sparats på eventet
+  const uploadedPaths = useRef(new Set<string>());
+
+  /**
+   * Raderar ur Storage de banfiler som varken utkastet eller den publicerade versionen längre pekar på.
+   * Anropas efter lyckad sparning med de listor som nu gäller; filer som den publicerade versionen fortfarande
+   * visar behålls tills den ändrats (publicera ändringar).
+   */
+  async function removeUnusedCourseFiles(keep: { storagePath: string }[]) {
+    const kept = new Set(keep.map((f) => f.storagePath));
+    const candidates = new Set<string>([
+      ...(record?.courseFiles ?? []).map((f) => f.storagePath),
+      ...(record?.published?.courseFiles ?? []).map((f) => f.storagePath),
+      ...uploadedPaths.current,
+    ]);
+    const unused = [...candidates].filter((p) => !kept.has(p));
+    if (unused.length === 0) return;
+    await deleteCourseFiles(unused);
+    unused.forEach((p) => uploadedPaths.current.delete(p));
+  }
+
   /** Sparar utkastet; skapar eventet första gången. Returnerar id. */
   async function persist(content: EventContent): Promise<string> {
     if (id) {
@@ -190,7 +211,11 @@ function Editor({ session }: { session: Session }) {
     return run('upload', async () => {
       const eventId = id ?? (await persist(draft));
       const uploaded = [];
-      for (const f of list) uploaded.push(await uploadCourseFile(eventId, f));
+      for (const f of list) {
+        const up = await uploadCourseFile(eventId, f);
+        uploadedPaths.current.add(up.storagePath);
+        uploaded.push(up);
+      }
       update({ courseFiles: [...draft.courseFiles, ...uploaded] });
       return courseOnly ? 'Uppladdat. Spara banorna för att behålla dem.' : 'Uppladdat. Spara utkastet för att behålla banorna.';
     });
@@ -199,17 +224,20 @@ function Editor({ session }: { session: Session }) {
   const onSave = () => run('save', async () => {
     if (courseOnly) {
       await saveCourseFiles(id!, record!.status, draft.courseFiles, session.uid);
+      await removeUnusedCourseFiles(draft.courseFiles);
       return record!.status === 'published'
         ? 'Sparat. Banorna syns på sajten efter nästa ombyggnad.'
         : 'Sparat. Banorna syns på sajten när eventet publicerats.';
     }
     await persist(draft);
+    await removeUnusedCourseFiles([...draft.courseFiles, ...(record?.published?.courseFiles ?? [])]);
     return isPublished ? 'Sparat som utkast. Besökarna ser den publicerade versionen tills du publicerar ändringarna.' : 'Sparat.';
   });
 
   const onPublish = () => run('publish', async () => {
     const eventId = id ?? (await persist(draft));
     await publishEvent(eventId, record?.slug ?? null, draft, session.uid);
+    await removeUnusedCourseFiles(draft.courseFiles);
     return 'Publicerat! Ändringen syns på sajten efter nästa ombyggnad.';
   });
 
@@ -222,6 +250,7 @@ function Editor({ session }: { session: Session }) {
     setBusy('delete');
     try {
       await deleteDraft(id!);
+      await deleteCourseFiles([...(record?.courseFiles ?? []).map((f) => f.storagePath), ...uploadedPaths.current]);
       location.href = '/admin/events';
     } catch {
       setBusy(null);
@@ -394,17 +423,20 @@ function Editor({ session }: { session: Session }) {
 
           </fieldset>
 
-          <Field label="Banor (PDF)" htmlFor="courses" hint={`Högst ${MAX_COURSE_FILES} filer, 10 MB var. Filer kan inte ersättas eller tas bort från lagringen, men du kan ta bort dem från eventet.`}>
+          <Field label="Banor (PDF)" htmlFor="courses" hint={`Högst ${MAX_COURSE_FILES} filer, 10 MB var. Ta bort en bana med knappen; filen raderas från servern när du sparat (en publicerad bana behålls tills ändringen publicerats).`}>
             {draft.courseFiles.length > 0 && (
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {draft.courseFiles.map((f, i) => (
                   <li key={f.storagePath} className="flex items-center gap-2">
-                    <input
-                      aria-label={`Namn på ${f.name}`}
-                      value={f.label}
-                      onChange={(e) => update({ courseFiles: draft.courseFiles.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
-                      className={INPUT}
-                    />
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <input
+                        aria-label={`Namn på ${f.name}`}
+                        value={f.label}
+                        onChange={(e) => update({ courseFiles: draft.courseFiles.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)) })}
+                        className={INPUT}
+                      />
+                      <span className="truncate px-1 text-xs text-muted" title={f.name}>Fil: {f.name}</span>
+                    </div>
                     <button
                       type="button"
                       onClick={() => update({ courseFiles: draft.courseFiles.filter((_, j) => j !== i) })}

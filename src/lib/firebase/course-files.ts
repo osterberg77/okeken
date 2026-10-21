@@ -1,4 +1,4 @@
-import { ref, uploadBytes } from 'firebase/storage';
+import { deleteObject, ref, uploadBytes } from 'firebase/storage';
 import type { CourseFile } from '../../types/event';
 import { storage } from './storage';
 
@@ -21,4 +21,10 @@ export async function uploadCourseFile(eventId: string, file: File): Promise<Cou
   const storagePath = `courses/${eventId}/${crypto.randomUUID()}-${safeName(file.name)}.pdf`;
   await uploadBytes(ref(storage, storagePath), file, { contentType: 'application/pdf' });
   return { name: file.name, storagePath, label: file.name.replace(/\.pdf$/i, '') };
+}
+
+/** Raderar filer ur Storage. Misslyckas en radering (t.ex. redan borta) ignoreras den: eventet är redan sparat utan filen. */
+export async function deleteCourseFiles(storagePaths: string[]): Promise<void> {
+  const results = await Promise.allSettled(storagePaths.map((p) => deleteObject(ref(storage, p))));
+  results.forEach((r, i) => r.status === 'rejected' && console.warn('Kunde inte radera', storagePaths[i], r.reason));
 }

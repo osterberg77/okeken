@@ -84,10 +84,9 @@ describe.skip('storage: courses – uppladdning', () => {
     await assertFails(put(as('publisher'), 'courses/ev1/for-stor.pdf', pdf(10 * 1024 * 1024 + 1)));
     await assertFails(put(as('publisher'), 'courses/ev1/tom.pdf', pdf(0)));
   });
-  it('raderar inte befintliga filer', async () => {
-    for (const uid of ['publisher', 'board', 'super', 'setter']) {
-      await assertFails(deleteObject(ref(as(uid), 'courses/ev1/existing-Bana.pdf')));
-    }
+  it('inloggad kan radera en bana (editorn städar bort borttagna banor); anonym kan inte', async () => {
+    await assertFails(deleteObject(ref(anon(), 'courses/ev1/existing-Bana.pdf')));
+    await assertSucceeds(deleteObject(ref(as('publisher'), 'courses/ev1/existing-Bana.pdf')));
   });
   // Emulatorn räknar en överskrivning som create (produktion som update, som nekas), så skyddet går inte att testa här.
   // Reglerna får inte referera till `resource`: det gav "Null value error" i Rules-tjänsten och nekade nya filer.
@@ -287,8 +286,7 @@ describe('storage: image_bank – läsning och radering', () => {
       await assertFails(deleteObject(ref(s, path)));
     }
   });
-  it('bildbanksregeln ger ingen radering av banor eller andra sökvägar', async () => {
-    await assertFails(deleteObject(ref(as('super'), 'courses/ev1/existing-Bana.pdf')));
+  it('bildbanksregeln ger ingen radering av andra sökvägar', async () => {
     await assertFails(deleteObject(ref(as('super'), 'other/secret.txt')));
   });
 });
