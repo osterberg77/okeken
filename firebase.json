@@ -5,7 +5,9 @@
     "trailingSlash": false,
     "redirects": [
       { "source": "/traningskalender", "destination": "/", "type": 301 },
-      { "source": "/traningskalender/**", "destination": "/", "type": 301 }
+      { "source": "/traningskalender/**", "destination": "/", "type": 301 },
+      { "source": "/om-ok-eken", "destination": "/om-klubben", "type": 301 },
+      { "source": "/banlaggning-purple-pen", "destination": "/banlaggning-i-purple-pen", "type": 301 }
     ],
     "ignore": [
       "firebase.json",

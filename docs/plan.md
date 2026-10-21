@@ -108,6 +108,8 @@ Uppdaterad 2026-10-21. ✅ = klart och live på https://okeken.web.app.
 
 ## Flytt från Wix
 
+**Status 2026-10-21:** åtta infosidor är importerade som utkast i produktion (`seed/pages/`): Om klubben, Bli medlem, Träning och tävling, Tävla, Terrängspår i Botorp, Veckans bana i Livelox, Banläggning i Purple Pen, Stöd för träningsansvarig. Adresserna (satta från titeln vid publicering) matchar gamla okeken.se utom Om klubben (`/om-ok-eken`) och Purple Pen (`/banlaggning-purple-pen`), som har redirect i `firebase.json`. PDF-kartor för terrängspåren och startlistan ligger i `public/dokument/`. Kvar att flytta: informationsbladet (8 MB), Eken-Nytt-arkivet (102 PDF:er, 18 MB), nyheter och blogg; de kräver dokumentarkiv eller nyhetssida (se `framtida-funktioner.md`). Bli medlem-sidan ber om mejl i stället för Idrottonline-formuläret tills vi beslutat hur ansökan ska ske.
+
 - Omdirigeringar från gamla adresser (förslag i `gamla-sajten/content/data/redirects.json`) läggs i `firebase.json`.
 - Domän okeken.se ägs av klubben och ligger hos Loopia. DNS pekas om till Firebase Hosting vid lansering.
 - Wix avvecklas först efter att PDF:er sparats (se `gamla-sajten/scripts/fetch-wix-assets.sh`) och sajten är live.

@@ -1,17 +1,28 @@
 ---
 title: Träning och tävling
-inMenu: false
-menuLabel: ''
+inMenu: true
+menuLabel: Träning & tävling
 menuOrder: 30
 ---
-Vi tränar varje tisdag och arrangerar och deltar i tävlingar under året. Alla nivåer är välkomna, från nybörjare till elit.
+## Tisdagsträning
 
-## Träning
+Start mellan kl. 17:00 och 18:00 under april–juni och augusti–oktober. Tid och plats meddelas vid föregående träning, i [träningskalendern](/) och på Facebook.
 
-Veckans träningar finns i [kalendern](/). Banorna hänger ute från tisdag till söndag, så du kan springa när det passar dig.
+Träningarna är öppna för alla oavsett ålder och tidigare erfarenhet. Den som vill ha hjälp kan kontakta banläggaren.
 
-## Tävling
+## Banor
 
-Kommande tävlingar listas i kalendern tillsammans med träningarna.
+Ungefärliga längder, anpassade efter träningskartan:
 
-*Texten är en platshållare som styrelsen ersätter med klubbens egen information.*
+- **Bana A:** lång och svår, 4–5 km
+- **Bana B:** lång och lättare, 3–4 km
+- **Bana C:** kort och svårare, 2–3 km
+- **Bana D:** kort och lätt, 1–2 km
+
+Icke-medlemmar betalar 20 kr i startavgift (frivillig för medlemmar och ungdomar).
+
+## Mer
+
+- [Tävla](/tavla)
+- [Terrängspår i Botorp](/terrangspar-i-botorp)
+- [Stöd för träningsansvarig](/stod-for-traningsansvarig)

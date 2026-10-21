@@ -4,14 +4,25 @@ inMenu: true
 menuLabel: Om oss
 menuOrder: 10
 ---
-OK Eken är en orienteringsklubb i Åtvidaberg. Hos oss kan du springa, gå eller promenera i skogen, ensam eller tillsammans med andra.
+OK Eken Åtvidaberg bildades 1958 av medlemmar från Åtvidabergs IF, SGU GoIF och Björsäters SK. Grundarna träffades på Sandelius konditori, eftersom intresset för orientering var stort och man länge hade diskuterat hur sporten kunde utvecklas.
 
-## Vad gör vi?
+Klubben har fått sitt namn efter ortens stora ekbestånd. Området i tätorten är klassat som Natura 2000.
 
-- Tisdagsträningar under hela säsongen
-- Tävlingar för alla åldrar
-- Kartor och terrängspår i närområdet
+## Fakta
 
-Se aktuella träningar i [kalendern](/). Vill du vara med? Läs om hur du [blir medlem](/bli-medlem).
+| | |
+|---|---|
+| Bildad | 21 januari 1958 |
+| Organisationsnummer | 822002-6291 |
+| Föreningsnummer | 12872-28 |
+| Bankgiro | 367-9206 |
+| Swish | 123 026 4556 |
+| E-post | ok-eken@hotmail.com |
+| Telefon | 0702 892 899 |
+| Adress | Enström, Storsättersv 15, 597 52 Åtvidaberg |
 
-*Texten är en platshållare som styrelsen ersätter med klubbens egen presentation.*
+## Länkar
+
+- [Facebook](https://www.facebook.com/OKEkenOrientering)
+- [Eventor](https://eventor.orientering.se/)
+- [Livelox](https://www.livelox.com/)
