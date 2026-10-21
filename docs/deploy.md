@@ -14,3 +14,15 @@
 - Projekt-id `okeken` (Hosting: `okeken.web.app`), skapat 2026-10-20 på Eriks Google-konto.
 - Region **europe-north1** för Firestore, Storage och Functions (närmast, kan inte ändras i efterhand).
 - Blaze-plan med budgetlarm (t.ex. 50 kr/månad).
+
+## Storage-reglerna läser Firestore (engångssteg)
+
+`storage.rules` slår upp behörighet i `users/{uid}` (`firestore.get`). Det kräver att Storages tjänstekonto har rollen `roles/firebaserules.firestoreServiceAgent`. Firebase CLI försöker ge den vid deploy, men CI-kontot `github-deploy@` får inte ändra IAM, så utan detta steg nekas **alla** uppladdningar (403, `storage/unauthorized`). Kör en gång som projektägare (gjort 2026-10-21):
+
+```
+gcloud projects add-iam-policy-binding okeken \
+  --member="serviceAccount:service-1034481154088@gcp-sa-firebasestorage.iam.gserviceaccount.com" \
+  --role="roles/firebaserules.firestoreServiceAgent"
+```
+
+Projektnumret (1034481154088) byts om projektet sätts upp på nytt.
