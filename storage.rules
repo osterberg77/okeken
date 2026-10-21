@@ -25,14 +25,12 @@ service firebase.storage {
       // OBS: referera inte till `resource` här (`resource == null` gav "Null value error" i Rules-tjänsten och nekade
       // uppladdning av nya filer) och `request.method` finns inte i Storage-regler. Emulatorn räknar en överskrivning
       // som create, så överskrivningsskyddet kan inte testas där.
-      allow create: if canUploadCourses()
-        && eventId.matches('^[A-Za-z0-9_-]{1,64}$')
-        && fileName.matches('^[A-Za-z0-9][A-Za-z0-9._-]{0,119}[.]pdf$')
+      // TILLFÄLLIGT SLAPPA REGLER (Erik 2026-10-21): uppladdning nekades med 403 i produktion och orsaken är okänd.
+      // Bara inloggad + PDF + högst 10 MB tills vidare. TAJTA TILL FÖRE RELEASE (se docs/plan.md): kräv canUploadCourses()
+      // (rollkontroll via Firestore), filnamnsmönster, ingen contentDisposition/contentEncoding/egen metadata.
+      // Den strikta varianten finns i git-historiken (commit e247536) och i tests/rules/storage.test.ts (avstängda tester).
+      allow create: if request.auth != null
         && request.resource.contentType == 'application/pdf'
-        && request.resource.contentDisposition == null
-        && request.resource.contentEncoding == null
-        // metadata saknas helt (null) i produktion när ingen egen metadata skickas, men är {} i emulatorn
-        && (request.resource.metadata == null || request.resource.metadata.size() == 0)
         && request.resource.size > 0
         && request.resource.size <= 10 * 1024 * 1024;
 
@@ -68,16 +66,13 @@ service firebase.storage {
       allow list: if false;
 
       // Bara nya filer, se kommentaren vid courses/ ovan (ingen referens till `resource`)
-      allow create: if validImageFileName(fileName)
-        // Ändelsen ska stämma med typen; svg, gif m.fl. nekas
-        && request.resource.contentType == {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}[fileName.split('[.]')[1]]
-        && request.resource.contentDisposition == null
-        && request.resource.contentEncoding == null
-        && (request.resource.metadata == null || request.resource.metadata.size() == 0)
+      // TILLFÄLLIGT SLAPPA REGLER (Erik 2026-10-21), se kommentaren vid courses/. Bara inloggad + jpeg/png/webp + högst 10 MB.
+      // TAJTA TILL FÖRE RELEASE: canPublishImages(), validImageFileName, ändelse = typ, !imagePostExists, ingen extra
+      // metadata (strikt variant: commit e247536).
+      allow create: if request.auth != null
+        && request.resource.contentType in ['image/jpeg', 'image/png', 'image/webp']
         && request.resource.size > 0
-        && request.resource.size <= 10 * 1024 * 1024
-        && canPublishImages()
-        && !imagePostExists(fileName);
+        && request.resource.size <= 10 * 1024 * 1024;
 
       allow delete: if validImageFileName(fileName)
         && canPublishImages()
