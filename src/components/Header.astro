@@ -41,8 +41,8 @@ const tone = (active: boolean) =>
 const summaryBase = 'flex cursor-pointer list-none items-center [&::-webkit-details-marker]:hidden';
 ---
 
-{/* z-20: över kalenderpanelen (z-10) så att undermenyer och profilmenyn hamnar ovanpå den */}
-<header class="relative z-20">
+{/* z-40: över kalenderpanelen (z-10) och editorernas fasta åtgärdsrad (z-30); under modaler och StatusBadge (z-50) */}
+<header class="relative z-40">
   <div class="mx-auto flex max-w-[1240px] flex-wrap items-start gap-3 px-4 pt-4 pb-2 sm:gap-5 sm:px-8 sm:pt-[22px]">
     <a href="/" aria-label="OK Eken Åtvidaberg – startsida" class="block">
       <img
