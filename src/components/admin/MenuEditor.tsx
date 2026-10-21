@@ -156,6 +156,13 @@ function Editor({ session }: { session: Session }) {
         )}
       </div>
 
+      {!record?.published && (
+        <p role="status" className="m-0 rounded-2xl bg-[#FFF3CC] px-4 py-3 text-sm text-[#6B5200]">
+          Menyn är inte publicerad ännu. Besökarna ser tills vidare de gamla länkarna (Om oss och Bli medlem på okeken.se). Publicera sidorna du vill ha med
+          under <a href="/admin/sidor" className="font-semibold">Sidor</a> och tryck sedan Publicera här.
+        </p>
+      )}
+
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <AdminPanel>
           <div>
