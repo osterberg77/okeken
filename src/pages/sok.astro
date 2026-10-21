@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Sök – OK Eken" description="Sök bland tävlingar och träningar hos OK Eken">
+  <main class="mx-auto max-w-[900px] px-4 pt-2 pb-12 sm:px-8">
+    <h1 class="mb-4 font-display text-3xl font-bold">Sök</h1>
+    <form role="search" id="search-form" class="mb-6">
+      <label for="q" class="sr-only">Sökord</label>
+      <input
+        id="q"
+        type="search"
+        autocomplete="off"
+        placeholder="Sök tävling, träning eller plats"
+        class="w-full rounded-full border border-black/10 bg-white px-5 py-3 text-base shadow-card"
+      />
+    </form>
+    <p id="search-status" class="mb-3 text-muted" aria-live="polite"></p>
+    <ul id="search-results" class="flex flex-col gap-3"></ul>
+  </main>
+</BaseLayout>
+
+<script>
+  // Pagefind-indexet skapas vid build och finns inte i `npm run dev`.
+  const input = document.querySelector<HTMLInputElement>('#q')!;
+  const status = document.querySelector<HTMLElement>('#search-status')!;
+  const list = document.querySelector<HTMLElement>('#search-results')!;
+  let pagefind: any;
+  let timer: number | undefined;
+
+  async function load() {
+    if (!pagefind) {
+      try {
+        const url = '/pagefind/pagefind.js';
+        pagefind = await import(/* @vite-ignore */ url);
+      } catch {
+        status.textContent = 'Sökningen finns bara i den publicerade sajten.';
+        return null;
+      }
+    }
+    return pagefind;
+  }
+
+  async function run() {
+    const term = input.value.trim();
+    list.replaceChildren();
+    if (!term) {
+      status.textContent = '';
+      return;
+    }
+    const pf = await load();
+    if (!pf) return;
+    const search = await pf.search(term);
+    const results = await Promise.all(search.results.slice(0, 20).map((r: any) => r.data()));
+    if (input.value.trim() !== term) return;
+    status.textContent = results.length ? `${results.length} träffar` : 'Inga träffar.';
+    for (const r of results) {
+      const li = document.createElement('li');
+      li.className = 'rounded-[20px] bg-white p-4 shadow-card';
+      const a = document.createElement('a');
+      a.href = r.url.replace(/\.html$/, '');
+      a.textContent = r.meta.title ?? r.url;
+      a.className = 'font-semibold no-underline hover:text-accent';
+      const p = document.createElement('p');
+      p.className = 'mt-1 text-sm text-muted';
+      // Pagefind returnerar utdraget som HTML med <mark>; övrig text är escapad av Pagefind.
+      p.innerHTML = r.excerpt;
+      li.append(a, p);
+      list.append(li);
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = window.setTimeout(run, 200);
+  });
+  document.querySelector('#search-form')!.addEventListener('submit', (e) => {
+    e.preventDefault();
+    run();
+  });
+  const initial = new URLSearchParams(location.search).get('q');
+  if (initial) {
+    input.value = initial;
+    run();
+  }
+</script>
