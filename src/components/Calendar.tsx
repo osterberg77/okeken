@@ -7,28 +7,33 @@ import {
   formatKeyLong,
   isWeekend,
   keyDayOfMonth,
-  keyMonthLabel,
   keyMonthShort,
   keyWeekdayShort,
+  lastDayOfMonth,
 } from '../lib/time';
 import type { EventType, PublicEvent } from '../types/event';
 import CategoryChip from './CategoryChip';
+import { CATEGORIES } from '../lib/categories';
 import DaySymbol, { StartIcon, type DayKind } from './DaySymbol';
 import { rememberedSignIn } from '../lib/firebase/flags';
 import EventDetail from './EventDetail';
+import MonthPicker from './MonthPicker';
 import StatusBadge, { StatusLabel } from './admin/StatusBadge';
 import type { DraftOverlay } from '../lib/firebase/calendar-drafts';
 
 const CELL = 72; // px per dag (symbolytans bredd)
 const DAYS_BEFORE = 5; // dagar till vänster om idag/valt datum (-5 … +10)
-const PAGE = 6; // antal kommande i listan innan "Visa fler"
+const PAGE = 6; // antal i huvudlistan innan "Visa fler"
+const SIDE = 3; // antal i den andra listan (tidigare resp. kommande)
 const DESKTOP = '(min-width: 1024px)';
 
-type Filter = 'all' | Extract<EventType, 'training' | 'competition'>;
+// Möte och Händelse är sällsynta och syns under "Alla" (avsteg från specen, se kalender-och-kontrollsymboler.md).
+type Filter = 'all' | Extract<EventType, 'training' | 'competition' | 'info'>;
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: 'Alla' },
-  { key: 'training', label: 'Träning' },
-  { key: 'competition', label: 'Tävling' },
+  { key: 'training', label: CATEGORIES.training.label },
+  { key: 'competition', label: CATEGORIES.competition.label },
+  { key: 'info', label: CATEGORIES.info.label },
 ];
 
 interface CalEvent extends PublicEvent {
@@ -81,8 +86,9 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
     [events, overlay],
   );
-  const filtered = filter === 'all' ? all : all.filter((e) => e.type === filter);
+  const filtered = useMemo(() => (filter === 'all' ? all : all.filter((e) => e.type === filter)), [all, filter]);
   const startsOn = useMemo(() => new Set(filtered.map((e) => e.startDay)), [filtered]);
+  const eventMonths = useMemo(() => new Set(filtered.map((e) => e.startDay.slice(0, 7))), [filtered]);
 
   // Sidan kan vara byggd en annan dag än den visas.
   useEffect(() => {
@@ -125,24 +131,42 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
     setViewDay(days[Math.min(Math.max(i, 0), days.length - 1)]);
   }
 
-  function selectDay(key: string) {
+  function selectDay(key: string, smooth = true) {
     setSelectedDay(key);
     setSelectedSlug(filtered.find((e) => e.startDay === key)?.slug ?? null);
     setShown(PAGE);
-    setScrollRequest((r) => ({ n: r.n + 1, smooth: true }));
+    setScrollRequest((r) => ({ n: r.n + 1, smooth }));
+  }
+
+  /** Månadsväljaren: innevarande månad → idag, framtida → den 1:a, passerad → sista dagen (så att listan börjar i den månaden). */
+  function jumpToMonth(month: string) {
+    const current = today.slice(0, 7);
+    const key = month === current ? today : month > current ? `${month}-01` : lastDayOfMonth(month);
+    selectDay(key < rangeStart ? rangeStart : key > rangeEnd ? rangeEnd : key, false);
   }
 
   function scrollWeek(direction: 1 | -1) {
     scroller.current?.scrollBy({ left: direction * 7 * CELL, behavior: 'smooth' });
   }
 
-  const upcomingAll = filtered.filter((e) => e.endDay >= selectedDay);
-  const upcoming = upcomingAll.slice(0, shown);
-  const past = filtered
-    .filter((e) => e.endDay < selectedDay)
-    .reverse()
-    .slice(0, 3);
-  const chosen = filtered.find((e) => e.slug === selectedSlug) ?? upcoming[0] ?? past[0];
+  // Listorna utgår alltid från verkliga idag: "Kommande" (närmast först) är det som inte har passerat,
+  // "Tidigare" (senaste först) det som har passerat. Valt datum styr var listan börjar: väljer man en dag
+  // bakåt i tiden blir "Tidigare" huvudlista och börjar vid den dagen, så att listan följer stegandet bakåt.
+  const browsingPast = selectedDay < today;
+  const upcomingAll = filtered.filter((e) => e.endDay >= (browsingPast ? today : selectedDay));
+  const pastAll = filtered.filter((e) => e.endDay < today && (!browsingPast || e.startDay <= selectedDay)).reverse();
+  const lists = browsingPast
+    ? [
+        { title: 'Tidigare', all: pastAll, empty: 'Inga tidigare aktiviteter.' },
+        { title: 'Kommande', all: upcomingAll },
+      ]
+    : [
+        { title: 'Kommande', all: upcomingAll, empty: 'Inga kommande aktiviteter just nu.' },
+        { title: 'Tidigare', all: pastAll },
+      ];
+  const main = lists[0].all.slice(0, shown);
+  const side = lists[1].all.slice(0, SIDE);
+  const chosen = filtered.find((e) => e.slug === selectedSlug) ?? main[0] ?? side[0];
 
   function onRowClick(ev: MouseEvent, e: CalEvent) {
     // Mobil: länken öppnar eventsidan. Desktop: visa i detaljvyn bredvid.
@@ -158,11 +182,21 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
 
   return (
     <div className="flex flex-col gap-7">
-      <section aria-label="Tidslinje" className="relative overflow-hidden rounded-[28px] bg-map shadow-panel">
-        <MapBackground />
+      <section aria-label="Tidslinje" className="relative z-10 rounded-[28px] bg-map shadow-panel">
+        {/* Kartan klipps i en egen ram så att månadsväljaren kan hänga ut under panelen. */}
+        <div className="absolute inset-0 overflow-hidden rounded-[28px]">
+          <MapBackground />
+        </div>
         <div className="relative pt-[22px] pb-[14px]">
           <div className="flex flex-wrap items-center gap-2.5 px-5 pb-3 sm:px-7">
-            <span className="mr-1.5 font-display text-[22px] font-bold first-letter:uppercase">{keyMonthLabel(viewDay)}</span>
+            <MonthPicker
+              viewDay={viewDay}
+              currentMonth={today.slice(0, 7)}
+              min={rangeStart.slice(0, 7)}
+              max={rangeEnd.slice(0, 7)}
+              eventMonths={eventMonths}
+              onSelect={jumpToMonth}
+            />
             <RoundButton label="Tidigare" onClick={() => scrollWeek(-1)}>‹</RoundButton>
             <RoundButton label="Senare" onClick={() => scrollWeek(1)}>›</RoundButton>
             <div className="hidden flex-1 sm:block" />
@@ -191,7 +225,7 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
                 type="button"
                 onClick={() => selectDay(today)}
                 aria-label="Gå till idag"
-                className="inline-flex flex-none cursor-pointer items-center gap-[7px] rounded-full bg-white/90 py-2 pr-3.5 pl-3 text-[13px] font-semibold text-ink shadow-chip hover:bg-white"
+                className="order-first inline-flex flex-none cursor-pointer items-center gap-[7px] rounded-full bg-white/90 py-2 pr-3.5 pl-3 sm:order-none text-[13px] font-semibold text-ink shadow-chip hover:bg-white"
               >
                 <StartIcon />
                 idag
@@ -230,9 +264,9 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
 
       <section className="flex flex-wrap items-start gap-7">
         <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-3 lg:max-w-[440px]">
-          <h2 className="m-0 mb-0.5 font-display text-xl font-bold">Kommande</h2>
-          {upcoming.length > 0 ? upcoming.map(row) : <p className="text-muted">Inga kommande aktiviteter just nu.</p>}
-          {upcomingAll.length > upcoming.length && (
+          <h2 className="m-0 mb-0.5 font-display text-xl font-bold">{lists[0].title}</h2>
+          {main.length > 0 ? main.map(row) : <p className="text-muted">{lists[0].empty}</p>}
+          {lists[0].all.length > main.length && (
             <button
               type="button"
               onClick={() => setShown((n) => n + PAGE)}
@@ -241,10 +275,10 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
               Visa fler
             </button>
           )}
-          {past.length > 0 && (
+          {side.length > 0 && (
             <>
-              <h2 className="mt-3.5 mb-0.5 font-display text-xl font-bold">Tidigare</h2>
-              {past.map(row)}
+              <h2 className="mt-3.5 mb-0.5 font-display text-xl font-bold">{lists[1].title}</h2>
+              {side.map(row)}
             </>
           )}
         </div>

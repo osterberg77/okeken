@@ -65,8 +65,14 @@ Beslut som togs i justeringarna:
 
 - Fönster: **-5 till +10 dagar** runt idag (16 dagar). Pilknappar ‹ › flyttar en vecka. I riktiga sajten ska detta vara **oändlig horisontell scroll** med en liten knapp "idag" som scrollar hem.
 - "Idag"-knapp: pillform, vit `rgba(255,255,255,.9)`, liten triangel-ikon (16 px, `rotate(-30)`, stroke `#8A4B9E` 2.2, points `10,1.5 17.4,14.3 2.6,14.3`) + texten *idag*, 13 px vikt 600.
-- Filterchips: Alla / Träning / Tävling. Aktiv chip `#2B2838` med vit text, annars vit.
+- Filterchips: Alla / Träning / Tävling / Information (se avsteg nedan). Aktiv chip `#2B2838` med vit text, annars vit.
 - Panel: `border-radius: 28px`, skugga `0 20px 50px -24px rgba(43,40,56,.25), 0 2px 6px rgba(43,40,56,.05)`.
+
+### Avsteg godkända av Erik (2026-10-21, efter användartest)
+
+1. **Listans ordning.** Rubrikerna utgår alltid från verkliga idag: *Kommande* = inte passerat, närmast först; *Tidigare* = passerat, senaste först. Valt datum styr var listan börjar. Väljer man en dag bakåt i tiden blir *Tidigare* huvudlista (överst, med "Visa fler") och börjar vid den dagen; *Kommande* visas under med tre rader. Väljer man idag eller framåt är det tvärtom. (Tidigare hamnade passerade events under "Kommande" i stigande ordning när man valde en dag bakåt.)
+2. **Månadsväljare.** Månadsrubriken är en knapp med en liten nedpil (chevron 16 px, accentfärg, vänds uppåt när öppen). Den öppnar en vit ruta under rubriken (`border-radius: 22px`, panelskuggan, 272 px bred): år med ‹ › och 12 månader i 3 × 4. Månaden som visas är mörk pill (`#2B2838`, vit text), innevarande månad har lila ring, månader med aktiviteter (enligt valt filter) har en liten lila prick, övriga är dämpade (`#8A859C`). Val av månad: innevarande → idag, framtida → den 1:a, passerad → sista dagen, så att listan börjar i den månaden. Piltangenter flyttar fokus (upp/ned ett kvartal, PageUp/PageDown ett år), Escape och klick utanför stänger. Kartbakgrunden klipps nu i en egen ram så att rutan kan hänga ut under panelen.
+3. **Filter för Information.** Filterraden: Alla / Träning / Tävling / Information, samma etikett som taggen. Möte och Händelse är sällsynta och syns bara under *Alla* (håller raden kort). På mobil ligger *idag*-knappen först i filterraden så att den alltid syns; filtren scrollas i sidled.
 
 ### Kartbakgrund i panelen
 

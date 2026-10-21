@@ -56,6 +56,12 @@ export function keyMonthLabel(key: string): string {
   return keyMonthLongFmt.format(keyToUtc(key));
 }
 
+/** Sista dagen i månaden för 'YYYY-MM' → 'YYYY-MM-DD' */
+export function lastDayOfMonth(month: string): string {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+}
+
 const timeFmt = new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
 
 export function formatTime(iso: string): string {
