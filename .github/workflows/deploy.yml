@@ -16,7 +16,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Regler, index och Functions deployas bara när koden ändrats (push/manuellt), inte vid varje publicering
+  # (content-published) eller nattbygge – de bygger bara om sajten.
   rules:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +40,8 @@ jobs:
 
   deploy:
     needs: rules
+    # rules hoppas över vid publicering/nattbygge; då ska bygget ändå köras
+    if: ${{ !cancelled() && (needs.rules.result == 'success' || needs.rules.result == 'skipped') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
