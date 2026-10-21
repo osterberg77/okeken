@@ -14,7 +14,10 @@ import {
 import type { EventType, PublicEvent } from '../types/event';
 import CategoryChip from './CategoryChip';
 import DaySymbol, { StartIcon, type DayKind } from './DaySymbol';
+import { rememberedSignIn } from '../lib/firebase/flags';
 import EventDetail from './EventDetail';
+import StatusBadge, { StatusLabel } from './admin/StatusBadge';
+import type { DraftOverlay } from '../lib/firebase/calendar-drafts';
 
 const CELL = 72; // px per dag (symbolytans bredd)
 const DAYS_BEFORE = 5; // dagar till vänster om idag/valt datum (-5 … +10)
@@ -50,9 +53,33 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
   const [viewDay, setViewDay] = useState(initialToday); // styr månadsrubriken
   const scroller = useRef<HTMLDivElement>(null);
 
+  // Inloggade publicerare ser även utkast och ändringar (med statusetikett). Firebase hämtas bara om de är inloggade.
+  const [overlay, setOverlay] = useState<DraftOverlay | null>(null);
+  useEffect(() => {
+    if (!rememberedSignIn()) return;
+    let stop = () => {};
+    let cancelled = false;
+    import('../lib/firebase/calendar-drafts').then((m) => {
+      if (!cancelled) stop = m.watchDraftOverlay(setOverlay);
+    });
+    return () => {
+      cancelled = true;
+      stop();
+    };
+  }, []);
+
   const all = useMemo<CalEvent[]>(
-    () => events.map((e) => ({ ...e, startDay: dayKey(e.startsAt), endDay: dayKey(e.endsAt) })),
-    [events],
+    () =>
+      [
+        ...events.map((e) => {
+          const adminId = overlay?.changed.get(e.slug);
+          return adminId ? { ...e, state: 'changed' as const, adminId } : e;
+        }),
+        ...(overlay?.extra ?? []),
+      ]
+        .map((e) => ({ ...e, startDay: dayKey(e.startsAt), endDay: dayKey(e.endsAt) }))
+        .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+    [events, overlay],
   );
   const filtered = filter === 'all' ? all : all.filter((e) => e.type === filter);
   const startsOn = useMemo(() => new Set(filtered.map((e) => e.startDay)), [filtered]);
@@ -224,7 +251,15 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
 
         {chosen && (
           <div className="hidden min-w-0 flex-[999_1_480px] lg:block">
-            <EventDetail event={chosen} today={today} as="h2" shareUrl={`${siteUrl}/event/${chosen.slug}`} />
+            <EventDetail event={chosen} today={today} as="h2" shareUrl={chosen.state ? undefined : `${siteUrl}/event/${chosen.slug}`} />
+            {chosen.state && (
+              <>
+                <StatusBadge state={chosen.state} />
+                <a href={`/admin/event?id=${chosen.adminId}`} className="mt-3 inline-block text-sm font-semibold text-accent">
+                  Redigera i admin →
+                </a>
+              </>
+            )}
           </div>
         )}
       </section>
@@ -237,9 +272,11 @@ function EventRow({ event, selected, onClick }: { event: CalEvent; selected: boo
   const meta = [keyWeekdayShort(event.startDay), time, event.location?.name].filter(Boolean).join(' · ');
   return (
     <a
-      href={`/event/${event.slug}`}
+      href={event.state ? `/admin/event?id=${event.adminId}` : `/event/${event.slug}`}
       onClick={onClick}
       className={`flex w-full items-center gap-4 rounded-[22px] px-[18px] py-4 text-ink no-underline ${
+        event.state ? 'outline-2 -outline-offset-2 outline-[#F9D932] outline-dashed ' : ''
+      }${
         selected
           ? 'bg-white shadow-[0_1px_3px_rgba(43,40,56,.06)] lg:shadow-[0_12px_28px_-14px_rgba(138,75,158,.45),0_0_0_2px_rgba(138,75,158,.62)]'
           : 'bg-white/60 shadow-[0_1px_3px_rgba(43,40,56,.06)] hover:bg-white'
@@ -250,7 +287,10 @@ function EventRow({ event, selected, onClick }: { event: CalEvent; selected: boo
         <span className="text-[11px] font-semibold tracking-[.08em] text-subtle uppercase">{keyMonthShort(event.startDay)}</span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-[5px]">
-        <CategoryChip type={event.type} />
+        <span className="flex flex-wrap items-center gap-2">
+          <CategoryChip type={event.type} />
+          {event.state && <StatusLabel state={event.state} />}
+        </span>
         <span className="font-display text-[17px] leading-[1.25] font-semibold">{event.title}</span>
         <span className="text-[13px] text-subtle">{meta}</span>
       </span>

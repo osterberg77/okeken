@@ -51,4 +51,8 @@ export interface PublicEvent {
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;
+  /** Bara för inloggade publicerare i kalendern: eventet är inte (helt) live. Saknas för vanliga publika events. */
+  state?: 'draft' | 'changed' | 'unpublished';
+  /** Eventets id i admin, när `state` är satt */
+  adminId?: string;
 }

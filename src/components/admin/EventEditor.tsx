@@ -11,9 +11,9 @@ import {
   watchBuild,
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
-import { renderMarkdown, toExcerpt } from '../../lib/markdown';
+import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
-import { EVENT_TYPES, type EventContent, type EventRecord, type PublicEvent } from '../../types/event';
+import { EVENT_TYPES, type EventContent, type EventRecord } from '../../types/event';
 import { canPublish, type Session } from '../../types/user';
 import EventDetail from '../EventDetail';
 import AdminGate, { AdminPanel } from './AdminGate';
@@ -55,21 +55,6 @@ const contentOf = (r: EventRecord): EventContent => ({
   courseSetter: r.courseSetter,
   livelox: r.livelox,
 });
-
-function toPreview(c: EventContent, slug: string | null): PublicEvent {
-  return {
-    slug: slug ?? 'forhandsvisning',
-    type: c.type,
-    title: c.title.trim() || 'Titel saknas',
-    startsAt: c.startsAt.toISOString(),
-    endsAt: c.endsAt.toISOString(),
-    location: c.location.name.trim() ? { name: c.location.name.trim(), mapUrl: c.location.mapUrl.trim() || undefined } : undefined,
-    courseSetter: c.courseSetter.trim() || undefined,
-    livelox: c.livelox.trim() || undefined,
-    bodyHtml: renderMarkdown(c.body),
-    excerpt: toExcerpt(c.body),
-  };
-}
 
 type Message = { kind: 'ok' | 'error'; text: string } | null;
 
