@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Skriver meta/build.lastBuildAt efter lyckad deploy (körs i GitHub Actions).
 // Tiden är när bygget *startade* (argument 1, ISO-8601): ett event som publicerades
-// medan bygget pågick ska inte räknas som delningsklart.
+// medan bygget pågick ska inte räknas som delningsklart. merge bevarar requestedAt (Functions).
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
@@ -12,5 +12,5 @@ if (Number.isNaN(startedAt.getTime())) {
 }
 
 initializeApp({ credential: applicationDefault(), projectId: 'okeken' });
-await getFirestore().doc('meta/build').set({ lastBuildAt: Timestamp.fromDate(startedAt) });
+await getFirestore().doc('meta/build').set({ lastBuildAt: Timestamp.fromDate(startedAt) }, { merge: true });
 console.log(`meta/build.lastBuildAt = ${startedAt.toISOString()}`);

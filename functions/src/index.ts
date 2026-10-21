@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase-admin/app';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
@@ -29,6 +30,9 @@ export const onEventWritten = onDocumentWritten(
     const visible = (s: ReturnType<typeof liveState>) => (s?.status === 'published' ? s : null);
 
     if (JSON.stringify(visible(before)) === JSON.stringify(visible(after))) return;
+
+    // Adminvyn jämför requestedAt med lastBuildAt för att visa "bygger" (gul) eller "fel" (röd)
+    await getFirestore().doc('meta/build').set({ requestedAt: FieldValue.serverTimestamp() }, { merge: true });
 
     const res = await fetch(`https://api.github.com/repos/${REPO}/dispatches`, {
       method: 'POST',

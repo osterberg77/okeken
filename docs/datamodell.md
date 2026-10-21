@@ -44,7 +44,7 @@ Ordnad lista över menyalternativ (`label`, `href`, `children[]`).
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 
 ### `meta/build`
-`lastBuildAt` (skrivs av Actions efter lyckad deploy). Ett event är delningsklart när `lastBuildAt > event.publishedAt`.
+`lastBuildAt` (skrivs av Actions efter lyckad deploy, värdet är byggets starttid) och `requestedAt` (skrivs av Function när den begär ett bygge). Adminvyn visar grön om `lastBuildAt >= requestedAt`, gul om bygge pågår, röd om det gått mer än 10 minuter utan resultat. Ett event är delningsklart när `lastBuildAt > event.publishedAt`.
 
 ## Storage
 

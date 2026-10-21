@@ -35,6 +35,12 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 - `node scripts/seed-events.mjs` – importerar `seed/events/*.md` till Firestore (hoppar över befintliga)
 - `node scripts/set-permissions.mjs <e-post> <behörighet…>` – sätter behörigheter med Admin SDK (första superadmin); kräver `gcloud auth application-default login`
 
+## Kommunikation (WhatsApp)
+
+- Byggkanalen är WhatsApp-gruppen **"OK Eken - hemsidebygge"** (JID `120363413962914017@g.us`), nåbar via MCP-servern `whatsapp`. Där postas change-log vid större ändringar, och Erik ber ibland Claude läsa gruppen efter förslag och kommentarer som underlag för vidare bygge.
+- När Claude postar i gruppen börjar meddelandet alltid med **"🤖 AI-byggaren:"** så att alla ser att det är Claude och inte Erik som skriver.
+- Skriv på svenska, kort och för klubbmedlemmar (inte tekniskt). Posta bara det som är live, och bara när Erik bett om det eller godkänt texten.
+
 ## Arbetssätt och modellval
 
 Orkestrera själv och delegera med subagenter där det sparar tid eller kontext. Riktlinjer:

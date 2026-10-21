@@ -8,7 +8,7 @@ import {
   saveEvent,
   unpublishEvent,
   watchEvent,
-  watchLastBuild,
+  watchBuild,
 } from '../../lib/firebase/events';
 import { CATEGORIES } from '../../lib/categories';
 import { renderMarkdown, toExcerpt } from '../../lib/markdown';
@@ -17,6 +17,7 @@ import { EVENT_TYPES, type EventContent, type EventRecord, type PublicEvent } fr
 import { canPublish, type Session } from '../../types/user';
 import EventDetail from '../EventDetail';
 import AdminGate, { AdminPanel } from './AdminGate';
+import BuildStatus from './BuildStatus';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 
 export default function EventEditor() {
@@ -103,7 +104,7 @@ function Editor({ session }: { session: Session }) {
   }, [id]);
 
   const [lastBuild, setLastBuild] = useState<Date | null>(null);
-  useEffect(() => watchLastBuild(setLastBuild), []);
+  useEffect(() => watchBuild((b) => setLastBuild(b.lastBuildAt)), []);
 
   const dirty = !!draft && (!saved || !sameContent(draft, saved));
 
@@ -223,9 +224,10 @@ function Editor({ session }: { session: Session }) {
                 Dela på Facebook ↗
               </a>
             ) : (
-              <span className="px-2 text-[13px] text-subtle">Sajten byggs om (1–2 min) – delning aktiveras då</span>
+              <span className="px-2 text-[13px] text-subtle">Delning aktiveras när sajten är uppdaterad</span>
             )
           )}
+          <BuildStatus />
           {isPublished && (
             <ActionButton onClick={onUnpublish} disabled={!!busy} busy={busy === 'unpublish'}>Avpublicera</ActionButton>
           )}

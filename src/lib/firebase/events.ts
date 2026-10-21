@@ -87,12 +87,20 @@ export function watchEvent(id: string, callback: (event: EventRecord | null) => 
   );
 }
 
-/** När senaste bygget startade (meta/build.lastBuildAt); null tills första bygget skrivit den. */
-export function watchLastBuild(callback: (at: Date | null) => void): () => void {
+export interface BuildInfo {
+  /** Starttid för senaste lyckade bygget */
+  lastBuildAt: Date | null;
+  /** När Function senast begärde ett bygge */
+  requestedAt: Date | null;
+}
+
+/** Läser meta/build: lastBuildAt skrivs av Actions, requestedAt av Function vid publicering. */
+export function watchBuild(callback: (info: BuildInfo) => void): () => void {
+  const date = (v: unknown) => (v ? (v as Timestamp).toDate() : null);
   return onSnapshot(
     doc(db, 'meta', 'build'),
-    (snap) => callback(snap.exists() ? (snap.get('lastBuildAt') as Timestamp).toDate() : null),
-    () => callback(null),
+    (snap) => callback({ lastBuildAt: date(snap.get('lastBuildAt')), requestedAt: date(snap.get('requestedAt')) }),
+    () => callback({ lastBuildAt: null, requestedAt: null }),
   );
 }
 

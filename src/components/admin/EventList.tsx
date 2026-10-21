@@ -5,6 +5,7 @@ import type { EventRecord } from '../../types/event';
 import { canPublish } from '../../types/user';
 import CategoryChip from '../CategoryChip';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
+import BuildStatus from './BuildStatus';
 import { StatusLabel } from './StatusBadge';
 
 export default function EventList() {
@@ -31,6 +32,7 @@ function Events() {
           <AdminTitle>Events</AdminTitle>
           <p className="mt-2 text-muted">Träningar, tävlingar och annat i kalendern. Ändringar syns på sajten när de publicerats.</p>
         </div>
+        <BuildStatus />
         <a
           href="/admin/event"
           className="rounded-full bg-accent px-6 py-[13px] text-sm font-semibold text-white no-underline shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110"
