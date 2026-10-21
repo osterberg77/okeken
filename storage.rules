@@ -31,7 +31,8 @@ service firebase.storage {
         && request.resource.contentType == 'application/pdf'
         && request.resource.contentDisposition == null
         && request.resource.contentEncoding == null
-        && request.resource.metadata.size() == 0
+        // metadata saknas helt (null) i produktion när ingen egen metadata skickas, men är {} i emulatorn
+        && (request.resource.metadata == null || request.resource.metadata.size() == 0)
         && request.resource.size > 0
         && request.resource.size <= 10 * 1024 * 1024;
 
@@ -72,7 +73,7 @@ service firebase.storage {
         && request.resource.contentType == {'jpg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp'}[fileName.split('[.]')[1]]
         && request.resource.contentDisposition == null
         && request.resource.contentEncoding == null
-        && request.resource.metadata.size() == 0
+        && (request.resource.metadata == null || request.resource.metadata.size() == 0)
         && request.resource.size > 0
         && request.resource.size <= 10 * 1024 * 1024
         && canPublishImages()
