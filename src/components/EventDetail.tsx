@@ -107,9 +107,9 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
 
       {event.image && (
         // Spec (docs/skisser): bild till höger, 300 px, radie 20 px, marginal 14 px, object-fit cover. Kortets bredd
-        // (containerfråga) avgör: smalt kort ger bilden i full bredd under texten (16:9). Ramen har alltid en
+        // (containerfråga) avgör: smalt kort ger bilden i full bredd ÖVERST i kortet (16:9). Ramen har alltid en
         // bestämd storlek, så sidan hoppar inte när bilden laddas.
-        <div className="relative m-3.5 mt-0 aspect-[16/9] flex-[1_1_100%] overflow-hidden rounded-[20px] bg-period @min-[680px]:mt-3.5 @min-[680px]:ml-0 @min-[680px]:aspect-auto @min-[680px]:min-h-[280px] @min-[680px]:min-w-[240px] @min-[680px]:flex-[0_1_300px]">
+        <div className="relative order-first m-3.5 mb-0 aspect-[16/9] flex-[1_1_100%] overflow-hidden rounded-[20px] bg-period @min-[680px]:order-none @min-[680px]:m-3.5 @min-[680px]:ml-0 @min-[680px]:aspect-auto @min-[680px]:min-h-[280px] @min-[680px]:min-w-[240px] @min-[680px]:flex-[0_1_300px]">
           <img
             src={bankImageSrc(event.image.url)}
             alt={event.image.alt}

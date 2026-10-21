@@ -20,6 +20,8 @@ interface Props {
 
 const { title, description = 'OK Eken – orienteringsklubb i Åtvidaberg', ogTitle = title, ogType = 'website', noindex = false, ogImage } = Astro.props;
 // build.format 'file' ger '/event/x.html'; Hosting (cleanUrls) serverar '/event/x'
+// Utan egen huvudbild delas klubbens logotyp (public/og-default.png, 1200x630)
+const shareImage = ogImage ?? { url: new URL('/og-default.png', Astro.site).href, alt: 'OK Eken Åtvidaberg' };
 const canonicalPath = Astro.url.pathname.replace(/(index)?\.html$/, '');
 const canonical = new URL(canonicalPath, Astro.site).href;
 ---
@@ -40,11 +42,11 @@ const canonical = new URL(canonicalPath, Astro.site).href;
     <meta property="og:title" content={ogTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    {ogImage && <meta property="og:image" content={ogImage.url} />}
-    {ogImage?.alt && <meta property="og:image:alt" content={ogImage.alt} />}
-    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
-    {ogImage && <meta name="twitter:image" content={ogImage.url} />}
-    {ogImage?.alt && <meta name="twitter:image:alt" content={ogImage.alt} />}
+    <meta property="og:image" content={shareImage.url} />
+    <meta property="og:image:alt" content={shareImage.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={shareImage.url} />
+    <meta name="twitter:image:alt" content={shareImage.alt} />
   </head>
   <body class="bg-canvas font-sans text-[15px] leading-normal text-ink antialiased">
     {/* overflow-x-clip (inte overflow-hidden): klipper de dekorativa cirklarna i sidled men inte menyernas rullgardiner */}
