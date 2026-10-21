@@ -9,6 +9,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -124,13 +125,13 @@ const save = (id: string, over: Record<string, unknown>, uid = 'publisher') =>
   updateDoc(ev(as(uid), id), { updatedBy: uid, updatedAt: serverTimestamp(), ...over });
 
 describe('events: read', () => {
-  for (const uid of ['publisher', 'board', 'super']) {
+  for (const uid of ['publisher', 'board', 'super', 'setter']) {
     it(`${uid} kan läsa (get och list)`, async () => {
       await assertSucceeds(getDoc(ev(as(uid), 'draft1')));
       await assertSucceeds(getDocs(collection(as(uid), 'events')));
     });
   }
-  for (const uid of ['member', 'setter', 'nobody']) {
+  for (const uid of ['member', 'nobody']) {
     it(`${uid} kan inte läsa`, async () => {
       await assertFails(getDoc(ev(as(uid), 'draft1')));
       await assertFails(getDocs(collection(as(uid), 'events')));
@@ -491,6 +492,27 @@ describe('events: courseFiles (PDF-banor)', () => {
     await assertFails(save('draft1', { courseFiles: [{ name: 'a.pdf', label: 'A' }] }));
     await assertFails(save('draft1', { courseFiles: [file({ storagePath: 'courses/draft1/..pdf' })] }));
   });
+  it('längdgränser och typer i banposten', async () => {
+    await assertSucceeds(save('draft1', { courseFiles: [file({ name: 'x'.repeat(200), label: 'y'.repeat(200) })] }));
+    await assertSucceeds(save('draft1', { courseFiles: [file({ name: 'rad\nbrytning.pdf', label: '' })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ name: 'x'.repeat(201) })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ label: 'y'.repeat(201) })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ name: 5 })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ name: null })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: 7 })] }));
+    await assertFails(save('draft1', { courseFiles: [file({ storagePath: `courses/draft1/${'a'.repeat(197)}.pdf` })] }));
+    await assertSucceeds(save('draft1', { courseFiles: [file({ storagePath: `courses/draft1/${'a'.repeat(196)}.pdf` })] }));
+    await assertFails(save('draft1', { courseFiles: [42] }));
+  });
+  it('publicera 8 banor med maxlängder ryms under uttryckstaket', async () => {
+    const big = Array.from({ length: 8 }, (_, i) =>
+      file({ name: 'x'.repeat(200), label: 'y'.repeat(200), storagePath: `courses/draft2/${i}${'a'.repeat(195)}.pdf` }, 'draft2'),
+    );
+    const c = { ...content(), title: 't'.repeat(200), body: 'b'.repeat(20000), courseFiles: big };
+    await assertSucceeds(
+      save('draft2', { ...c, status: 'published', slug: 'x'.repeat(120), published: c, publishedAt: serverTimestamp() }),
+    );
+  });
   it('banor måste ligga under eventets egen mapp', async () => {
     await assertFails(save('draft1', { courseFiles: [file({}, 'draft2')] }));
     await assertSucceeds(save('draft1', { courseFiles: [file({}, 'draft1')] }));
@@ -502,8 +524,166 @@ describe('events: courseFiles (PDF-banor)', () => {
     await assertFails(save('draft1', { courseFiles: [...many(7), file({ storagePath: 'courses/draft1/x.exe' })] }));
   });
   it('övriga roller kan inte skriva banor', async () => {
-    for (const uid of ['member', 'setter', 'nobody']) {
+    for (const uid of ['member', 'nobody']) {
       await assertFails(save('draft1', { courseFiles: [file()] }, uid));
     }
+  });
+});
+
+describe('events: banläggare (courseFiles)', () => {
+  const file = (id: string, n = 0) => ({
+    name: `Bana ${n}.pdf`,
+    storagePath: `courses/${id}/f${n}-Bana.pdf`,
+    label: `Bana ${n}`,
+  });
+  const files = (id: string, count: number) => Array.from({ length: count }, (_, i) => file(id, i));
+  // Bara banor (+ updatedBy/updatedAt), som banläggaren
+  const saveFiles = (id: string, courseFiles: unknown, over: Record<string, unknown> = {}, uid = 'setter') =>
+    save(id, { courseFiles, ...over }, uid);
+  // Banor i både utkast och published (publicerat event)
+  const syncFiles = (id: string, courseFiles: unknown, over: Record<string, unknown> = {}, uid = 'setter') =>
+    save(id, { courseFiles, published: { ...content(), courseFiles }, ...over }, uid);
+
+  it('kan spara banor på utkast', async () => {
+    await assertSucceeds(saveFiles('draft1', [file('draft1')]));
+    await assertSucceeds(saveFiles('draft1', []));
+  });
+  it('kan spara banor i utkastet på publicerat/avpublicerat event utan att röra published', async () => {
+    await assertSucceeds(saveFiles('pub1', [file('pub1')]));
+    await assertSucceeds(saveFiles('unpub1', [file('unpub1')]));
+  });
+  it('publicerat event: published.courseFiles får sättas lika med utkastets i samma skrivning', async () => {
+    await assertSucceeds(syncFiles('pub1', [file('pub1'), file('pub1', 1)]));
+    await assertSucceeds(syncFiles('pub1', []));
+  });
+  it('8 banor ryms (även synkade till published)', async () => {
+    await assertSucceeds(syncFiles('pub1', files('pub1', 8)));
+  });
+  it('publicerat event utan courseFiles (äldre) kan få banor', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const { courseFiles: _a, ...legacy } = publishedDoc() as Record<string, unknown>;
+      const { courseFiles: _b, ...legacyPublished } = content() as Record<string, unknown>;
+      await setDoc(doc(ctx.firestore(), 'events', 'legacyPub'), { ...legacy, published: legacyPublished });
+    });
+    const f = [file('legacyPub')];
+    await assertSucceeds(save('legacyPub', { courseFiles: f, published: { ...content(), courseFiles: f } }, 'setter'));
+  });
+
+  it('published.courseFiles som skiljer sig från utkastets nekas', async () => {
+    await assertFails(
+      save('pub1', { courseFiles: [file('pub1')], published: { ...content(), courseFiles: [file('pub1', 1)] } }, 'setter'),
+    );
+    await assertFails(
+      save('pub1', { courseFiles: [], published: { ...content(), courseFiles: [file('pub1')] } }, 'setter'),
+    );
+  });
+  it('kan inte smuggla in annat i published', async () => {
+    const f = [file('pub1')];
+    await assertFails(save('pub1', { courseFiles: f, published: { ...content(), courseFiles: f, title: 'Smyg' } }, 'setter'));
+    await assertFails(save('pub1', { courseFiles: f, published: { ...content(), courseFiles: f, extra: 1 } }, 'setter'));
+    const { body: _b, ...noBody } = content();
+    await assertFails(save('pub1', { courseFiles: f, published: { ...noBody, courseFiles: f } }, 'setter'));
+    await assertFails(save('pub1', { published: { ...content(), title: 'Smyg' } }, 'setter'));
+  });
+  it('published får inte röras på utkast eller avpublicerat event', async () => {
+    const f = [file('draft1')];
+    await assertFails(save('draft1', { courseFiles: f, published: { ...content(), courseFiles: f } }, 'setter'));
+    const g = [file('unpub1')];
+    await assertFails(save('unpub1', { courseFiles: g, published: { ...content(), courseFiles: g } }, 'setter'));
+  });
+  it('kan inte ändra publishedAt, inte ens med serverTimestamp', async () => {
+    await assertFails(syncFiles('pub1', [file('pub1')], { publishedAt: serverTimestamp() }));
+    await assertFails(saveFiles('pub1', [file('pub1')], { publishedAt: serverTimestamp() }));
+  });
+
+  const denied: [string, Record<string, unknown>][] = [
+    ['title', { title: 'Ny titel' }],
+    ['body', { body: 'Ny text' }],
+    ['courseSetter', { courseSetter: 'Jag' }],
+    ['status', { status: 'unpublished' }],
+    ['slug', { slug: 'ny-adress' }],
+    ['createdBy', { createdBy: 'setter' }],
+    ['okänt fält', { extra: 1 }],
+  ];
+  for (const [name, over] of denied) {
+    it(`kan inte ändra ${name}`, async () => {
+      await assertFails(saveFiles('pub1', [file('pub1')], over));
+      await assertFails(saveFiles('draft1', [file('draft1')], over));
+    });
+  }
+  it('kan inte avpublicera eller publicera', async () => {
+    await assertFails(save('pub1', { status: 'unpublished' }, 'setter'));
+    await assertFails(save('unpub1', { status: 'published' }, 'setter'));
+    await assertFails(
+      save(
+        'draft1',
+        { status: 'published', slug: 'smyg', published: content(), publishedAt: serverTimestamp() },
+        'setter',
+      ),
+    );
+  });
+  it('kan inte publicera om hela utkastet (publishedAt + published)', async () => {
+    await assertFails(
+      save('pub1', { title: 'Ny', published: { ...content(), title: 'Ny' }, publishedAt: serverTimestamp() }, 'setter'),
+    );
+  });
+  it('fler än 8 banor nekas', async () => {
+    await assertFails(saveFiles('draft1', files('draft1', 9)));
+    await assertFails(syncFiles('pub1', files('pub1', 9)));
+  });
+  it('fel prefix nekas (annat event, annan mapp, ej pdf)', async () => {
+    await assertFails(saveFiles('draft1', [file('draft2')]));
+    await assertFails(syncFiles('pub1', [file('draft1')]));
+    await assertFails(saveFiles('draft1', [{ ...file('draft1'), storagePath: 'images/draft1/a.pdf' }]));
+    await assertFails(saveFiles('draft1', [{ ...file('draft1'), storagePath: 'courses/draft1/a.html' }]));
+    await assertFails(saveFiles('draft1', [...files('draft1', 7), file('draft2', 7)]));
+  });
+  it('ogiltiga eller borttagna courseFiles nekas', async () => {
+    await assertFails(saveFiles('draft1', 'bana.pdf'));
+    await assertFails(saveFiles('draft1', null));
+    await assertFails(saveFiles('draft1', [{ ...file('draft1'), extra: 'x' }]));
+    await assertFails(save('draft1', { courseFiles: deleteField() }, 'setter'));
+  });
+  it('måste sätta egen updatedBy och serverTimestamp', async () => {
+    await assertFails(saveFiles('draft1', [file('draft1')], { updatedBy: 'publisher' }));
+    await assertFails(saveFiles('draft1', [file('draft1')], { updatedAt: OLD }));
+    await assertFails(
+      updateDoc(ev(as('setter'), 'draft1'), { courseFiles: [file('draft1')] }),
+    );
+  });
+  it('kan inte skapa eller radera events', async () => {
+    await assertFails(setDoc(ev(as('setter'), 'new'), newEvent('setter')));
+    await assertFails(deleteDoc(ev(as('setter'), 'draft1')));
+    await assertFails(deleteDoc(ev(as('setter'), 'pub1')));
+  });
+  it('kan inte läsa meta/build eller pages', async () => {
+    await assertFails(getDoc(doc(as('setter'), 'meta', 'build')));
+    await assertFails(getDoc(doc(as('setter'), 'pages', 'p1')));
+  });
+  it('övriga roller kan inte använda banläggarvägen', async () => {
+    for (const uid of ['member', 'nobody']) {
+      await assertFails(saveFiles('pub1', [file('pub1')], {}, uid));
+      await assertFails(syncFiles('pub1', [file('pub1')], {}, uid));
+    }
+    await assertFails(
+      updateDoc(ev(ghost(), 'pub1'), { courseFiles: [file('pub1')], updatedBy: 'ghost', updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(ev(anon(), 'pub1'), { courseFiles: [file('pub1')], updatedBy: 'setter', updatedAt: serverTimestamp() }),
+    );
+  });
+  it('publicerare kan inte synka published.courseFiles utan att publicera om (oförändrade rättigheter)', async () => {
+    await assertFails(syncFiles('pub1', [file('pub1')], {}, 'publisher'));
+    await assertSucceeds(saveFiles('pub1', [file('pub1')], {}, 'publisher'));
+  });
+  it('banläggare som också är publicerare får båda vägarna', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'both'), {
+        displayName: 'both', email: 'both@example.com', permissions: ['course_setter', 'publisher'], createdAt: Timestamp.now(),
+      });
+    });
+    await assertSucceeds(syncFiles('pub1', [file('pub1')], {}, 'both'));
+    await assertSucceeds(syncFiles('pub1', files('pub1', 8), {}, 'both'));
+    await assertSucceeds(save('pub1', { title: 'Ny' }, 'both'));
   });
 });

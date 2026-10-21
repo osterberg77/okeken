@@ -71,14 +71,15 @@ service cloud.firestore {
       return requiredEventKeys().concat(['courseFiles']);
     }
 
-    // Storage-sökvägen ska ligga under courses/ och sluta på .pdf (filen laddas upp via storage.rules)
+    // Storage-sökvägen ska ligga under courses/<eventId>/ och sluta på .pdf (filen laddas upp via storage.rules).
+    // Skrivet med få uttryck (taket på 1000 per anrop, se validCourseFiles): keys() ger fel om f inte är en map
+    // och matches() ger fel om värdet inte är en sträng, vilket nekar skrivningen. Längdgränserna ligger i
+    // regexen: name 1–200 tecken, label 0–200, filnamnsdelen av storagePath högst 200 tecken.
     function validCourseFile(f, prefix) {
-      return f is map
-        && f.keys().hasOnly(['name', 'storagePath', 'label'])
-        && f.name is string && f.name.size() > 0 && f.name.size() <= 200
-        && f.label is string && f.label.size() <= 200
-        && f.storagePath is string && f.storagePath.size() <= 300
-        && f.storagePath.matches(prefix + '[A-Za-z0-9][A-Za-z0-9._-]*[.]pdf$');
+      return f.keys().hasOnly(['name', 'storagePath', 'label'])
+        && f.name.matches('(?s).{1,200}')
+        && f.label.matches('(?s).{0,200}')
+        && f.storagePath.matches(prefix + '[A-Za-z0-9][A-Za-z0-9._-]{0,195}[.]pdf$');
     }
 
     // Saknad nyckel i f ger utvärderingsfel och därmed nekad skrivning (täcks av test). hasAll utelämnad: rules har ett
@@ -130,8 +131,34 @@ service cloud.firestore {
       return slug is string && slug.size() <= 120 && slug.matches('^[a-z0-9]+(-[a-z0-9]+)*$');
     }
 
+    // Banläggare (beslut 0006): får läsa events och ändra courseFiles, inget annat.
+    function isCourseSetter() {
+      return signedIn() && exists(userDoc())
+        && 'course_setter' in get(userDoc()).data.permissions;
+    }
+
+    // Banläggarens skrivning: bara courseFiles (+ updatedBy/updatedAt). Är eventet publicerat får samma
+    // skrivning lägga exakt utkastets courseFiles i `published` (resten av snapshoten och publishedAt orörda),
+    // så att banorna går live vid nästa bygge utan att övriga utkastsändringar publiceras.
+    // status/slug/publishedAt finns inte bland tillåtna nycklar, så de kan inte ändras här.
+    function courseSetterUpdate(eventId) {
+      let after = request.resource.data;
+      let changed = after.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['courseFiles', 'updatedBy', 'updatedAt', 'published'])
+        && after.updatedBy == request.auth.uid
+        && after.updatedAt == request.time
+        // Nyckeln måste finnas efter skrivningen (validCourseFiles ger fel på saknat fält)
+        && validCourseFiles(after.courseFiles, eventId)
+        && (!changed.hasAny(['published'])
+          || (resource.data.status == 'published'
+            && after.published is map
+            && after.published.diff(resource.data.published).affectedKeys().hasOnly(['courseFiles'])
+            && after.published.courseFiles == after.courseFiles));
+    }
+
     match /events/{eventId} {
-      allow read: if canPublish();
+      allow read: if canPublish() || isCourseSetter();
+
 
       allow create: if canPublish()
         && request.resource.data.keys().hasOnly(eventKeys())
@@ -150,7 +177,6 @@ service cloud.firestore {
       allow update: if canPublish()
         && request.resource.data.keys().hasOnly(eventKeys())
         && request.resource.data.keys().hasAll(requiredEventKeys())
-        && validEventContent(request.resource.data, eventId)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt', 'source'])
         && request.resource.data.updatedBy == request.auth.uid
         && request.resource.data.updatedAt == request.time
@@ -165,6 +191,87 @@ service cloud.firestore {
             && request.resource.data.published is map
             && validSlug(request.resource.data.slug))
         // Adressen låses vid första publiceringen (delade länkar ska fortsätta fungera)
+        && (resource.data.publishedAt == null || request.resource.data.slug == resource.data.slug)
+        // Innehållet (med upp till 8 banor) är dyrast och kontrolleras sist, så att en skrivning som ändå nekas
+        // här inte förbrukar uttryckstaket innan banläggarregeln nedan prövas
+        && validEventContent(request.resource.data, eventId);
+
+      // Banläggare: bara banfiler (se courseSetterUpdate). Står efter publicerarregeln: taket på 1000 uttryck
+      // gäller hela anropet, och publicerarregeln med 8 filer ligger nära taket.
+      allow update: if isCourseSetter() && courseSetterUpdate(eventId);
+
+      // Bara aldrig publicerade utkast får raderas; publicerade avpubliceras i stället
+      allow delete: if canPublish() && resource.data.publishedAt == null;
+    }
+
+    // ---- Infosidor -------------------------------------------------------------------
+    // Samma publiceringsmönster som events: utkastet är fälten på dokumentet, `published` är det som är live.
+    // Bara publicerare, styrelse och superadmin har åtkomst (inte banläggare).
+
+    function pageKeys() {
+      return ['title', 'body', 'inMenu', 'menuOrder', 'menuLabel',
+        'status', 'slug', 'published', 'publishedAt',
+        'createdBy', 'createdAt', 'updatedBy', 'updatedAt'];
+    }
+
+    function validPageContent(d) {
+      return d.title is string && d.title.size() > 0 && d.title.size() <= 200
+        && d.body is string && d.body.size() <= 50000
+        && d.inMenu is bool
+        && d.menuOrder is int && d.menuOrder >= 0 && d.menuOrder <= 999
+        && d.menuLabel is string && d.menuLabel.size() <= 40;
+    }
+
+    function pageSnapshot(d) {
+      return {
+        'title': d.title, 'body': d.body, 'inMenu': d.inMenu, 'menuOrder': d.menuOrder, 'menuLabel': d.menuLabel
+      };
+    }
+
+    // Sidor serveras på /<slug> och får inte krocka med sajtens egna adresser.
+    // Håll listan synkad med RESERVED_PAGE_SLUGS i src/lib/slug.ts.
+    function reservedPageSlugs() {
+      return ['event', 'admin', 'sok', 'logga-in', 'pagefind', 'api', 'assets', '404', 'index', 'kalender',
+        'traningskalender'];
+    }
+
+    match /pages/{pageId} {
+      allow read: if canPublish();
+
+      allow create: if canPublish()
+        && request.resource.data.keys().hasOnly(pageKeys())
+        && request.resource.data.keys().hasAll(pageKeys())
+        && validPageContent(request.resource.data)
+        && request.resource.data.status == 'draft'
+        && request.resource.data.slug == null
+        && request.resource.data.published == null
+        && request.resource.data.publishedAt == null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if canPublish()
+        && request.resource.data.keys().hasOnly(pageKeys())
+        && request.resource.data.keys().hasAll(pageKeys())
+        && validPageContent(request.resource.data)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt'])
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time
+        // Publicering: ögonblicksbilden ska vara exakt utkastet i samma skrivning
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['published', 'publishedAt'])
+          || (request.resource.data.published == pageSnapshot(request.resource.data)
+            && request.resource.data.publishedAt == request.time))
+        // 'draft' bara för aldrig publicerade; publicerade/avpublicerade har ögonblicksbild och adress
+        && (request.resource.data.status == 'draft'
+          ? request.resource.data.published == null && request.resource.data.slug == null
+          : request.resource.data.status in ['published', 'unpublished']
+            && request.resource.data.published is map
+            && validSlug(request.resource.data.slug)
+            // Reserverade adresser kontrolleras när slug sätts (en senare reserverad adress låser inte en befintlig sida)
+            && (request.resource.data.slug == resource.data.slug
+              || !(request.resource.data.slug in reservedPageSlugs())))
+        // Adressen låses vid första publiceringen (menyn och andra sidor länkar till den)
         && (resource.data.publishedAt == null || request.resource.data.slug == resource.data.slug);
 
       // Bara aldrig publicerade utkast får raderas; publicerade avpubliceras i stället

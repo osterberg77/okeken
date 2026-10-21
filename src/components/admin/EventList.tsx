@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { eventState, watchEvents } from '../../lib/firebase/events';
 import { dayKey, formatEventTime, keyDayOfMonth, keyMonthShort, keyWeekdayShort } from '../../lib/time';
 import type { EventRecord } from '../../types/event';
-import { canPublish } from '../../types/user';
+import { canPublish, canViewEvents } from '../../types/user';
 import CategoryChip from '../CategoryChip';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
 import BuildStatus from './BuildStatus';
@@ -10,13 +10,14 @@ import { StatusLabel } from './StatusBadge';
 
 export default function EventList() {
   return (
-    <AdminGate allowed={canPublish} requirement="publicerare, styrelse eller superadmin">
-      {() => <Events />}
+    <AdminGate allowed={canViewEvents} requirement="publicerare, banläggare, styrelse eller superadmin">
+      {(session) => <Events publisher={canPublish(session.permissions)} />}
     </AdminGate>
   );
 }
 
-function Events() {
+/** Banläggare ser listan men kan bara öppna eventen för att ändra banor (beslut 0006) */
+function Events({ publisher }: { publisher: boolean }) {
   const [events, setEvents] = useState<EventRecord[] | null>(null);
   const [error, setError] = useState('');
   useEffect(() => watchEvents(setEvents, () => setError('Kunde inte läsa events.')), []);
@@ -30,15 +31,21 @@ function Events() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <AdminTitle>Events</AdminTitle>
-          <p className="mt-2 text-muted">Träningar, tävlingar och annat i kalendern. Ändringar syns på sajten när de publicerats.</p>
+          <p className="mt-2 text-muted">
+            {publisher
+              ? 'Träningar, tävlingar och annat i kalendern. Ändringar syns på sajten när de publicerats.'
+              : 'Öppna ett event för att lägga till, byta eller ta bort banor. Övrigt innehåll kan du bara läsa.'}
+          </p>
         </div>
-        <BuildStatus />
-        <a
-          href="/admin/event"
-          className="rounded-full bg-accent px-6 py-[13px] text-sm font-semibold text-white no-underline shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110"
-        >
-          Nytt event
-        </a>
+        {publisher && <BuildStatus />}
+        {publisher && (
+          <a
+            href="/admin/event"
+            className="rounded-full bg-accent px-6 py-[13px] text-sm font-semibold text-white no-underline shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110"
+          >
+            Nytt event
+          </a>
+        )}
       </div>
 
       {error && <p role="alert" className="rounded-2xl bg-[#FBEAEA] px-4 py-3 text-sm text-[#8A2B2B]">{error}</p>}
@@ -46,7 +53,7 @@ function Events() {
 
       {events && (
         <>
-          <Section title="Kommande och pågående" events={current} empty="Inga kommande events. Skapa ett nytt!" />
+          <Section title="Kommande och pågående" events={current} empty={publisher ? 'Inga kommande events. Skapa ett nytt!' : 'Inga kommande events.'} />
           <Section title="Tidigare" events={past} empty="Inga tidigare events." />
         </>
       )}

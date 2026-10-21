@@ -6,7 +6,7 @@ Behörigheter (funktioner) kopplas på vanliga konton – ett konto kan ha flera
 |---|---|---|
 | gäst | – | Ej inloggad. Läsa publicerat innehåll |
 | medlem | `member` | Inloggad. Inget eget innehåll i v1 (medlemsinnehåll krockar med statiska sidor) |
-| banläggare | `course_setter` | Ladda upp/ersätta PDF-banor, (v1.1) mata in resultat |
+| banläggare | `course_setter` | Läsa events (även utkast), ladda upp PDF-banor och koppla dem till event (`courseFiles`, beslut 0006), (v1.1) mata in resultat |
 | publicerare | `publisher` | Skapa/redigera/publicera events och sidor, (v1.1) bildbanken, dela till SoMe |
 | styrelse | `board` | Som publicerare + tilldela `member`, `course_setter`, `publisher` |
 | superadmin | `superadmin` | Allt, inklusive tilldelning av `board` och `superadmin`, (v1.2) mallar |
@@ -34,4 +34,11 @@ function has(p)  { return request.auth != null && p in perms(); }
 - `superadmin` får ändra `permissions` fritt.
 - `board` får bara lägga till/ta bort `member`, `course_setter`, `publisher`; skillnaden mellan före och efter (`diff`) får inte röra `board`/`superadmin`.
 - Storage-regler läser samma dokument via `firestore.get()`.
+- `course_setter` (beslut 0006): läsa `events` och uppdatera bara `courseFiles` (+ `updatedBy`/`updatedAt`). På ett publicerat event får samma skrivning sätta `published.courseFiles` till exakt utkastets lista; allt annat i `published`, samt `publishedAt`, `status` och `slug`, måste vara oförändrat. Ingen åtkomst till `pages` eller `meta/build`. Tester: `tests/rules/events.test.ts` ("banläggare").
+- `pages` (infosidor): bara `publisher`, `board`, `superadmin`, samma regler som events (`tests/rules/pages.test.ts`).
 - UI döljer funktioner men är aldrig själva skyddet. Regeltester mot emulatorn täcker delegeringen.
+
+
+## UI för banläggare och infosidor
+
+`canViewEvents` (`src/types/user.ts`) släpper in publicerare, styrelse, superadmin och banläggare på `/admin/events`. Banläggare ser editorn med alla fält utom banorna skrivskyddade och sparar bara `courseFiles` (plus `published.courseFiles` på publicerade events). `/admin/sidor` och `/admin/sida` kräver `canPublish`, alltså inte banläggare.

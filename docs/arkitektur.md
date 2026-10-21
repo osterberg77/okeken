@@ -30,6 +30,10 @@ Alla publika sidor (infosidor och varje event) är statiska HTML-filer med korre
 
 Bildbanken (Storage + `imageBank`) levererar tre storlekar per bild (thumb 800 px, web 1920 px, ev. 4K). Bilder i events och Markdown refererar `webUrl`; bygget lägger på `srcset` och lazy loading.
 
+## Infosidor och länkar i editorn
+
+Infosidor delar mönster med events: `PageDetail` renderas både av `src/pages/[slug].astro` (statisk HTML, `data-pagefind-body`) och av adminpreviewn. Menyn i `Header.astro` byggs av Kalender + `getMenuPages()`; utan publicerade menysidor visas gamla sajtens platshållare. Editorn (`MarkdownField`) laddar publicerade sidor och events från Firestore för länkväljaren och infogar interna länkar utan domän (`/slug`, `/event/slug`). Slugs kontrolleras mot reserverade adresser och andra sidor i `src/lib/firebase/pages.ts` före skrivning, eftersom reglerna inte kan garantera unikhet.
+
 ## Statusbadge (obligatorisk)
 
 Inloggade användare med rätt behörighet ska aldrig kunna missta ett ej publicerat innehåll för live. Regler:

@@ -1,6 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
 import { loadPublishedEvents } from './lib/server/published-events';
+import { loadPublishedPages } from './lib/server/published-pages';
 
 // Publicerade events från Firestore (bara `published`-ögonblicksbilden, se docs/datamodell.md).
 const events = defineCollection({
@@ -23,4 +24,17 @@ const events = defineCollection({
   }),
 });
 
-export const collections = { events };
+// Publicerade infosidor från Firestore (bara `published`-ögonblicksbilden). id = slug.
+const pages = defineCollection({
+  loader: loadPublishedPages,
+  schema: z.object({
+    slug: z.string(),
+    title: z.string(),
+    body: z.string(),
+    inMenu: z.boolean(),
+    menuOrder: z.number().int(),
+    menuLabel: z.string(),
+  }),
+});
+
+export const collections = { events, pages };

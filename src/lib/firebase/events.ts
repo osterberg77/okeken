@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { eventSlug } from '../slug';
 import { dayKey } from '../time';
-import type { EventContent, EventRecord } from '../../types/event';
+import type { CourseFile, EventContent, EventRecord } from '../../types/event';
 import { db } from './client';
 
 const events = collection(db, 'events');
@@ -146,6 +146,19 @@ export async function publishEvent(id: string, slug: string | null, content: Eve
     published: data,
     publishedAt: serverTimestamp(),
     slug: slug ?? (await uniqueSlug(id, content)),
+    ...stamp(uid),
+  });
+}
+
+/**
+ * Banläggarens sparning (beslut 0006, courseSetterUpdate i firestore.rules): bara courseFiles, och på
+ * publicerade events samma lista i published.courseFiles. Allt annat skulle nekas av reglerna.
+ */
+export async function saveCourseFiles(id: string, status: EventRecord['status'], files: CourseFile[], uid: string): Promise<void> {
+  const courseFiles = files.map((f) => ({ name: f.name, storagePath: f.storagePath, label: f.label.trim() }));
+  await updateDoc(doc(events, id), {
+    courseFiles,
+    ...(status === 'published' ? { 'published.courseFiles': courseFiles } : {}),
     ...stamp(uid),
   });
 }

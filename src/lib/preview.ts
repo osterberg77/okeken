@@ -1,4 +1,5 @@
 import type { EventContent, PublicEvent } from '../types/event';
+import type { PageContent, PublicPage } from '../types/page';
 import { toPublicCourseFiles } from './courses';
 import { renderMarkdown, toExcerpt } from './markdown';
 
@@ -16,5 +17,18 @@ export function toPreview(c: EventContent, slug: string | null): PublicEvent {
     courseFiles: c.courseFiles.length ? toPublicCourseFiles(c.courseFiles) : undefined,
     bodyHtml: renderMarkdown(c.body),
     excerpt: toExcerpt(c.body),
+  };
+}
+
+/** Sidutkast i publik form, för adminpreview. */
+export function toPagePreview(c: PageContent, slug: string | null): PublicPage {
+  return {
+    slug: slug ?? 'forhandsvisning',
+    title: c.title.trim() || 'Titel saknas',
+    bodyHtml: renderMarkdown(c.body),
+    excerpt: toExcerpt(c.body),
+    inMenu: c.inMenu,
+    menuOrder: c.menuOrder,
+    menuLabel: c.menuLabel,
   };
 }

@@ -1,0 +1,20 @@
+---
+import PageDetail from '../components/PageDetail';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPublicPages } from '../lib/pages';
+import type { PublicPage } from '../types/page';
+
+// Infosidor på /<slug>. Reserverade adresser (event, admin, sok …) kan inte bli sidor, se src/lib/slug.ts.
+export async function getStaticPaths() {
+  const pages = await getPublicPages();
+  return pages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+}
+
+const { page } = Astro.props as { page: PublicPage };
+---
+
+<BaseLayout title={`${page.title} – OK Eken`} ogTitle={page.title} description={page.excerpt || undefined} ogType="article">
+  <main data-pagefind-body class="mx-auto max-w-[900px] px-4 pt-2 pb-12 sm:px-8">
+    <PageDetail page={page} />
+  </main>
+</BaseLayout>

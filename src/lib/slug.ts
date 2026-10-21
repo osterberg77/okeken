@@ -15,3 +15,23 @@ export function eventSlug(startDay: string, title: string): string {
   const base = slugify(title);
   return base ? `${startDay}-${base}` : startDay;
 }
+
+/**
+ * Adresser som infosidor (/<slug>) inte får använda: sajtens egna sidor och mappar samt omdirigeringar i firebase.json.
+ * Håll listan synkad med reservedPageSlugs() i firestore.rules (reglerna är skyddet, listan här är för UI:t).
+ */
+export const RESERVED_PAGE_SLUGS: readonly string[] = [
+  'event',
+  'admin',
+  'sok',
+  'logga-in',
+  'pagefind',
+  'api',
+  'assets',
+  '404',
+  'index',
+  'kalender',
+  'traningskalender',
+];
+
+export const isReservedPageSlug = (slug: string) => RESERVED_PAGE_SLUGS.includes(slug);

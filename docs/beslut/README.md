@@ -9,3 +9,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | 0003 | Astro + React-öar, Tailwind 4, Pagefind | Förslag |
 | [0004](0004-statisk-prerender-med-rebuild.md) | Statisk prerender med rebuild vid publicering | Beslutat |
 | [0005](0005-roller-i-firestore.md) | Roller i Firestore (`users/{uid}.permissions`) i stället för custom claims | Beslutat |
+| [0006](0006-banlaggare-och-courseFiles.md) | Banläggare redigerar `courseFiles` själva och kan publicera banor utan övriga utkastsändringar | Beslutat |

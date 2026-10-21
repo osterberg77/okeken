@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEvent,
   deleteDraft,
   eventState,
   publishEvent,
+  saveCourseFiles,
   sameContent,
   saveEvent,
   unpublishEvent,
@@ -15,15 +16,16 @@ import { uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files
 import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
 import { EVENT_TYPES, MAX_COURSE_FILES, type EventContent, type EventRecord } from '../../types/event';
-import { canPublish, type Session } from '../../types/user';
+import { canPublish, canViewEvents, type Session } from '../../types/user';
 import EventDetail from '../EventDetail';
 import AdminGate, { AdminPanel } from './AdminGate';
+import { ActionButton, Field, INPUT, QuickButton } from './AdminUi';
 import BuildStatus from './BuildStatus';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 
 export default function EventEditor() {
   return (
-    <AdminGate allowed={canPublish} requirement="publicerare, styrelse eller superadmin">
+    <AdminGate allowed={canViewEvents} requirement="publicerare, banläggare, styrelse eller superadmin">
       {(session) => <Editor session={session} />}
     </AdminGate>
   );
@@ -62,6 +64,8 @@ const contentOf = (r: EventRecord): EventContent => ({
 type Message = { kind: 'ok' | 'error'; text: string } | null;
 
 function Editor({ session }: { session: Session }) {
+  // Banläggare (utan publicerarbehörighet) får bara ändra banor; övriga fält är skrivskyddade (beslut 0006)
+  const courseOnly = !canPublish(session.permissions);
   const initialId = new URLSearchParams(location.search).get('id');
   const [id, setId] = useState<string | null>(initialId);
   const [record, setRecord] = useState<EventRecord | null | undefined>(initialId ? undefined : null);
@@ -92,7 +96,8 @@ function Editor({ session }: { session: Session }) {
   }, [id]);
 
   const [lastBuild, setLastBuild] = useState<Date | null>(null);
-  useEffect(() => watchBuild((b) => setLastBuild(b.lastBuildAt)), []);
+  // Banläggare får inte läsa meta/build
+  useEffect(() => (courseOnly ? undefined : watchBuild((b) => setLastBuild(b.lastBuildAt))), [courseOnly]);
 
   const dirty = !!draft && (!saved || !sameContent(draft, saved));
 
@@ -107,6 +112,13 @@ function Editor({ session }: { session: Session }) {
 
   if (record === undefined || !draft || !preview) {
     return <AdminPanel><p className="text-muted">Laddar…</p></AdminPanel>;
+  }
+  if (courseOnly && !id) {
+    return (
+      <AdminPanel>
+        <p>Banläggare kan inte skapa events. <a href="/admin/events" className="font-semibold text-accent">Till alla events</a></p>
+      </AdminPanel>
+    );
   }
   if (id && record === null) {
     return (
@@ -174,11 +186,17 @@ function Editor({ session }: { session: Session }) {
       const uploaded = [];
       for (const f of list) uploaded.push(await uploadCourseFile(eventId, f));
       update({ courseFiles: [...draft.courseFiles, ...uploaded] });
-      return 'Uppladdat. Spara utkastet för att behålla banorna.';
+      return courseOnly ? 'Uppladdat. Spara banorna för att behålla dem.' : 'Uppladdat. Spara utkastet för att behålla banorna.';
     });
   };
 
   const onSave = () => run('save', async () => {
+    if (courseOnly) {
+      await saveCourseFiles(id!, record!.status, draft.courseFiles, session.uid);
+      return record!.status === 'published'
+        ? 'Sparat. Banorna syns på sajten efter nästa ombyggnad.'
+        : 'Sparat. Banorna syns på sajten när eventet publicerats.';
+    }
     await persist(draft);
     return isPublished ? 'Sparat som utkast. Besökarna ser den publicerade versionen tills du publicerar ändringarna.' : 'Sparat.';
   });
@@ -222,7 +240,7 @@ function Editor({ session }: { session: Session }) {
               Visa på sajten ↗
             </a>
           )}
-          {isPublished && record?.slug && (
+          {!courseOnly && isPublished && record?.slug && (
             siteReady ? (
               <a
                 href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(`${location.origin}/event/${record.slug}`)}`}
@@ -236,18 +254,26 @@ function Editor({ session }: { session: Session }) {
               <span className="px-2 text-[13px] text-subtle">Delning aktiveras när sajten är uppdaterad</span>
             )
           )}
-          <BuildStatus />
-          {isPublished && (
+          {!courseOnly && <BuildStatus />}
+          {!courseOnly && isPublished && (
             <ActionButton onClick={onUnpublish} disabled={!!busy} busy={busy === 'unpublish'}>Avpublicera</ActionButton>
           )}
-          <ActionButton onClick={onSave} disabled={!!busy || !dirty || !!problem} busy={busy === 'save'}>
-            Spara utkast
-          </ActionButton>
-          <ActionButton primary onClick={onPublish} disabled={!!busy || !!problem || (state === 'live' && !dirty)} busy={busy === 'publish'}>
-            {publishLabel}
-          </ActionButton>
+          {courseOnly ? (
+            <ActionButton primary onClick={onSave} disabled={!!busy || !dirty} busy={busy === 'save'}>
+              Spara banor
+            </ActionButton>
+          ) : (
+            <>
+              <ActionButton onClick={onSave} disabled={!!busy || !dirty || !!problem} busy={busy === 'save'}>
+                Spara utkast
+              </ActionButton>
+              <ActionButton primary onClick={onPublish} disabled={!!busy || !!problem || (state === 'live' && !dirty)} busy={busy === 'publish'}>
+                {publishLabel}
+              </ActionButton>
+            </>
+          )}
         </div>
-        {(message || problem) && (
+        {(message || (problem && !courseOnly)) && (
           <p
             role={message?.kind === 'error' ? 'alert' : 'status'}
             className={`m-0 w-full rounded-2xl px-4 py-2.5 text-sm ${
@@ -279,6 +305,12 @@ function Editor({ session }: { session: Session }) {
             {id ? 'Redigera event' : 'Nytt event'}
           </h1>
 
+          {courseOnly && (
+            <p className="m-0 rounded-2xl bg-period px-4 py-2.5 text-sm text-muted">
+              Som banläggare kan du bara ändra banorna. Övrigt är skrivskyddat.
+            </p>
+          )}
+          <fieldset disabled={courseOnly} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
           <Field label="Typ">
             <div className="flex flex-wrap gap-2">
               {EVENT_TYPES.map((t) => {
@@ -354,6 +386,8 @@ function Editor({ session }: { session: Session }) {
             </Field>
           </div>
 
+          </fieldset>
+
           <Field label="Banor (PDF)" htmlFor="courses" hint={`Högst ${MAX_COURSE_FILES} filer, 10 MB var. Filer kan inte ersättas eller tas bort från lagringen, men du kan ta bort dem från eventet.`}>
             {draft.courseFiles.length > 0 && (
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -390,6 +424,7 @@ function Editor({ session }: { session: Session }) {
             />
           </Field>
 
+          <fieldset disabled={courseOnly} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
           <Field
             label="Text"
             htmlFor="body"
@@ -398,7 +433,9 @@ function Editor({ session }: { session: Session }) {
             <textarea id="body" rows={12} value={draft.body} onChange={(e) => update({ body: e.target.value })} className={`${INPUT} min-h-[240px] leading-relaxed`} />
           </Field>
 
-          {id && neverPublished && (
+          </fieldset>
+
+          {id && neverPublished && !courseOnly && (
             <div className="border-t border-line pt-4">
               {confirmDelete ? (
                 <div className="flex flex-wrap items-center gap-3">
@@ -428,41 +465,6 @@ function Editor({ session }: { session: Session }) {
         detail={state === 'changed' ? 'Publicera ändringarna för att visa dem för besökare' : state === 'draft' ? 'Syns inte för besökare' : undefined}
       />
     </div>
-  );
-}
-
-const INPUT = 'w-full rounded-2xl border-[1.5px] border-ink/15 bg-white px-4 py-3 text-base outline-none focus:border-accent';
-
-function Field({ label, htmlFor, hint, children }: { label: string; htmlFor?: string; hint?: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={htmlFor} className="text-[15px] font-semibold">{label}</label>
-      {children}
-      {hint && <span className="text-[13px] text-muted">{hint}</span>}
-    </div>
-  );
-}
-
-function ActionButton({
-  children, onClick, disabled, busy, primary, danger,
-}: { children: ReactNode; onClick: () => void; disabled?: boolean; busy?: boolean; primary?: boolean; danger?: boolean }) {
-  const style = primary
-    ? 'bg-accent text-white shadow-[0_8px_18px_-8px_#8A4B9E] hover:brightness-110'
-    : danger
-      ? 'bg-[#A33A3A] text-white'
-      : 'border-[1.5px] border-ink/18 bg-white text-ink hover:border-accent hover:text-accent';
-  return (
-    <button type="button" onClick={onClick} disabled={disabled} className={`cursor-pointer rounded-full px-5 py-2.5 text-sm font-semibold disabled:cursor-default disabled:opacity-45 ${style}`}>
-      {busy ? 'Vänta…' : children}
-    </button>
-  );
-}
-
-function QuickButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" onClick={onClick} className="cursor-pointer rounded-full bg-period px-3 py-1.5 text-[13px] font-semibold text-accent hover:bg-pastel">
-      {children}
-    </button>
   );
 }
 

@@ -40,6 +40,11 @@ export function canPublish(own: readonly Permission[]): boolean {
   return own.includes('publisher') || own.includes('board') || own.includes('superadmin');
 }
 
+/** Får öppna events (lista och editor). Banläggare får bara ändra banor; reglerna avgör (beslut 0006). */
+export function canViewEvents(own: readonly Permission[]): boolean {
+  return canPublish(own) || own.includes('course_setter');
+}
+
 export function canManageUsers(own: readonly Permission[]): boolean {
   return own.includes('superadmin') || own.includes('board');
 }

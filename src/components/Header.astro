@@ -1,15 +1,24 @@
 ---
+import { getMenuPages } from '../lib/pages';
 import AccountMenu from './AccountMenu';
 
 // Mått enligt docs/skisser/kalender-och-kontrollsymboler.md (desktop); nedskalat på mobil.
-const path = Astro.url.pathname;
+const path = Astro.url.pathname.replace(/(index)?\.html$/, '').replace(/(.)\/$/, '$1');
 
-// Om oss och Bli medlem pekar tills vidare på gamla sajten, tills sidorna finns här.
-const links = [
-  { href: '/', label: 'Kalender', active: path === '/' || path.startsWith('/event') },
-  { href: 'https://www.okeken.se/om-ok-eken', label: 'Om oss', active: false },
-  { href: 'https://www.okeken.se/bli-medlem', label: 'Bli medlem', active: false },
-];
+// Kalender + publicerade infosidor med "Visa i menyn". Tills det finns några sådana sidor pekar
+// Om oss och Bli medlem på gamla sajten, så att sajten inte tappar länkar.
+const menuPages = await getMenuPages();
+const links =
+  menuPages.length > 0
+    ? [
+        { href: '/', label: 'Kalender', active: path === '/' || path.startsWith('/event') },
+        ...menuPages.map((p) => ({ href: p.href, label: p.label, active: path === p.href })),
+      ]
+    : [
+        { href: '/', label: 'Kalender', active: path === '/' || path.startsWith('/event') },
+        { href: 'https://www.okeken.se/om-ok-eken', label: 'Om oss', active: false },
+        { href: 'https://www.okeken.se/bli-medlem', label: 'Bli medlem', active: false },
+      ];
 ---
 
 <header class="relative z-[5]">

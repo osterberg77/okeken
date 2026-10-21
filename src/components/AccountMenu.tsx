@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { rememberedSignIn } from '../lib/firebase/flags';
-import { canManageUsers, canPublish, type Session } from '../types/user';
+import { canManageUsers, canPublish, canViewEvents, type Session } from '../types/user';
 import PermissionTag from './PermissionTag';
 
 // Firebase laddas bara för den som varit inloggad på den här enheten,
@@ -99,10 +99,15 @@ export default function AccountMenu() {
               </span>
             )}
           </div>
-          {(canPublish(session.permissions) || canManageUsers(session.permissions)) && <div className="h-px bg-line" />}
-          {canPublish(session.permissions) && (
+          {(canViewEvents(session.permissions) || canManageUsers(session.permissions)) && <div className="h-px bg-line" />}
+          {canViewEvents(session.permissions) && (
             <a href="/admin/events" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
-              Events
+              {canPublish(session.permissions) ? 'Events' : 'Banor på events'}
+            </a>
+          )}
+          {canPublish(session.permissions) && (
+            <a href="/admin/sidor" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+              Sidor
             </a>
           )}
           {canManageUsers(session.permissions) && (
