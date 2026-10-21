@@ -188,7 +188,7 @@ function Editor({ session }: { session: Session }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="sticky top-2 z-30 flex flex-wrap items-center gap-3 rounded-[22px] bg-white/95 px-5 py-3.5 shadow-card backdrop-blur">
+      <div className="z-30 flex flex-wrap sm:sticky sm:top-2 items-center gap-3 rounded-[22px] bg-white/95 px-5 py-3.5 shadow-card backdrop-blur">
         <a href="/admin/sidor" className="text-sm font-semibold text-muted no-underline hover:text-accent">← Alla sidor</a>
         <StatusLabel state={state} />
         <span className="text-[13px] text-subtle">
