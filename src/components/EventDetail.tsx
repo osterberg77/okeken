@@ -26,12 +26,12 @@ interface Props {
 
 /** Relativ markering bredvid datumet. Räknas i webbläsaren (sidan är förbyggd, så "idag" från bygget vore fel dagen efter). */
 function whenLabel(startDay: string, endDay: string, now: string): string | null {
-  if (endDay < now) return null;
+  if (endDay < now) return 'Passerat';
   if (startDay > now) {
     const n = daysBetween(now, startDay);
     return n === 1 ? 'Imorgon' : `Om ${n} dagar`;
   }
-  return startDay === now ? 'Idag' : 'Pågår';
+  return startDay === now ? 'Idag' : 'Pågående';
 }
 
 // Delas av eventsidan (statisk HTML), kalenderns detaljvy och adminpreview.
