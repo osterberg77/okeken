@@ -181,8 +181,11 @@ export const onUserMemberWritten = onDocumentWritten('users/{uid}', async (event
   else await ref.delete();
 });
 
-/** Publicerar schemalagda events var 15:e minut (beslut 0016). Skrivningen startar bygget via onEventWritten. */
-export const publishScheduled = onSchedule({ schedule: 'every 15 minutes', timeZone: 'Europe/Stockholm' }, async () => {
+/**
+ * Publicerar schemalagda events var 15:e minut (beslut 0016). Skrivningen startar bygget via onEventWritten.
+ * Region europe-west1: Cloud Scheduler finns inte i europe-north1 (deployen nekas med "not a valid location").
+ */
+export const publishScheduled = onSchedule({ schedule: 'every 15 minutes', timeZone: 'Europe/Stockholm', region: 'europe-west1' }, async () => {
   const ids = await publishDueEvents(getFirestore());
   if (ids.length > 0) logger.info('Schemalagda events publicerade', { ids });
 });

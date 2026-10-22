@@ -11,5 +11,6 @@
 - Gäller events, inte infosidor.
 
 **Att veta:**
+- Funktionen ligger i `europe-west1`: Cloud Scheduler finns inte i `europe-north1` (där de andra funktionerna ligger).
 - Kräver Cloud Scheduler API och att deploykontot `github-deploy@` får skapa schemajobb (`roles/cloudscheduler.admin`). Utan det misslyckas Functions-deployen.
 - Regler: `validPublishAt` i `firestore.rules`, tester i `tests/rules/events.test.ts`; Functionens logik: `tests/server/scheduled-publish.test.ts`.
