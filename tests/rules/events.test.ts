@@ -57,6 +57,7 @@ const content = () => ({
   livelox: '',
   courseFiles: [],
   image: null,
+  publisher: null,
 });
 
 const draftDoc = () => ({
@@ -226,8 +227,8 @@ describe('events: create', () => {
   });
 
   it('saknad nyckel nekas', async () => {
-    // courseFiles och image är valfria (events skapade före PDF-banor/huvudbild saknar dem)
-    for (const key of Object.keys(newEvent()).filter((k) => k !== 'courseFiles' && k !== 'image')) {
+    // courseFiles, image och publisher är valfria (äldre events saknar dem)
+    for (const key of Object.keys(newEvent()).filter((k) => !['courseFiles', 'image', 'publisher'].includes(k))) {
       const data: Record<string, unknown> = newEvent();
       delete data[key];
       await assertFails(setDoc(ev(as('publisher'), `m-${key}`), data));
@@ -836,5 +837,38 @@ describe('events: huvudbild (image)', () => {
   });
   it('övriga roller kan inte sätta bild', async () => {
     for (const uid of ['member', 'nobody']) await assertFails(save('draft1', { image: image() }, uid));
+  });
+});
+
+describe('events: publicerat av (publisher)', () => {
+  it('publicerare kan välja, byta och ta bort publicerare', async () => {
+    await assertSucceeds(save('draft1', { publisher: 'abc123XYZ' }));
+    await assertSucceeds(save('draft1', { publisher: 'annanUid9' }));
+    await assertSucceeds(save('draft1', { publisher: null }));
+  });
+  it('publicerare följer med i ögonblicksbilden vid publicering', async () => {
+    const c = { ...content(), publisher: 'abc123XYZ' };
+    await assertSucceeds(save('draft2', { ...c, status: 'published', slug: 'med-publicerare', published: c, publishedAt: serverTimestamp() }));
+    // Ögonblicksbilden som saknar publicerare men utkastet har en nekas
+    const d = { ...content(), publisher: 'abc123XYZ' };
+    await assertFails(save('draft1', { ...d, status: 'published', slug: 'utan-snapshot', published: content(), publishedAt: serverTimestamp() }));
+  });
+  it('nytt event med publicerare får skapas', async () => {
+    await assertSucceeds(setDoc(ev(as('publisher'), 'nytt'), newEvent('publisher', { publisher: 'abc123XYZ' })));
+  });
+  it('ogiltigt värde nekas', async () => {
+    for (const bad of ['', 'a/b', 'a b', 'x'.repeat(129), 42, { uid: 'a' }, ['a']]) {
+      await assertFails(save('draft1', { publisher: bad }));
+    }
+  });
+  it('event utan publisher-fält (äldre) kan sparas', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const { publisher: _omit, ...legacy } = draftDoc() as Record<string, unknown>;
+      await setDoc(doc(ctx.firestore(), 'events', 'legacy2'), legacy);
+    });
+    await assertSucceeds(save('legacy2', { title: 'Ny titel' }));
+  });
+  it('banläggare kan inte ändra publicerare', async () => {
+    await assertFails(save('draft1', { publisher: 'abc123XYZ' }, 'setter'));
   });
 });

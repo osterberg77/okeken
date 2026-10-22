@@ -32,6 +32,18 @@ export async function loadPublishedEvents() {
     );
   }
 
+  // "Publicerat av" slås upp här: bara medlemmar som godkänt policyn och inte dolt sitt namn visas (members.publicName)
+  const members = new Map((await getFirestore().collection('members').get()).docs.map((m) => [m.id, m.data()]));
+  const publisherOf = (uid: unknown) => {
+    const m = typeof uid === 'string' ? members.get(uid) : undefined;
+    if (!m || m.publicName !== true || typeof m.displayName !== 'string') return undefined;
+    return {
+      name: m.displayName as string,
+      photoUrl: typeof m.photoUrl === 'string' ? (m.photoUrl as string) : undefined,
+      color: typeof m.avatarColor === 'string' ? (m.avatarColor as string) : undefined,
+    };
+  };
+
   return snap.docs.flatMap((d) => {
     const { published: p, slug } = d.data();
     if (!p || !slug) return [];
@@ -47,6 +59,7 @@ export async function loadPublishedEvents() {
         livelox: p.livelox || undefined,
         courseFiles: Array.isArray(p.courseFiles) && p.courseFiles.length ? toPublicCourseFiles(p.courseFiles) : undefined,
         image: toPublicImage(p.image),
+        publisher: publisherOf(p.publisher),
         body: p.body ?? '',
       },
     ];

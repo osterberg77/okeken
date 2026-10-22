@@ -46,6 +46,8 @@ export interface EventContent {
   courseFiles: CourseFile[];
   /** Valfri huvudbild; null = ingen (äldre events saknar fältet i Firestore) */
   image: EventImage | null;
+  /** "Publicerat av": uid för en medlem (members/{uid}), eller null = ingen. Namn och bild slås upp vid bygget. */
+  publisher: string | null;
 }
 
 /**
@@ -72,6 +74,14 @@ export interface EventLocation {
   lng?: number;
 }
 
+/** Den som står som publicerare på ett event, i publik form */
+export interface PublicPublisher {
+  name: string;
+  photoUrl?: string;
+  /** Profilfärg (id i src/lib/avatar.ts) */
+  color?: string;
+}
+
 /** Publicerat event i serialiserbar form – det som bygget skickar till sidor och kalender. */
 export interface PublicEvent {
   slug: string;
@@ -87,6 +97,8 @@ export interface PublicEvent {
   courseFiles?: { label: string; url: string }[];
   /** Huvudbild: kanonisk Storage-adress (webbversionen) och alt-text */
   image?: { url: string; alt: string };
+  /** "Publicerat av", bara när personen godkänt policyn och inte dolt sitt namn (members.publicName) */
+  publisher?: PublicPublisher;
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;

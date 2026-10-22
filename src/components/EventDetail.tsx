@@ -10,6 +10,7 @@ import {
 } from '../lib/time';
 import { bankImageSrc } from '../lib/markdown';
 import type { PublicEvent } from '../types/event';
+import Avatar from './Avatar';
 import CategoryChip from './CategoryChip';
 import RouteMap from './RouteMap';
 import RsvpBox from './RsvpBox';
@@ -115,6 +116,15 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
               ))}
             </ul>
           </div>
+        )}
+
+        {event.publisher && (
+          <p className="m-0 flex items-center gap-2.5 text-sm text-muted">
+            <Avatar name={event.publisher.name} color={event.publisher.color} photoUrl={event.publisher.photoUrl} size={26} />
+            <span>
+              Publicerat av <span className="font-semibold text-ink">{event.publisher.name}</span>
+            </span>
+          </p>
         )}
 
         {actions.length > 0 && (

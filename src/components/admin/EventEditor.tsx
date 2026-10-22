@@ -16,6 +16,7 @@ import { CATEGORIES } from '../../lib/categories';
 import { deleteCourseFiles, uploadCourseFile, MAX_PDF_BYTES } from '../../lib/firebase/course-files';
 import { displayUrl } from '../../lib/firebase/image-bank';
 import { loadLinkTargets, type LinkTarget } from '../../lib/firebase/link-targets';
+import { loadMembers, toPublisher, type Member } from '../../lib/firebase/members';
 import { toPreview } from '../../lib/preview';
 import { addDays, dayKey, formatTime, fromStockholmInput, isWeekend, toStockholmInput } from '../../lib/time';
 import { EVENT_TYPES, MAX_COURSE_FILES, MAX_IMAGE_ALT, type EventContent, type EventImage, type EventRecord } from '../../types/event';
@@ -39,7 +40,7 @@ export default function EventEditor() {
 }
 
 /** Nytt event: nästa tisdagsträning, banorna ute till söndag lunch */
-function newEventContent(): EventContent {
+function newEventContent(uid: string): EventContent {
   const today = dayKey(new Date());
   let tuesday = addDays(today, 1);
   while (new Date(`${tuesday}T12:00:00Z`).getUTCDay() !== 2) tuesday = addDays(tuesday, 1);
@@ -54,6 +55,8 @@ function newEventContent(): EventContent {
     livelox: '',
     courseFiles: [],
     image: null,
+    // Förvalt är den som skapar eventet; kan bytas eller tas bort i editorn
+    publisher: uid,
   };
 }
 
@@ -68,6 +71,7 @@ const contentOf = (r: EventRecord): EventContent => ({
   livelox: r.livelox,
   courseFiles: r.courseFiles,
   image: r.image,
+  publisher: r.publisher,
 });
 
 /** Huvudbild från en bildbankspost; alt-texten förifylls med beskrivningen (annars namnet) */
@@ -86,7 +90,7 @@ function Editor({ session }: { session: Session }) {
   const initialId = new URLSearchParams(location.search).get('id');
   const [id, setId] = useState<string | null>(initialId);
   const [record, setRecord] = useState<EventRecord | null | undefined>(initialId ? undefined : null);
-  const [draft, setDraft] = useState<EventContent | null>(initialId ? null : newEventContent());
+  const [draft, setDraft] = useState<EventContent | null>(initialId ? null : newEventContent(session.uid));
   const [saved, setSaved] = useState<EventContent | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Message>(null);
@@ -100,6 +104,11 @@ function Editor({ session }: { session: Session }) {
   const [targets, setTargets] = useState<LinkTarget[] | null>(null);
   useEffect(() => {
     loadLinkTargets().then(setTargets).catch(() => setTargets([]));
+  }, []);
+  // Medlemmar att välja som "Publicerat av" (banläggare saknar den ändå eftersom de inte ändrar innehållet)
+  const [members, setMembers] = useState<Member[] | null>(null);
+  useEffect(() => {
+    loadMembers().then(setMembers).catch(() => setMembers([]));
   }, []);
 
   useEffect(() => {
@@ -150,7 +159,10 @@ function Editor({ session }: { session: Session }) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
-  const preview = useMemo(() => (draft ? toPreview(draft, record?.slug ?? null) : null), [draft, record?.slug]);
+  const preview = useMemo(
+    () => (draft ? toPreview(draft, record?.slug ?? null, toPublisher(members, draft.publisher)) : null),
+    [draft, record?.slug, members],
+  );
 
   if (record === undefined || !draft || !preview) {
     return <AdminPanel><p className="text-muted">Laddar…</p></AdminPanel>;
@@ -482,6 +494,30 @@ function Editor({ session }: { session: Session }) {
               <input id="livelox" type="url" value={draft.livelox} onChange={(e) => update({ livelox: e.target.value })} placeholder="https://www.livelox.com/…" className={INPUT} />
             </Field>
           </div>
+
+          <Field
+            label="Publicerat av"
+            htmlFor="publisher"
+            hint="Visas som liten profilbild och namn på eventet. Bara medlemmar som godkänt policyn och inte dolt sitt namn visas för besökare."
+          >
+            <select
+              id="publisher"
+              value={draft.publisher ?? ''}
+              disabled={courseOnly}
+              onChange={(e) => update({ publisher: e.target.value || null })}
+              className={INPUT}
+            >
+              <option value="">Ingen</option>
+              {/* Valet finns kvar även om personen inte längre är medlem, så att det inte tappas vid sparning */}
+              {draft.publisher && !members?.some((m) => m.uid === draft.publisher) && <option value={draft.publisher}>(okänd medlem)</option>}
+              {(members ?? []).map((m) => (
+                <option key={m.uid} value={m.uid}>
+                  {m.displayName}
+                  {m.publicName ? '' : ' (visas inte publikt)'}
+                </option>
+              ))}
+            </select>
+          </Field>
 
           <MainImageField
             image={draft.image}

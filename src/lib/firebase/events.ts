@@ -42,6 +42,8 @@ function contentToFirestore(c: EventContent) {
     image: c.image
       ? { imageId: c.image.imageId, url: c.image.url, thumbnailUrl: c.image.thumbnailUrl, alt: c.image.alt.trim() }
       : null,
+    // Alltid med (null = ingen), av samma skäl som image
+    publisher: c.publisher,
   };
 }
 
@@ -61,6 +63,7 @@ function contentFromFirestore(d: DocumentData): EventContent {
     livelox: d.livelox ?? '',
     courseFiles: Array.isArray(d.courseFiles) ? d.courseFiles : [],
     image: d.image ?? null,
+    publisher: typeof d.publisher === 'string' ? d.publisher : null,
   };
 }
 

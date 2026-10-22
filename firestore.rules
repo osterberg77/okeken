@@ -68,7 +68,7 @@ service cloud.firestore {
     }
 
     function eventKeys() {
-      return requiredEventKeys().concat(['courseFiles', 'image']);
+      return requiredEventKeys().concat(['courseFiles', 'image', 'publisher']);
     }
 
     // Storage-sökvägen ska ligga under courses/<eventId>/ och sluta på .pdf (filen laddas upp via storage.rules).
@@ -134,6 +134,16 @@ service cloud.firestore {
           && l.lat >= -90 && l.lat <= 90 && l.lng >= -180 && l.lng <= 180;
     }
 
+    // "Publicerat av": null eller medlemmens uid (valfritt fält, äldre events saknar det). Att medlemmen finns
+    // kontrolleras inte; bygget visar bara medlemmar med members.publicName (beslut 0015).
+    function publisherOf(d) {
+      return d.get('publisher', null);
+    }
+
+    function validPublisher(p) {
+      return p == null || (p is string && p.matches('[A-Za-z0-9]{1,128}'));
+    }
+
     function validEventContent(d, eventId) {
       return d.type in ['training', 'competition', 'meeting', 'info', 'happening']
         && d.title is string && d.title.size() > 0 && d.title.size() <= 200
@@ -148,14 +158,15 @@ service cloud.firestore {
         && d.livelox is string && d.livelox.size() <= 500
         && (d.livelox == '' || d.livelox.matches('https://.*'))
         && validCourseFiles(courseFilesOf(d), eventId)
-        && validEventImage(eventImageOf(d));
+        && validEventImage(eventImageOf(d))
+        && validPublisher(publisherOf(d));
     }
 
     function eventSnapshot(d) {
       return {
         'type': d.type, 'title': d.title, 'startsAt': d.startsAt, 'endsAt': d.endsAt,
         'location': d.location, 'body': d.body, 'courseSetter': d.courseSetter, 'livelox': d.livelox,
-        'courseFiles': courseFilesOf(d), 'image': eventImageOf(d)
+        'courseFiles': courseFilesOf(d), 'image': eventImageOf(d), 'publisher': publisherOf(d)
       };
     }
 
