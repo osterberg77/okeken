@@ -78,7 +78,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
           {time && <span>{time}</span>}
           {event.location?.name && <span>{event.location.name}</span>}
           {event.organiser && <span>Arrangör {event.organiser}</span>}
-          {event.courseSetter && <span>Banläggare {event.courseSetter}</span>}
+          {event.courseSetter && <span>{event.type === 'meeting' || event.type === 'info' ? 'Ansvarig' : 'Banläggare'} {event.courseSetter}</span>}
         </div>
 
         {startDay !== endDay && (

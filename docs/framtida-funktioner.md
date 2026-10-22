@@ -96,6 +96,23 @@ Innehåll som bara inloggade medlemmar ser (t.ex. kontaktlistor, interna dokumen
 
 **Öppna frågor kvar:** Ska ordföranden (justeraren) alltid vara den som justerar, eller kan man välja? Ska medlemmar senare kunna läsa arkivet (ändrar behörighetsmodellen, ny ADR)?
 
+## 12. Kommer/Kommer kanske/Kommer inte och integritetsval (Eriks riktning 2026-10-22)
+
+Föranlett av önskemål i gruppen om en "vill delta"-knapp. Inget är byggt; ska bli en egen ADR när det tas upp.
+
+**Svar på events och möten**
+- Tre val: *Kommer*, *Kommer kanske*, *Kommer inte*. Bara för inloggade användare, aldrig publikt (sidorna är statiska, så svaren läses och skrivs klientside bakom inloggning).
+- Antal syns bredvid knappen i event/möteskortet för inloggade. Namnen visas vid hovring, bara för inloggade.
+- Kräver ny collection, regler i `firestore.rules` och regeltest (kärnprincipen om säkerhet i reglerna).
+
+**Resultatlista och samtycke (GDPR)**
+- Opt-in/opt-out för att visa namn, med tre nivåer: *visa för inloggade*, *visa publikt*, *aldrig*.
+- Man ska också kunna dölja sin tid och bara stå som "deltagit".
+- Deltagandet ska kunna räknas även när namnet är dolt. Den som inte vill synas får ändå tillåta registrering, så att till exempel bara styrelsen ser vem det är.
+- Frågan om godkännande av användaruppgifter tas upp vartefter, se GDPR i `plan.md`.
+
+**Namngivning:** fältet `courseSetter` visas som "Ansvarig" för möten och information, "Banläggare" för övriga (UI-etikett, rollnyckeln är oförändrad).
+
 ## Hur vi använder listan
 1. Erik väljer en fråga och postar den i WhatsApp-gruppen (börja med "🤖 AI-byggaren:" om Claude postar, se `CLAUDE.md`).
 2. Svaren sammanfattas här under respektive rubrik (status: *Frågat*, *Beslutat ja*, *Beslutat nej*).

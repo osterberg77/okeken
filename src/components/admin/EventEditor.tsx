@@ -186,6 +186,16 @@ function Editor({ session }: { session: Session }) {
     setMessage(null);
   };
 
+  /** Slutet följer med när starten flyttas (behåller längden), så att ett endagsevent inte blir flerdagars. */
+  const changeStart = (startsAt: Date) => {
+    setDraft((d) => {
+      if (!d) return d;
+      const length = Math.max(0, d.endsAt.getTime() - d.startsAt.getTime());
+      return { ...d, startsAt, endsAt: new Date(startsAt.getTime() + length) };
+    });
+    setMessage(null);
+  };
+
   async function run(label: string, action: () => Promise<string>) {
     setBusy(label);
     setMessage(null);
@@ -417,7 +427,7 @@ function Editor({ session }: { session: Session }) {
                 id="start"
                 type="datetime-local"
                 value={toStockholmInput(draft.startsAt)}
-                onChange={(e) => e.target.value && update({ startsAt: fromStockholmInput(e.target.value) })}
+                onChange={(e) => e.target.value && changeStart(fromStockholmInput(e.target.value))}
                 className={INPUT}
               />
             </Field>
@@ -465,7 +475,7 @@ function Editor({ session }: { session: Session }) {
           <LocationPicker value={draft.location.coords} onChange={(coords) => update({ location: { ...draft.location, coords } })} />
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Banläggare" htmlFor="setter">
+            <Field label="Ansvarig" htmlFor="setter" hint="Banläggare, mötesansvarig eller liknande.">
               <input id="setter" value={draft.courseSetter} onChange={(e) => update({ courseSetter: e.target.value })} className={INPUT} />
             </Field>
             <Field label="Livelox-länk" htmlFor="livelox">
