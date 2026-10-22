@@ -104,7 +104,7 @@ Uppdaterad 2026-10-22. ✅ = klart och live på https://okeken.web.app.
 8. Pagefind-sök är byggd: `build` kör `pagefind --site dist`, bara eventsidor indexeras (`data-pagefind-body`), sökning på `/sok` (sökikon i headern, godkänd av Erik). Redirect `/traningskalender` → `/` ligger i `firebase.json`; övriga Wix-adresser läggs till när målsidorna finns (404 tills dess är OK, sajten byggs klart före flytten). *Kvar:* omdirigeringar från Wix (`firebase.json`), finjustering, lansering (DNS för okeken.se på Loopia).
 
 9. ✅ Eventor-spegel (2026-10-21/22): hämtning på `/admin/eventor`, urval som utkast och knappen Publicera (live = valt urval, ett bygge per publicering), valda tävlingar visas i kalendern och länkar till Eventor. Se `eventor.md`.
-9b. Mobilfixar och hosting (2026-10-22): tabeller och långa ord stannar inom sidkorten, periodkedjans ring klipps inte, sidor revalideras (`no-cache`) så att cachade 404 inte fastnar på mobil.
+9b. Mobilfixar och hosting (2026-10-22): tabeller och långa ord stannar inom sidkorten, periodkedjans ring klipps inte, sidor revalideras (`no-cache`) så att cachade 404 inte fastnar på mobil. Undantag: `/_astro/**` (hashade JS/CSS-filer) får `public, max-age=31536000, immutable` (en senare regel i `firebase.json` vinner, provat i Hosting-emulatorn). Bilder i Storage: bildbankens unika filer laddas upp med `immutable`, profilbilden (fast filnamn) med `max-age=300`.
 
 Justeringar efter första användartestet (2026-10-21): listans ordning när man väljer en dag bakåt, månadsväljare vid månadsrubriken och filtret Information. Se "Avsteg" i `skisser/kalender-och-kontrollsymboler.md`.
 

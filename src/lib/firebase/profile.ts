@@ -63,7 +63,8 @@ export async function saveProfile(uid: string, fields: ProfileFields): Promise<v
 export async function uploadAvatar(uid: string, file: File): Promise<void> {
   const blob = await prepareAvatar(file);
   const fileRef = ref(storage, `avatars/${uid}.jpg`);
-  await uploadBytes(fileRef, blob, { contentType: 'image/jpeg' });
+  // Fast filnamn som skrivs över när bilden byts: kort cachetid så att en ny bild syns inom några minuter
+  await uploadBytes(fileRef, blob, { contentType: 'image/jpeg', cacheControl: 'public, max-age=300' });
   await updateDoc(doc(db, 'users', uid), { photoUrl: await getDownloadURL(fileRef) });
 }
 

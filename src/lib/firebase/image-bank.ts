@@ -81,7 +81,8 @@ export async function uploadImage(file: File, onStep: (step: UploadStep) => void
     await Promise.all(
       VARIANTS.map(async (v) => {
         const r = ref(storage, paths[v]);
-        await uploadBytes(r, prepared[v], { contentType: prepared.type });
+        // Unika filnamn som aldrig skrivs över: webbläsare och CDN får cacha länge
+        await uploadBytes(r, prepared[v], { contentType: prepared.type, cacheControl: 'public, max-age=31536000, immutable' });
         uploaded.push(paths[v]);
         urls[v] = canonicalUrl(paths[v], await getDownloadURL(r));
       }),

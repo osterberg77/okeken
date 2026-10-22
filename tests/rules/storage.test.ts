@@ -322,3 +322,20 @@ describe('storage: avatars', () => {
     await assertFails(listAll(ref(as('publisher'), 'avatars')));
   });
 });
+
+describe('storage: cacheControl i uppladdningsmetadata', () => {
+  it('profilbild och bildbank släpps igenom med cacheControl', async () => {
+    await assertSucceeds(
+      uploadBytes(ref(as('member'), 'avatars/member.jpg'), new Uint8Array(100).fill(255), {
+        contentType: 'image/jpeg',
+        cacheControl: 'public, max-age=300',
+      }),
+    );
+    await assertSucceeds(
+      uploadBytes(ref(as('publisher'), `image_bank/cc${Date.now()}-web.webp`), new Uint8Array(100).fill(1), {
+        contentType: 'image/webp',
+        cacheControl: 'public, max-age=31536000, immutable',
+      }),
+    );
+  });
+});
