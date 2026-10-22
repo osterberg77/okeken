@@ -37,7 +37,7 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 
 ## Kommunikation (WhatsApp)
 
-- Byggkanalen är WhatsApp-gruppen **"OK Eken - hemsidebygge"** (JID `120363413962914017@g.us`), nåbar via MCP-servern `whatsapp`. Där postas change-log vid större ändringar, och Erik ber ibland Claude läsa gruppen efter förslag och kommentarer som underlag för vidare bygge.
+- Byggkanalen är WhatsApp-gruppen **"OK Eken - hemsidebygge"**, nåbar via MCP-servern `whatsapp` (slå upp gruppen på namn med `list_chats`). Där postas change-log vid större ändringar, och Erik ber ibland Claude läsa gruppen efter förslag och kommentarer som underlag för vidare bygge.
 - När Claude postar i gruppen börjar meddelandet alltid med **"🤖 AI-byggaren:"** så att alla ser att det är Claude och inte Erik som skriver.
 - Skriv på svenska, kort och för klubbmedlemmar (inte tekniskt). Posta bara det som är live, och bara när Erik bett om det eller godkänt texten.
 - Är ett förslag från en medlem tveksamt (oklart behov, stor ändring, krockar med annat, risk för bieffekter) får Claude i gruppen tagga personen, fråga om detaljerna och belysa konsekvenserna innan något byggs. Håll tonen vänlig och kort, och bygg inte förrän Erik sagt ja.
