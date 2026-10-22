@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import {
   addDays,
   dayKey,
@@ -24,12 +24,25 @@ interface Props {
   imageLoading?: 'eager' | 'lazy';
 }
 
+/** Relativ markering bredvid datumet. Räknas i webbläsaren (sidan är förbyggd, så "idag" från bygget vore fel dagen efter). */
+function whenLabel(startDay: string, endDay: string, now: string): string | null {
+  if (endDay < now) return null;
+  if (startDay > now) {
+    const n = daysBetween(now, startDay);
+    return n === 1 ? 'Imorgon' : `Om ${n} dagar`;
+  }
+  return startDay === now ? 'Idag' : 'Pågår';
+}
+
 // Delas av eventsidan (statisk HTML), kalenderns detaljvy och adminpreview.
 export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl, imageLoading = 'lazy' }: Props) {
   const startDay = dayKey(event.startsAt);
   const endDay = dayKey(event.endsAt);
   const isPast = endDay < today;
   const time = formatEventTime(event.startsAt, event.endsAt);
+  const [now, setNow] = useState<string | null>(null);
+  useEffect(() => setNow(dayKey(new Date())), []);
+  const when = now ? whenLabel(startDay, endDay, now) : null;
 
   const actions: { label: string; href: string }[] = [];
   if (event.livelox) actions.push({ label: 'Öppna i Livelox', href: event.livelox });
@@ -51,7 +64,14 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         </Heading>
 
         <div className="flex flex-wrap gap-x-6 gap-y-2 font-medium text-muted">
-          <span>{formatKeyLong(startDay)}</span>
+          <span>
+            {formatKeyLong(startDay)}
+            {when && (
+              <span className="ml-2 inline-block rounded-full bg-accent px-2.5 py-0.5 align-[1px] text-xs font-semibold tracking-[.04em] text-white uppercase">
+                {when}
+              </span>
+            )}
+          </span>
           {time && <span>{time}</span>}
           {event.location && <span>{event.location.name}</span>}
           {event.courseSetter && <span>Banläggare {event.courseSetter}</span>}
