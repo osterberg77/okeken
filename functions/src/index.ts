@@ -11,6 +11,8 @@ import { deleteAccountData, LastSuperadminError } from './delete-account.js';
 import { syncEventor } from './eventor-sync.js';
 import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 
+export { hit } from './stats.js';
+
 initializeApp();
 setGlobalOptions({ region: 'europe-north1', maxInstances: 3 });
 

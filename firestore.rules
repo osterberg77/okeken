@@ -665,6 +665,22 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- Besöksstatistik (beslut 0014) -----------------------------------------------------
+    // statsPages/{datum}__{sida} och statsDownloads/{datum}__{sida|fil}: dagliga räknare som bara Cloud Function
+    // `hit` skriver (Admin SDK). Publicerare, styrelse och superadmin läser. statsSeen (hashar för unika besökare)
+    // är aldrig läsbar eller skrivbar från klienten.
+    match /statsPages/{id} {
+      allow read: if canPublish();
+      allow write: if false;
+    }
+    match /statsDownloads/{id} {
+      allow read: if canPublish();
+      allow write: if false;
+    }
+    match /statsSeen/{id} {
+      allow read, write: if false;
+    }
+
     // ---- Svar på events (Kommer / Kommer kanske / Kommer inte) -------------------------
     // rsvps/{slug}/responses/{uid}: ett svar per användare, dokument-id = uid. Bara inloggade med minst en
     // behörighet (medlem eller högre) får läsa och svara; besökare ser aldrig svar. `name` är användarens

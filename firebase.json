@@ -9,6 +9,9 @@
       { "source": "/om-ok-eken", "destination": "/om-klubben", "type": 301 },
       { "source": "/banlaggning-purple-pen", "destination": "/banlaggning-i-purple-pen", "type": 301 }
     ],
+    "rewrites": [
+      { "source": "/api/hit", "function": { "functionId": "hit", "region": "europe-north1" } }
+    ],
     "headers": [
       {
         "source": "**",

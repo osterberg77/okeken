@@ -29,6 +29,7 @@ const GROUPS: GroupDef[] = [
       { href: '/admin/sidor', label: 'Sidor', description: 'Infosidor som Om klubben och Bli medlem' },
       { href: '/admin/meny', label: 'Meny', description: 'Ordning och undermenyer i huvudmenyn' },
       { href: '/admin/bilder', label: 'Bilder', description: 'Bildbanken som används i sidor och events' },
+      { href: '/admin/statistik', label: 'Besöksstatistik', description: 'Mest besökta sidor, varifrån besökarna kommer och nedladdningar' },
     ],
   },
   {
