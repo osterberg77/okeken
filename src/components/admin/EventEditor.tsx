@@ -167,6 +167,13 @@ function Editor({ session }: { session: Session }) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
 
+  // Schemalagd publicering (beslut 0016): Function `publishScheduled` publicerar utkastet som det ser ut då.
+  // Hooks måste ligga före de tidiga return nedan (annars React-fel 310).
+  const [scheduleInput, setScheduleInput] = useState('');
+  useEffect(() => {
+    if (record?.publishAt) setScheduleInput(toStockholmInput(record.publishAt));
+  }, [record?.publishAt]);
+
   const preview = useMemo(
     () => (draft ? toPreview(draft, record?.slug ?? null, toPublisher(members, draft.publisher)) : null),
     [draft, record?.slug, members],
@@ -318,11 +325,7 @@ function Editor({ session }: { session: Session }) {
     return 'Avpublicerat. Eventet försvinner från sajten vid nästa ombyggnad.';
   });
 
-  // Schemalagd publicering (beslut 0016): Function `publishScheduled` publicerar utkastet som det ser ut då
-  const [scheduleInput, setScheduleInput] = useState('');
-  useEffect(() => {
-    if (record?.publishAt) setScheduleInput(toStockholmInput(record.publishAt));
-  }, [record?.publishAt]);
+
   const scheduleAt = scheduleInput ? fromStockholmInput(scheduleInput) : null;
   const scheduleProblem =
     !scheduleAt || Number.isNaN(scheduleAt.getTime()) ? 'Välj datum och tid.' : scheduleAt.getTime() < Date.now() + 60_000 ? 'Tiden måste ligga i framtiden.' : '';
