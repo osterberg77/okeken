@@ -18,7 +18,7 @@ export const isBankImageUrl = (url: string) => url.startsWith(IMAGE_PREFIX);
 /** Adressen som `src` ska ha: i emulatorläge Storage-emulatorn, annars den kanoniska adressen oförändrad */
 export const bankImageSrc = (url: string) => (EMULATORS ? EMULATOR_IMAGE_PREFIX + url.slice(IMAGE_PREFIX.length) : url);
 
-const SAFE_URL = /^(https?:|mailto:|tel:|\/(?!\/)|#)/i;
+const SAFE_URL = /^(https?:|mailto:|tel:|\/(?![\/\\])|#)/i;
 
 const marked = new Marked({
   async: false,

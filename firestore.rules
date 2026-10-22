@@ -141,10 +141,12 @@ service cloud.firestore {
         && d.location is map && d.location.keys().hasOnly(['name', 'mapUrl', 'lat', 'lng'])
         && d.location.name is string && d.location.name.size() <= 200
         && d.location.mapUrl is string && d.location.mapUrl.size() <= 500
+        && (d.location.mapUrl == '' || d.location.mapUrl.matches('https://.*'))
         && validCoords(d.location)
         && d.body is string && d.body.size() <= 20000
         && d.courseSetter is string && d.courseSetter.size() <= 200
         && d.livelox is string && d.livelox.size() <= 500
+        && (d.livelox == '' || d.livelox.matches('https://.*'))
         && validCourseFiles(courseFilesOf(d), eventId)
         && validEventImage(eventImageOf(d));
     }
@@ -677,7 +679,7 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['displayName', 'email', 'permissions', 'createdAt'])
         && request.resource.data.permissions == []
         && request.resource.data.email == request.auth.token.email
-        && (!('displayName' in request.resource.data) || request.resource.data.displayName is string)
+        && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100))
         && request.resource.data.createdAt == request.time;
 
       allow update: if signedIn() && (

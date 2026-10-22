@@ -204,6 +204,12 @@ describe('events: create', () => {
     );
   });
 
+  it('livelox och mapUrl måste vara https-adresser (eller tomma)', async () => {
+    await assertFails(setDoc(ev(as('publisher'), 'badlx'), newEvent('publisher', { livelox: 'javascript:alert(1)' })));
+    await assertFails(setDoc(ev(as('publisher'), 'badlx2'), newEvent('publisher', { livelox: 'http://example.com' })));
+    await assertSucceeds(setDoc(ev(as('publisher'), 'oklx'), newEvent('publisher', { livelox: 'https://www.livelox.com/Events/Show/1' })));
+  });
+
   it('gränsvärden accepteras', async () => {
     await assertSucceeds(
       setDoc(
@@ -212,7 +218,7 @@ describe('events: create', () => {
           title: 'x'.repeat(200),
           body: 'x'.repeat(20000),
           courseSetter: 'x'.repeat(200),
-          livelox: 'x'.repeat(500),
+          livelox: 'https://' + 'x'.repeat(492),
           endsAt: T1,
         }),
       ),

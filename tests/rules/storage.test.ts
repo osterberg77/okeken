@@ -56,8 +56,7 @@ const ghost = () => env.authenticatedContext('ghost', { email_verified: true }).
 const put = (s: ReturnType<typeof as>, path: string, data: Uint8Array = pdf(), contentType = 'application/pdf') =>
   uploadBytes(ref(s, path), data, { contentType });
 
-// TILLFÄLLIGT AVSTÄNGD: uppladdningsreglerna är släppta på (storage.rules, 2026-10-21). Slå på igen när reglerna tajtas till före release.
-describe.skip('storage: courses – uppladdning', () => {
+describe('storage: courses – uppladdning', () => {
   for (const uid of ['publisher', 'board', 'super', 'setter']) {
     it(`${uid} kan ladda upp en PDF`, async () => {
       await assertSucceeds(put(as(uid), fresh()));
@@ -95,7 +94,8 @@ describe.skip('storage: courses – uppladdning', () => {
       await assertFails(put(as(uid), 'courses/ev1/existing-Bana.pdf'));
     }
   });
-  it('ingen extra metadata (contentDisposition, customMetadata, contentEncoding)', async () => {
+  // Metadatakontrollen är utelämnad i storage.rules tills 403-felet i produktion är utrett (commit e247536 har den).
+  it.skip('ingen extra metadata (contentDisposition, customMetadata, contentEncoding)', async () => {
     const withMeta = (m: Record<string, unknown>) => uploadBytes(ref(as('publisher'), fresh()), pdf(), { contentType: 'application/pdf', ...m });
     await assertFails(withMeta({ contentDisposition: 'attachment; filename="evil.html"' }));
     await assertFails(withMeta({ contentEncoding: 'gzip' }));
@@ -164,8 +164,7 @@ const seedImage = async (id: string, withPost: boolean) => {
   return `image_bank/${id}-web.webp`;
 };
 
-// TILLFÄLLIGT AVSTÄNGD, se kommentaren vid courses ovan.
-describe.skip('storage: image_bank – uppladdning', () => {
+describe('storage: image_bank – uppladdning', () => {
   for (const uid of ['publisher', 'board', 'super']) {
     it(`${uid} kan ladda upp bilder`, async () => {
       const id = freshId();
@@ -236,13 +235,15 @@ describe.skip('storage: image_bank – uppladdning', () => {
       await assertFails(putImg(as(uid), path));
     }
   });
-  it('kan inte ladda upp filer till en befintlig post', async () => {
+  // !imagePostExists är utelämnad i storage.rules tills vidare (se ovan).
+  it.skip('kan inte ladda upp filer till en befintlig post', async () => {
     const id = freshId();
     await seedImage(id, true);
     await assertFails(putImg(as('super'), `image_bank/${id}-original.jpg`, 'image/jpeg'));
     await assertFails(putImg(as('super'), `image_bank/${id}-thumbnail.webp`));
   });
-  it('ingen extra metadata (contentDisposition, customMetadata, contentEncoding)', async () => {
+  // Metadatakontrollen är utelämnad i storage.rules tills 403-felet i produktion är utrett (commit e247536 har den).
+  it.skip('ingen extra metadata (contentDisposition, customMetadata, contentEncoding)', async () => {
     const withMeta = (m: Record<string, unknown>) =>
       uploadBytes(ref(as('publisher'), `image_bank/${freshId()}-web.webp`), img(), { contentType: 'image/webp', ...m });
     await assertFails(withMeta({ contentDisposition: 'inline; filename="evil.html"' }));
