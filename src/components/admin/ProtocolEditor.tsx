@@ -282,13 +282,12 @@ function Editor({ session, id }: { session: Session; id: string }) {
   const setTodo = (i: number, patch: Partial<ProtocolContent['todos'][number]>) =>
     update({ todos: draft.todos.map((t, j) => (j === i ? { ...t, ...patch } : t)) });
 
-  const selectedIds = new Set(draft.attendees.map((a) => a.uid));
-  // Närvarande som inte (längre) finns i kontolistan visas ändå
-  const attendeeList = [
-    ...boardUsers.map((u) => ({ uid: u.uid, name: nameOf(u) })),
-    ...draft.attendees.filter((a) => !boardUsers.some((u) => u.uid === a.uid)),
-  ];
-  const others = (users ?? []).filter((u) => !attendeeList.some((a) => a.uid === u.uid));
+  // Tillgängliga att lägga till: alla konton som inte redan är närvarande, styrelsen först
+  const isBoardUser = (u: UserProfile) => boardUsers.some((b) => b.uid === u.uid);
+  const addable = (users ?? [])
+    .filter((u) => !draft.attendees.some((a) => a.uid === u.uid))
+    .sort((a, b) => Number(isBoardUser(b)) - Number(isBoardUser(a)) || nameOf(a).localeCompare(nameOf(b), 'sv'));
+  const addableBoard = addable.filter(isBoardUser);
 
   const signOptions = (uid: string | null, name: string) => {
     const opts = boardUsers.map((u) => ({ uid: u.uid, name: nameOf(u) }));
@@ -373,49 +372,58 @@ function Editor({ session, id }: { session: Session; id: string }) {
 
           <fieldset className="m-0 flex flex-col gap-2.5 border-0 p-0">
             <legend className="mb-1 text-[15px] font-semibold">Närvarande</legend>
-            <div className="flex flex-wrap gap-2">
-              {attendeeList.map((a) => {
-                const on = selectedIds.has(a.uid);
-                return (
-                  <label
-                    key={a.uid}
-                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${on ? 'cursor-pointer bg-ink text-white' : attendeesFull ? 'cursor-not-allowed bg-period text-subtle' : 'cursor-pointer bg-period text-ink hover:bg-pastel'}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      disabled={!on && attendeesFull}
-                      onChange={(e) => {
-                        const u = users.find((x) => x.uid === a.uid);
-                        if (e.target.checked) update({ attendees: [...draft.attendees, { uid: a.uid, name: u ? nameOf(u) : a.name }] });
-                        else update({ attendees: draft.attendees.filter((x) => x.uid !== a.uid) });
-                      }}
-                      className="h-4 w-4 accent-[#F9D932]"
-                    />
+            {draft.attendees.length === 0 ? (
+              <p className="m-0 text-sm text-muted">Ingen vald ännu.</p>
+            ) : (
+              <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                {draft.attendees.map((a) => (
+                  <li key={a.uid} className="flex items-center gap-1.5 rounded-full bg-ink py-1.5 pr-1.5 pl-4 text-sm font-semibold text-white">
                     {a.name}
-                  </label>
-                );
-              })}
-            </div>
-            {others.length > 0 && (
+                    <button
+                      type="button"
+                      aria-label={`Ta bort ${a.name} ur närvarande`}
+                      onClick={() => update({ attendees: draft.attendees.filter((x) => x.uid !== a.uid) })}
+                      className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-0 bg-white/20 text-base leading-none text-white hover:bg-white/35"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
               <select
-                aria-label="Lägg till närvarande utanför styrelsen"
+                aria-label="Lägg till närvarande"
                 value=""
-                disabled={attendeesFull}
+                disabled={attendeesFull || addable.length === 0}
                 onChange={(e) => {
                   const u = users.find((x) => x.uid === e.target.value);
                   if (u) toggleAttendee(u, true);
                 }}
                 className={`${INPUT} sm:max-w-xs`}
               >
-                <option value="">Lägg till någon annan…</option>
-                {others.map((u) => <option key={u.uid} value={u.uid}>{nameOf(u)}</option>)}
+                <option value="">{addable.length === 0 ? 'Alla är redan tillagda' : 'Lägg till närvarande…'}</option>
+                {addable.map((u) => <option key={u.uid} value={u.uid}>{nameOf(u)}{isBoardUser(u) ? ' (styrelsen)' : ''}</option>)}
               </select>
-            )}
+              {addableBoard.length > 0 && (
+                <button
+                  type="button"
+                  disabled={attendeesFull}
+                  onClick={() =>
+                    update({
+                      attendees: [...draft.attendees, ...addableBoard.map((u) => ({ uid: u.uid, name: nameOf(u) }))].slice(0, MAX_ATTENDEES),
+                    })
+                  }
+                  className="cursor-pointer rounded-full border-[1.5px] border-ink/18 bg-white px-4 py-2 text-sm font-semibold text-ink hover:border-accent hover:text-accent disabled:cursor-default disabled:opacity-40"
+                >
+                  Lägg till hela styrelsen
+                </button>
+              )}
+            </div>
             <span className="text-[13px] text-muted">
               {attendeesFull
                 ? `Du har nått taket på ${MAX_ATTENDEES} närvarande. Det beror på en gräns i databasreglerna; ta bort någon för att lägga till en annan.`
-                : 'Bocka bara för dem som var på plats. Frånvarande noteras inte.'}
+                : 'Lägg bara till dem som var på plats. Frånvarande noteras inte.'}
             </span>
           </fieldset>
 

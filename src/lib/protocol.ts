@@ -85,6 +85,30 @@ export function newTodoId(): string {
   return Array.from({ length: 20 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
 }
 
+/**
+ * Gör att göra-punkternas id giltiga och unika (A–Z a–z 0-9 _ -, se TODO_ID_PATTERN): svenska tecken byts mot
+ * motsvarande ASCII, övrigt tas bort, och dubbletter eller tomma id får ett nytt. Äldre eller importerade
+ * protokoll kan ha id som reglerna skulle neka; här rättas de när protokollet läses, så att nästa sparning går igenom.
+ */
+export function uniqueTodoIds(ids: readonly string[]): string[] {
+  const taken = new Set<string>();
+  return ids.map((raw) => {
+    let id = raw
+      .replace(/[åäÅÄ]/g, 'a')
+      .replace(/[öÖ]/g, 'o')
+      .replace(/[^A-Za-z0-9_-]/g, '')
+      .slice(0, 64);
+    if (!TODO_ID_PATTERN.test(id) || taken.has(id)) {
+      const base = id.slice(0, 50) || 'punkt';
+      id = base;
+      for (let n = 2; taken.has(id); n++) id = `${base}-${n}`;
+      if (!TODO_ID_PATTERN.test(id)) id = newTodoId();
+    }
+    taken.add(id);
+    return id;
+  });
+}
+
 const HEADING = /^ {0,3}#{1,6}(?:[ \t]|$)/;
 const FENCE = /^ {0,3}(```|~~~)/;
 

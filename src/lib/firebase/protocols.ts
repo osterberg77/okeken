@@ -16,6 +16,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import type { ApprovalRole, ProtocolContent, ProtocolRecord } from '../../types/protocol';
+import { uniqueTodoIds } from '../protocol';
 import { canViewProtocols, type Permission, type UserProfile } from '../../types/user';
 import { db } from './client';
 
@@ -44,6 +45,17 @@ function contentToFirestore(c: ProtocolContent) {
   };
 }
 
+function readTodos(raw: DocumentData[]): ProtocolContent['todos'] {
+  const ids = uniqueTodoIds(raw.map((t) => String(t.id ?? '')));
+  return raw.map((t, i) => ({
+    id: ids[i],
+    text: t.text ?? '',
+    assigneeUid: t.assigneeUid ?? null,
+    assigneeName: t.assigneeName ?? '',
+    done: t.done === true,
+  }));
+}
+
 function recordFromFirestore(id: string, d: DocumentData): ProtocolRecord {
   return {
     id,
@@ -51,13 +63,7 @@ function recordFromFirestore(id: string, d: DocumentData): ProtocolRecord {
     location: d.location ?? '',
     body: d.body ?? '',
     attendees: ((d.attendees ?? []) as DocumentData[]).map((a) => ({ uid: a.uid, name: a.name ?? '' })),
-    todos: ((d.todos ?? []) as DocumentData[]).map((t) => ({
-      id: t.id,
-      text: t.text ?? '',
-      assigneeUid: t.assigneeUid ?? null,
-      assigneeName: t.assigneeName ?? '',
-      done: t.done === true,
-    })),
+    todos: readTodos((d.todos ?? []) as DocumentData[]),
     secretaryUid: d.secretaryUid ?? null,
     secretaryName: d.secretaryName ?? '',
     adjusterUid: d.adjusterUid ?? null,

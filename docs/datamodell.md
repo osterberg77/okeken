@@ -98,7 +98,7 @@ Internt: bara styrelse och superadmin får läsa och skriva. **Bygget läser ald
 | `secretaryApprovedAt`, `adjusterApprovedAt` | timestamp \| null | Servertid när respektive person godkände. Båda satta = låst |
 | `createdBy`, `createdAt`, `updatedBy`, `updatedAt` | | Egen uid och servertid. Godkännanden ändrar inte `updated*` |
 
-uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utsedda personen, bara det egna fältet, värdet `request.time`; tillbakadragande av eget godkännande (`null`) går på olåst protokoll. Varje innehållsändring nollställer båda godkännandena i samma skrivning. Låst protokoll kan inte ändras eller raderas; radering bara av utkast utan godkännanden. Reglerna kontrollerar inte att uid:n finns eller är unika i listorna (klienten gör det, `validateProtocol`).
+Ogiltiga eller dubblerade id på att göra-punkter (t.ex. `nybörjare-träff` med å/ä/ö) rättas av klienten när protokollet läses (`uniqueTodoIds` i `src/lib/protocol.ts`) och sparas rätt nästa gång. uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utsedda personen, bara det egna fältet, värdet `request.time`; tillbakadragande av eget godkännande (`null`) går på olåst protokoll. Varje innehållsändring nollställer båda godkännandena i samma skrivning. Låst protokoll kan inte ändras eller raderas; radering bara av utkast utan godkännanden. Reglerna kontrollerar inte att uid:n finns eller är unika i listorna (klienten gör det, `validateProtocol`).
 
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
