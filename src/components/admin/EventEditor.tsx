@@ -94,6 +94,7 @@ function Editor({ session }: { session: Session }) {
   const loaded = useRef(false);
   // Filer som laddats upp i den här vyn men kanske aldrig sparats på eventet (hook: måste ligga före tidiga return)
   const uploadedPaths = useRef(new Set<string>());
+  const fileInput = useRef<HTMLInputElement>(null);
   const [targets, setTargets] = useState<LinkTarget[] | null>(null);
   useEffect(() => {
     loadLinkTargets().then(setTargets).catch(() => setTargets([]));
@@ -122,6 +123,23 @@ function Editor({ session }: { session: Session }) {
   useEffect(() => (courseOnly ? undefined : watchBuild((b) => setLastBuild(b.lastBuildAt))), [courseOnly]);
 
   const dirty = !!draft && (!saved || !sameContent(draft, saved));
+
+  // Banor som laddats upp men aldrig sparats raderas när man lämnar sidan (bästa försök: webbläsaren kan avbryta anropet)
+  const savedRef = useRef<EventRecord | null | undefined>(null);
+  savedRef.current = record;
+  useEffect(() => {
+    const cleanup = () => {
+      const r = savedRef.current;
+      const referenced = new Set([
+        ...(r?.courseFiles ?? []).map((f) => f.storagePath),
+        ...(r?.published?.courseFiles ?? []).map((f) => f.storagePath),
+      ]);
+      const orphans = [...uploadedPaths.current].filter((p) => !referenced.has(p));
+      if (orphans.length > 0) void deleteCourseFiles(orphans);
+    };
+    window.addEventListener('pagehide', cleanup);
+    return () => window.removeEventListener('pagehide', cleanup);
+  }, []);
 
   useEffect(() => {
     if (!dirty) return;
@@ -207,6 +225,13 @@ function Editor({ session }: { session: Session }) {
     setId(newId);
     history.replaceState(null, '', `?id=${newId}`);
     return newId;
+  }
+
+  function moveCourseFile(i: number, delta: -1 | 1) {
+    if (!draft) return;
+    const list = [...draft.courseFiles];
+    [list[i], list[i + delta]] = [list[i + delta], list[i]];
+    update({ courseFiles: list });
   }
 
   const onUploadFiles = (files: FileList | null) => {
@@ -457,6 +482,26 @@ function Editor({ session }: { session: Session }) {
                       />
                       <span className="truncate px-1 text-xs text-muted" title={f.name}>Fil: {f.name}</span>
                     </div>
+                    <div className="flex flex-none flex-col">
+                      <button
+                        type="button"
+                        aria-label={`Flytta ${f.label || f.name} uppåt`}
+                        disabled={i === 0}
+                        onClick={() => moveCourseFile(i, -1)}
+                        className="cursor-pointer rounded-full px-2 py-1 text-sm font-semibold text-muted hover:text-accent disabled:cursor-default disabled:opacity-30"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Flytta ${f.label || f.name} nedåt`}
+                        disabled={i === draft.courseFiles.length - 1}
+                        onClick={() => moveCourseFile(i, 1)}
+                        className="cursor-pointer rounded-full px-2 py-1 text-sm font-semibold text-muted hover:text-accent disabled:cursor-default disabled:opacity-30"
+                      >
+                        ↓
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => update({ courseFiles: draft.courseFiles.filter((_, j) => j !== i) })}
@@ -470,6 +515,7 @@ function Editor({ session }: { session: Session }) {
             )}
             <input
               id="courses"
+              ref={fileInput}
               type="file"
               accept="application/pdf"
               multiple
@@ -478,8 +524,11 @@ function Editor({ session }: { session: Session }) {
                 onUploadFiles(e.target.files);
                 e.target.value = '';
               }}
-              className="text-sm"
+              className="sr-only"
             />
+            <div>
+              <ActionButton onClick={() => fileInput.current?.click()} disabled={!!busy} busy={busy === 'upload'}>Välj filer</ActionButton>
+            </div>
           </Field>
 
           <fieldset disabled={courseOnly} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
