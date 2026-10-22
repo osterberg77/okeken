@@ -45,3 +45,15 @@ describe('results', () => {
     expect(g.map((x) => x.course)).toEqual(['Blå', 'Röd']);
   });
 });
+
+import { fromStockholmInput } from '../../src/lib/time';
+
+describe('fromStockholmInput med sekunder', () => {
+  it('läser HH:mm och HH:mm:ss (vintertid, UTC+1)', () => {
+    expect(fromStockholmInput('2026-11-03T18:30').toISOString()).toBe('2026-11-03T17:30:00.000Z');
+    expect(fromStockholmInput('2026-11-03T18:30:45').toISOString()).toBe('2026-11-03T17:30:45.000Z');
+  });
+  it('läser sommartid (UTC+2)', () => {
+    expect(fromStockholmInput('2026-07-01T18:30:07').toISOString()).toBe('2026-07-01T16:30:07.000Z');
+  });
+});

@@ -118,13 +118,14 @@ export function toStockholmInput(date: Date): string {
   return `${y}-${pad(m)}-${pad(d)}T${pad(h)}:${pad(min)}`;
 }
 
-/** 'YYYY-MM-DDTHH:mm' i svensk tid → Date */
+/** 'YYYY-MM-DDTHH:mm' eller 'YYYY-MM-DDTHH:mm:ss' i svensk tid → Date */
 export function fromStockholmInput(value: string): Date {
   const [datePart, timePart = '00:00'] = value.split('T');
   const [y, m, d] = datePart.split('-').map(Number);
-  const [h, min] = timePart.split(':').map(Number);
+  const [h, min, sec = 0] = timePart.split(':').map(Number);
+  // Tidszonsförskjutningen räknas på hela minuter; sekunderna läggs på efteråt
   const guess = Date.UTC(y, m - 1, d, h, min);
   const p = stockholmParts(new Date(guess));
   const offset = Date.UTC(p.y, p.m - 1, p.d, p.h, p.min) - guess;
-  return new Date(guess - offset);
+  return new Date(guess - offset + sec * 1000);
 }

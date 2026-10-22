@@ -12,7 +12,7 @@ import {
   type ResultPatch,
 } from '../../lib/firebase/results';
 import { formatDuration, parseDuration, publicEntries, rowSeconds } from '../../lib/results';
-import { dayKey, formatTime, fromStockholmInput, toStockholmInput } from '../../lib/time';
+import { dayKey, fromStockholmInput } from '../../lib/time';
 import type { EventRecord } from '../../types/event';
 import { SHOW_LABELS, SHOW_MODES, type ResultRow, type ShowMode } from '../../types/result';
 import { canViewEvents, type Session } from '../../types/user';
@@ -31,10 +31,12 @@ export default function ResultsAdmin() {
   );
 }
 
-const nowTime = () => toStockholmInput(new Date()).slice(11);
+/** 'HH:mm:ss' i svensk tid (sekunder stöds: en del är petiga med tiderna) */
+const clock = (d: Date) => d.toLocaleTimeString('sv-SE', { timeZone: 'Europe/Stockholm', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const nowTime = () => clock(new Date());
 
-/** 'HH:mm' i svensk tid → Date på dagen `day` (ÅÅÅÅ-MM-DD) */
-const atTime = (day: string, hhmm: string) => fromStockholmInput(`${day}T${hhmm}`);
+/** 'HH:mm' eller 'HH:mm:ss' i svensk tid → Date på dagen `day` (ÅÅÅÅ-MM-DD) */
+const atTime = (day: string, time: string) => fromStockholmInput(`${day}T${time}`);
 
 function Results({ session }: { session: Session }) {
   const eventId = new URLSearchParams(location.search).get('event');
@@ -249,7 +251,7 @@ function NewRow({
           </datalist>
         </Field>
         <Field label="Starttid" htmlFor="r-start">
-          <input id="r-start" type="time" value={start} onChange={(e) => setStart(e.target.value)} className={`${INPUT} !py-4 !text-lg`} />
+          <input id="r-start" type="time" step="1" value={start} onChange={(e) => setStart(e.target.value)} className={`${INPUT} !py-4 !text-lg`} />
         </Field>
         <Field label="Visa i resultatlistan" htmlFor="r-show">
           <select id="r-show" value={show} onChange={(e) => setShow(e.target.value as ShowMode)} className={`${INPUT} !py-4 !text-lg`}>
@@ -297,7 +299,7 @@ function RowItem({
         {row.memberUid && <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-muted">Medlem</span>}
         {row.youth && <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-white">Ungdom</span>}
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusStyle}`}>{status}</span>
-        <span className="text-[13px] text-subtle">{row.startAt ? `start ${formatTime(row.startAt.toISOString())}` : ''}</span>
+        <span className="text-[13px] text-subtle">{row.startAt ? `start ${clock(row.startAt)}` : ''}</span>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
@@ -305,9 +307,9 @@ function RowItem({
           <>
             <ActionButton primary onClick={() => onSave({ finishAt: new Date() })}>I mål nu</ActionButton>
             <label className="flex flex-col gap-1 text-[13px] font-semibold">
-              Måltid (klockslag)
+              Måltid (klockslag, med sekunder)
               <span className="flex gap-2">
-                <input type="time" value={finish} onChange={(e) => setFinish(e.target.value)} className={`${INPUT} !w-32 !py-2.5`} />
+                <input type="time" step="1" value={finish} onChange={(e) => setFinish(e.target.value)} className={`${INPUT} !w-36 !py-2.5`} />
                 <ActionButton onClick={() => { if (finish) { onSave({ finishAt: atTime(day, finish), totalSeconds: null }); setFinish(''); } }} disabled={!finish}>OK</ActionButton>
               </span>
             </label>
