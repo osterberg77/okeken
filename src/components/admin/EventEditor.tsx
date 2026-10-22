@@ -26,6 +26,7 @@ import AdminGate, { AdminPanel } from './AdminGate';
 import { ActionButton, Field, INPUT, QuickButton } from './AdminUi';
 import BuildStatus from './BuildStatus';
 import ImagePicker from './ImagePicker';
+import LocationPicker from './LocationPicker';
 import MarkdownField from './MarkdownField';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 
@@ -446,23 +447,22 @@ function Editor({ session }: { session: Session }) {
             <Field label="Plats" htmlFor="place">
               <input id="place" value={draft.location.name} onChange={(e) => update({ location: { ...draft.location, name: e.target.value } })} placeholder="T.ex. Skidstugan, Humpa" className={INPUT} />
             </Field>
-            <Field label="Kartlänk" htmlFor="map" hint="Valfri. Klistra in en länk från Google Maps.">
-              <input id="map" type="url" value={draft.location.mapUrl} onChange={(e) => update({ location: { ...draft.location, mapUrl: e.target.value } })} placeholder="https://maps.app.goo.gl/…" className={INPUT} />
-            </Field>
             <Field
               label="Koordinater"
               htmlFor="coords"
               hint={
                 !draft.location.coords.trim()
-                  ? 'Valfri. Ger en karta med körsträcka från Åtvidaberg. Högerklicka på platsen i Google Maps och klicka på siffrorna, eller klistra in dem här.'
+                  ? 'Valfri. Välj platsen på kartan nedan, eller klistra in siffror eller en Google Maps-länk här. Ger karta, körsträcka från Åtvidaberg och länk till Google Maps.'
                   : parseCoords(draft.location.coords)
-                    ? 'Kartan visas på eventsidan.'
+                    ? 'Kartan och Google Maps-länken visas på eventsidan.'
                     : 'Förstår inte koordinaterna. Skriv t.ex. 58.2025, 16.0015.'
               }
             >
               <input id="coords" value={draft.location.coords} onChange={(e) => update({ location: { ...draft.location, coords: e.target.value } })} placeholder="58.2025, 16.0015" className={INPUT} />
             </Field>
           </div>
+
+          <LocationPicker value={draft.location.coords} onChange={(coords) => update({ location: { ...draft.location, coords } })} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Banläggare" htmlFor="setter">

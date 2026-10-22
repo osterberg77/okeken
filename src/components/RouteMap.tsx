@@ -1,4 +1,5 @@
-import { HOME, haversineKm, type EventRoute, type LatLng } from '../lib/geo';
+import { useEffect, useRef, useState } from 'react';
+import { HOME, googleMapsUrl, haversineKm, type EventRoute, type LatLng } from '../lib/geo';
 
 const W = 600;
 const H = 300;
@@ -12,9 +13,28 @@ interface Props {
   route?: EventRoute;
 }
 
-// Samma kartbakgrund som kalenderpanelen (docs/skisser). Ren SVG, ingen JS och ingen extern kartserver:
-// rutten kommer färdigräknad från bygget (src/lib/server/route.ts). Utan rutt ritas fågelvägen streckad.
+// Ritad SVG-karta (docs/skisser) som syns i den förbyggda HTML:en och utan JS. När sidan hydreras byts den mot
+// en riktig OpenStreetMap-karta (Leaflet, src/lib/leaflet-map.ts). Rutten kommer färdigräknad från bygget
+// (src/lib/server/route.ts). Utan rutt ritas fågelvägen streckad.
 export default function RouteMap({ to, label, route }: Props) {
+  const mapEl = useRef<HTMLDivElement>(null);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    let off: (() => void) | undefined;
+    let cancelled = false;
+    import('../lib/leaflet-map')
+      .then((m) => {
+        if (cancelled || !mapEl.current) return;
+        off = m.mountViewMap(mapEl.current, to, route?.points, label);
+        setLive(true);
+      })
+      .catch(() => {}); // Misslyckas inläsningen finns den ritade kartan kvar
+    return () => {
+      cancelled = true;
+      off?.();
+      setLive(false);
+    };
+  }, [to.lat, to.lng, route, label]);
   const line: [number, number][] = route ? route.points : [[HOME.lng, HOME.lat], [to.lng, to.lat]];
   const all: [number, number][] = [[HOME.lng, HOME.lat], [to.lng, to.lat], ...line];
   const lngs = all.map((p) => p[0]);
@@ -48,7 +68,10 @@ export default function RouteMap({ to, label, route }: Props) {
 
   return (
     <figure className="m-0 flex flex-col gap-2">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Karta: ${summary} från ${HOME.name}`} className="block w-full rounded-[20px] bg-map">
+      <div className="relative">
+      {/* Kartan har alltid storlek (Leaflet mäter sin behållare); den ritade kartan ligger ovanpå tills den är klar */}
+      <div ref={mapEl} className="z-0 aspect-[2/1] w-full overflow-hidden rounded-[20px]" />
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Karta: ${summary} från ${HOME.name}`} className={`absolute inset-0 h-full w-full rounded-[20px] bg-map ${live ? 'hidden' : 'block'}`}>
         <svg width={W} height={H} viewBox="0 0 1240 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
           <rect width="1240" height="260" fill="#FFFEF8" />
           <path d="M0 190 C150 160 260 230 420 200 S700 150 860 190 S1120 220 1240 180 L1240 260 L0 260z" fill="#DDEBD0" opacity=".55" />
@@ -78,8 +101,12 @@ export default function RouteMap({ to, label, route }: Props) {
         <Label {...startLabel} text={HOME.name} />
         {label && <Label {...endLabel} text={label} />}
       </svg>
+      </div>
       <figcaption className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-muted">
         <span>{summary} från {HOME.name}</span>
+        <a href={googleMapsUrl(to)} target="_blank" rel="noopener" className="font-semibold text-accent">
+          Öppna i Google Maps ↗
+        </a>
         <a
           href={`https://www.google.com/maps/dir/?api=1&origin=${HOME.lat},${HOME.lng}&destination=${to.lat},${to.lng}`}
           target="_blank"

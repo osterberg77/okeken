@@ -48,7 +48,8 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
   const actions: { label: string; href: string }[] = [];
   if (event.externalUrl) actions.push({ label: 'Öppna i Eventor', href: event.externalUrl });
   if (event.livelox) actions.push({ label: 'Öppna i Livelox', href: event.livelox });
-  if (event.location?.mapUrl) actions.push({ label: 'Visa karta', href: event.location.mapUrl });
+  // Kartlänken ligger under kartan när platsen har koordinater; mapUrl är reserv för äldre event utan
+  if (event.location?.mapUrl && event.location.lat === undefined) actions.push({ label: 'Visa karta', href: event.location.mapUrl });
   if (shareUrl) {
     actions.push({ label: 'Dela på Facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` });
   }

@@ -20,6 +20,6 @@ const url = new URL(`/event/${event.slug}`, Astro.site).href;
     <a href="/" data-pagefind-ignore class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted no-underline hover:text-accent">
       <Icon name="arrowLeft" /> Till kalendern
     </a>
-    <EventDetail event={event} today={dayKey(new Date())} shareUrl={url} imageLoading="eager" />
+    <EventDetail client:idle event={event} today={dayKey(new Date())} shareUrl={url} imageLoading="eager" />
   </main>
 </BaseLayout>

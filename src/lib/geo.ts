@@ -36,3 +36,9 @@ export function haversineKm(a: LatLng, b: LatLng): number {
     Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 }
+
+/** Öppnar platsen i Google Maps (appen på mobil, annars webben) */
+export const googleMapsUrl = (at: LatLng): string => `https://www.google.com/maps/search/?api=1&query=${at.lat},${at.lng}`;
+
+/** Koordinater som text i samma format som admin tar emot: "58.20250, 16.00147" */
+export const formatCoords = (at: LatLng): string => `${at.lat.toFixed(5)}, ${at.lng.toFixed(5)}`;
