@@ -665,6 +665,33 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- Svar på events (Kommer / Kommer kanske / Kommer inte) -------------------------
+    // rsvps/{slug}/responses/{uid}: ett svar per användare, dokument-id = uid. Bara inloggade med minst en
+    // behörighet (medlem eller högre) får läsa och svara; besökare ser aldrig svar. `name` är användarens
+    // visningsnamn, eller '' när användaren dolt sitt namn (antalet räknas ändå och styrelsen ser vem via uid).
+    // Slug är eventets stabila adress; att eventet finns kontrolleras inte (en get per svar, se beslut 0012).
+
+    function isMember() {
+      return signedIn() && exists(userDoc()) && get(userDoc()).data.permissions.size() > 0;
+    }
+
+    match /rsvps/{slug}/responses/{uid} {
+      allow read: if isMember();
+
+      allow create, update: if isMember()
+        && request.auth.uid == uid
+        && validSlug(slug)
+        && request.resource.data.keys().hasOnly(['status', 'name', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['status', 'name', 'updatedAt'])
+        && request.resource.data.status in ['yes', 'maybe', 'no']
+        && request.resource.data.name is string
+        && (request.resource.data.name == '' || request.resource.data.name == get(userDoc()).data.displayName)
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isMember() && request.auth.uid == uid;
+    }
+
     // ---- Användare ---------------------------------------------------------------
 
     match /users/{uid} {

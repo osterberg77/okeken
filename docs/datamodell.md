@@ -105,6 +105,9 @@ uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utse
 
 `consent` (valfri): `{ version, acceptedAt }`, användarens godkännande av integritetspolicyn (beslut 0011). `version` är policyns datum (`CONSENT_VERSION` i `src/lib/consent.ts`), `acceptedAt` sätts av servern (`request.time`). Bara användaren själv kan skriva fältet, och inte vid kontoskapandet; styrelse och superadmin kan läsa det.
 
+### `rsvps/{slug}/responses/{uid}`
+Svar på ett event (beslut 0012). `status` (`yes`, `maybe`, `no`), `name` (användarens visningsnamn, eller `''` när namnet är dolt) och `updatedAt` (servertid). Dokument-id = uid. Läs/skriv bara för inloggade med minst en behörighet; användaren skriver och raderar bara sitt eget.
+
 ### `meta/build`
 `lastBuildAt` (skrivs av Actions efter lyckad deploy, värdet är byggets starttid) och `requestedAt` (skrivs av Function när den begär ett bygge). Adminvyn visar grön om `lastBuildAt >= requestedAt`, gul om bygge pågår, röd om det gått mer än 10 minuter utan resultat. Ett event är delningsklart när `lastBuildAt > event.publishedAt`.
 

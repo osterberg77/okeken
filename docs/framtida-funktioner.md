@@ -98,7 +98,7 @@ Innehåll som bara inloggade medlemmar ser (t.ex. kontaktlistor, interna dokumen
 
 ## 12. Kommer/Kommer kanske/Kommer inte och integritetsval (Eriks riktning 2026-10-22)
 
-Föranlett av önskemål i gruppen om en "vill delta"-knapp. Inget är byggt; ska bli en egen ADR när det tas upp.
+Föranlett av önskemål i gruppen om en "vill delta"-knapp. **Svar på events är byggt 2026-10-22 (beslut 0012).** Resultatlistan med namnval är inte byggd.
 
 **Svar på events och möten**
 - Tre val: *Kommer*, *Kommer kanske*, *Kommer inte*. Bara för inloggade användare, aldrig publikt (sidorna är statiska, så svaren läses och skrivs klientside bakom inloggning).

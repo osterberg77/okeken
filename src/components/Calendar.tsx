@@ -285,7 +285,7 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
 
         {chosen && (
           <div className="hidden min-w-0 flex-[999_1_480px] lg:block">
-            <EventDetail event={chosen} today={today} as="h2" shareUrl={chosen.state ? undefined : `${siteUrl}/event/${chosen.slug}`} />
+            <EventDetail event={chosen} today={today} rsvp={!chosen.state} as="h2" shareUrl={chosen.state ? undefined : `${siteUrl}/event/${chosen.slug}`} />
             {chosen.state && (
               <>
                 <StatusBadge state={chosen.state} />

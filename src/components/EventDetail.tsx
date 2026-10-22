@@ -12,6 +12,7 @@ import { bankImageSrc } from '../lib/markdown';
 import type { PublicEvent } from '../types/event';
 import CategoryChip from './CategoryChip';
 import RouteMap from './RouteMap';
+import RsvpBox from './RsvpBox';
 
 interface Props {
   event: PublicEvent;
@@ -23,6 +24,8 @@ interface Props {
   shareUrl?: string;
   /** 'eager' när kortet är det första på sidan (eventsidan); annars laddas huvudbilden när den syns */
   imageLoading?: 'eager' | 'lazy';
+  /** Visa "Kommer du?" för inloggade medlemmar. Av i adminpreview och för utkast (där finns inget publikt event att svara på). */
+  rsvp?: boolean;
 }
 
 /** Relativ markering bredvid datumet. Räknas i webbläsaren (sidan är förbyggd, så "idag" från bygget vore fel dagen efter). */
@@ -36,7 +39,7 @@ function whenLabel(startDay: string, endDay: string, now: string): string | null
 }
 
 // Delas av eventsidan (statisk HTML), kalenderns detaljvy och adminpreview.
-export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl, imageLoading = 'lazy' }: Props) {
+export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl, imageLoading = 'lazy', rsvp = false }: Props) {
   const startDay = dayKey(event.startsAt);
   const endDay = dayKey(event.endsAt);
   const isPast = endDay < today;
@@ -90,6 +93,8 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         {event.location?.lat !== undefined && event.location.lng !== undefined && (
           <RouteMap to={{ lat: event.location.lat, lng: event.location.lng }} label={event.location.name || undefined} route={event.route} />
         )}
+
+        {rsvp && !event.externalUrl && !isPast && <RsvpBox key={event.slug} slug={event.slug} />}
 
         {event.courseFiles && event.courseFiles.length > 0 && (
           <div className="flex flex-col gap-2">
