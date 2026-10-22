@@ -63,7 +63,9 @@ function centerPosition(e: FirebaseFirestore.DocumentData): { lat: number | null
   const pos = e.EventCenterPosition;
   const lng = Number(pos?.['@_x']);
   const lat = Number(pos?.['@_y']);
-  const ok = pos && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat !== 0 || lng !== 0);
+  // Schemat tillåter även meter/fot (projicerade koordinater): bara WGS-84 (grader) kan vi använda
+  const degrees = pos?.['@_unit'] === undefined || String(pos['@_unit']).toUpperCase().replace('_', '-') === 'WGS-84';
+  const ok = pos && degrees && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat !== 0 || lng !== 0);
   return ok ? { lat, lng } : { lat: null, lng: null };
 }
 
