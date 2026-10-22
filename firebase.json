@@ -9,6 +9,9 @@
       { "source": "/om-ok-eken", "destination": "/om-klubben", "type": 301 },
       { "source": "/banlaggning-purple-pen", "destination": "/banlaggning-i-purple-pen", "type": 301 }
     ],
+    "headers": [
+      { "source": "**", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",
