@@ -156,7 +156,7 @@ function PeriodChain({ startDay, endDay, label }: { startDay: string; endDay: st
   return (
     <div className="flex flex-col gap-2 rounded-[20px] bg-period px-[18px] py-4">
       <span className="text-xs font-semibold tracking-[.12em] text-subtle">{label}</span>
-      <div className="no-scrollbar -my-1 flex items-end overflow-x-auto py-1" aria-hidden="true">
+      <div className="no-scrollbar -mx-2 -my-1 flex items-end overflow-x-auto px-2 py-1" aria-hidden="true">
         {days.map((key, i) => (
           <span key={key} className="flex w-11 flex-none flex-col items-center gap-1 sm:w-14">
             <span style={i === 0 ? MARK_START : i === n ? MARK_FINISH : MARK_BETWEEN} />

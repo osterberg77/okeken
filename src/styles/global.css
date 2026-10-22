@@ -54,6 +54,42 @@
 .prose-eken img {
   @apply h-auto max-w-full rounded-[20px];
 }
+/* Långa ord (e-post, länkar) och tabeller ska aldrig tränga ut över kortet på smal skärm */
+.prose-eken {
+  overflow-wrap: anywhere;
+}
+.prose-eken table {
+  @apply block max-w-full overflow-x-auto border-collapse;
+}
+.prose-eken td,
+.prose-eken th {
+  @apply pr-3 text-left align-top;
+}
+/* Etikettkolumnen behåller hela ord; det som står bredvid får brytas */
+.prose-eken td:first-child,
+.prose-eken th:first-child {
+  overflow-wrap: normal;
+}
+/* Tabeller med rubrikrad eller tre kolumner och fler (t.ex. avgifter): sista kolumnen (belopp) bryts inte */
+.prose-eken table:has(th) tr > :last-child,
+.prose-eken tr:has(> :nth-child(3)) > :last-child {
+  white-space: nowrap;
+}
+/* Faktatabeller (två kolumner, utan rubrikrad) staplas på mobil: etikett ovanför värde */
+@media (max-width: 639px) {
+  .prose-eken table:not(:has(th)) tr:has(> :nth-child(2):last-child) {
+    @apply block py-1.5;
+  }
+  .prose-eken table:not(:has(th)) tr:has(> :nth-child(2):last-child) > * {
+    @apply block p-0;
+  }
+  .prose-eken table:not(:has(th)) tr:has(> :nth-child(2):last-child) > :first-child {
+    @apply text-[13px] font-semibold tracking-[.04em] text-subtle uppercase;
+  }
+}
+.prose-eken pre {
+  @apply max-w-full overflow-x-auto;
+}
 
 /* Omnämnande (@Namn) i protokollets editor */
 .mention-chip {
