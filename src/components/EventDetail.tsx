@@ -39,12 +39,13 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
   const startDay = dayKey(event.startsAt);
   const endDay = dayKey(event.endsAt);
   const isPast = endDay < today;
-  const time = formatEventTime(event.startsAt, event.endsAt);
+  const time = event.allDay ? '' : formatEventTime(event.startsAt, event.endsAt);
   const [now, setNow] = useState<string | null>(null);
   useEffect(() => setNow(dayKey(new Date())), []);
   const when = now ? whenLabel(startDay, endDay, now) : null;
 
   const actions: { label: string; href: string }[] = [];
+  if (event.externalUrl) actions.push({ label: 'Öppna i Eventor', href: event.externalUrl });
   if (event.livelox) actions.push({ label: 'Öppna i Livelox', href: event.livelox });
   if (event.location?.mapUrl) actions.push({ label: 'Visa karta', href: event.location.mapUrl });
   if (shareUrl) {
@@ -74,6 +75,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
           </span>
           {time && <span>{time}</span>}
           {event.location && <span>{event.location.name}</span>}
+          {event.organiser && <span>Arrangör {event.organiser}</span>}
           {event.courseSetter && <span>Banläggare {event.courseSetter}</span>}
         </div>
 
@@ -81,7 +83,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
           <PeriodChain startDay={startDay} endDay={endDay} label={event.type === 'training' ? 'BANAN ÄR UTE' : 'PÅGÅR'} />
         )}
 
-        <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />
+        {event.bodyHtml && <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />}
 
         {event.courseFiles && event.courseFiles.length > 0 && (
           <div className="flex flex-col gap-2">

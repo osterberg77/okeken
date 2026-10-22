@@ -166,16 +166,10 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
       ];
   const main = lists[0].all.slice(0, shown);
   const side = lists[1].all.slice(0, SIDE);
-  // Eventor-tävlingar har ingen detaljvy (raden länkar till Eventor), så de väljs aldrig som detaljen bredvid
-  const detailable = (e: CalEvent | undefined) => (e && !e.externalUrl ? e : undefined);
-  const chosen =
-    detailable(filtered.find((e) => e.slug === selectedSlug)) ??
-    main.find((e) => !e.externalUrl) ??
-    side.find((e) => !e.externalUrl);
+  const chosen = filtered.find((e) => e.slug === selectedSlug) ?? main[0] ?? side[0];
 
   function onRowClick(ev: MouseEvent, e: CalEvent) {
-    // Mobil: länken öppnar eventsidan. Desktop: visa i detaljvyn bredvid. Eventor-länkar följs alltid.
-    if (e.externalUrl) return;
+    // Mobil: länken öppnar eventsidan. Desktop: visa i detaljvyn bredvid.
     if (window.matchMedia(DESKTOP).matches) {
       ev.preventDefault();
       setSelectedSlug(e.slug);
@@ -312,8 +306,7 @@ function EventRow({ event, selected, onClick }: { event: CalEvent; selected: boo
   const meta = [keyWeekdayShort(event.startDay), time, event.location?.name ?? event.organiser].filter(Boolean).join(' · ');
   return (
     <a
-      href={event.externalUrl ?? (event.state ? `/admin/event?id=${event.adminId}` : `/event/${event.slug}`)}
-      {...(event.externalUrl ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      href={event.state ? `/admin/event?id=${event.adminId}` : `/event/${event.slug}`}
       onClick={onClick}
       className={`flex w-full items-center gap-4 rounded-[22px] px-[18px] py-4 text-ink no-underline ${
         event.state ? 'outline-2 -outline-offset-2 outline-[#F9D932] outline-dashed ' : ''
@@ -331,7 +324,7 @@ function EventRow({ event, selected, onClick }: { event: CalEvent; selected: boo
         <span className="flex flex-wrap items-center gap-2">
           <CategoryChip type={event.type} />
           {event.state && <StatusLabel state={event.state} />}
-          {event.externalUrl && <span className="text-[12px] font-semibold text-subtle">Eventor ↗</span>}
+          {event.externalUrl && <span className="text-[12px] font-semibold text-subtle">Eventor</span>}
         </span>
         <span className="font-display text-[17px] leading-[1.25] font-semibold">{event.title}</span>
         <span className="text-[13px] text-subtle">{meta}</span>
