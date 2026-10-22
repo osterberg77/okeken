@@ -38,7 +38,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 9. Sök (Pagefind).
 10. Enkel delningsknapp (förifylld text och länk, aktiv först när bygget är klart).
 11. ~~Omdirigeringar från gamla Wix-adresser~~ Beslutat 2026-10-22: behövs inte. Vi byter sida när den nya är klar; de få redirects som finns i `firebase.json` får ligga kvar.
-12. **Besöksstatistik** (egen räknare, beslut 0014): mest besökta sidor, varifrån besökarna kommer och nedladdningar per fil och sida. **Byggd 2026-10-22, verifierad mot emulatorer (Function + Firestore), ej deployad.** Efter deploy: slå på TTL (se beslut 0014) och kontrollera att land fylls i.
+12. **Besöksstatistik** (egen räknare, beslut 0014): mest besökta sidor, varifrån besökarna kommer och nedladdningar per fil och sida. **Live 2026-10-22:** `/api/hit` verifierad i produktion, land (SE) fylls i. TTL på `statsSeen.expireAt` beställd med gcloud (kontrollera att den står som aktiv).
 
 ## V1.1 (beslutat 2026-10-22: görs näst efter besöksräknaren)
 
@@ -47,7 +47,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 - **Schemalagd publicering** (`publishAt`, schemalagd Function).
 - Egen besöksräknare (väg B, se Besöksstatistik) flyttad till v1.
 
-- **Medlemslistan `members` är byggd (beslut 0015, 2026-10-22):** Function, regler och tester klara; efter deploy ska `node scripts/sync-members.mjs` köras en gång. Resultat och "publicerat av" bygger på den.
+- **Medlemslistan `members` är byggd (beslut 0015, 2026-10-22):** Function, regler och tester klara, deployat och fylld med `node scripts/sync-members.mjs` (4 medlemmar). Resultat och "publicerat av" bygger på den.
 - **"Publicerat av" på events och infosidor** (önskemål 2026-10-22, ej byggt). Fält i editorn: vem som står som publicerare. Förvalt är den inloggade, men man kan välja ingen eller en annan person (sökning i samma `members`-lista som namnsökningen i resultaten). Kortet och detaljvyn visar en liten profilbild med "Publicerat av <namn>". Att granska när det byggs: namn och bild hamnar i publik, prerenderad HTML och i Firestore-snapshoten, så det ska bara gälla den som godkänt policyn och inte valt att dölja sitt namn; uppdatera `/integritet`; byggs om när personen byter namn/bild eller raderar sitt konto (`deleteMyAccount` ska rensa fältet).
 
 ## V1.2
