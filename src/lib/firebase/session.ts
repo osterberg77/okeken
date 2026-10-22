@@ -135,7 +135,19 @@ export function watchSession(callback: (session: Session | null) => void): () =>
       (snap) => {
         const data = snap.data();
         const consent = typeof data?.consent?.version === 'string' ? { version: data.consent.version } : undefined;
-        callback({ ...base, displayName: data?.displayName || base.displayName, permissions: toPermissions(data?.permissions), consent });
+        // Efter ett bekräftat e-postbyte i inloggningen följer användardokumentet med (reglerna kräver samma adress som token)
+        if (data && user.emailVerified && user.email && data.email !== user.email) {
+          updateDoc(snap.ref, { email: user.email }).catch(() => {});
+        }
+        callback({
+          ...base,
+          displayName: data?.displayName || base.displayName,
+          permissions: toPermissions(data?.permissions),
+          consent,
+          avatarColor: typeof data?.avatarColor === 'string' ? data.avatarColor : undefined,
+          photoUrl: typeof data?.photoUrl === 'string' && data.photoUrl ? data.photoUrl : undefined,
+          hideNameInRsvp: data?.hideNameInRsvp === true,
+        });
       },
       () => callback({ ...base, permissions: [] }),
     );

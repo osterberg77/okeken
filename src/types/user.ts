@@ -58,6 +58,10 @@ export interface Session {
   permissions: Permission[];
   /** Godkänd version av integritetspolicyn, saknas tills användaren godkänt (se src/lib/consent.ts) */
   consent?: { version: string };
+  /** Profilfärg (id i src/lib/avatar.ts), profilbild och standardval för namn i svar på events */
+  avatarColor?: string;
+  photoUrl?: string;
+  hideNameInRsvp?: boolean;
 }
 
 export interface UserProfile {

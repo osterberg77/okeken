@@ -4,6 +4,7 @@ import type { Session } from '../types/user';
 import { hasAdminAccess } from '../lib/admin-nav';
 import PermissionTag from './PermissionTag';
 import ConsentDialog from './ConsentDialog';
+import Avatar from './Avatar';
 import { hasCurrentConsent, postponed, setPostponed } from '../lib/consent';
 
 // Firebase laddas bara för den som varit inloggad på den här enheten,
@@ -79,6 +80,15 @@ export default function AccountMenu() {
   }
 
   const name = session?.displayName || session?.email || '';
+  // 44 px på mobil, 56 px från sm och uppåt (som tidigare)
+  const [avatarSize, setAvatarSize] = useState(44);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const update = () => setAvatarSize(mq.matches ? 56 : 44);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
   const needsConsent = !!session && !hasCurrentConsent(session.consent);
   return (
     <div ref={root} className="relative">
@@ -98,9 +108,9 @@ export default function AccountMenu() {
         aria-label="Min profil"
         aria-haspopup="true"
         aria-expanded={open}
-        className="h-11 w-11 cursor-pointer rounded-full bg-[linear-gradient(135deg,#C9A7DA,#8A4B9E)] font-display text-lg font-bold text-white shadow-[0_8px_18px_-8px_#8A4B9E,0_0_0_3px_#fff] sm:h-14 sm:w-14 sm:text-[22px]"
+        className="cursor-pointer rounded-full"
       >
-        {name.charAt(0).toUpperCase()}
+        <Avatar name={name} color={session?.avatarColor} photoUrl={session?.photoUrl} size={avatarSize} />
       </button>
       {open && session && (
         <div className="absolute top-[56px] right-0 z-20 flex w-[272px] flex-col gap-3 rounded-[22px] bg-white p-[18px] shadow-[0_24px_48px_-20px_rgba(43,40,56,.45),0_2px_8px_rgba(43,40,56,.08)] sm:top-[68px]">
@@ -115,6 +125,10 @@ export default function AccountMenu() {
               </span>
             )}
           </div>
+          <div className="h-px bg-line" />
+          <a href="/profil" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+            Profil och inställningar
+          </a>
           {hasAdminAccess(session.permissions) && (
             <>
               <div className="h-px bg-line" />

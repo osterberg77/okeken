@@ -51,10 +51,11 @@ export default function RsvpBox({ slug }: Props) {
   }, [isMember, slug]);
 
   const mine = responses?.find((r) => r.uid === session?.uid);
-  // Följer det sparade svaret så att rutan visar vad som gäller
+  // Följer det sparade svaret så att rutan visar vad som gäller; utan svar gäller standardvalet i profilen
   useEffect(() => {
     if (mine) setHideName(mine.name === '');
-  }, [mine?.status, mine?.name]);
+    else setHideName(session?.hideNameInRsvp === true);
+  }, [mine?.status, mine?.name, session?.hideNameInRsvp]);
 
   const hiddenUids = useMemo(
     () => (responses ?? []).filter((r) => r.name === '').map((r) => r.uid).sort().join(','),

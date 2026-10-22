@@ -291,3 +291,34 @@ describe('storage: image_bank – läsning och radering', () => {
     await assertFails(deleteObject(ref(as('super'), 'other/secret.txt')));
   });
 });
+
+describe('storage: avatars', () => {
+  const jpeg = (bytes = 100) => new Uint8Array(bytes).fill(255);
+  it('användaren kan ladda upp, byta och radera sin egen profilbild', async () => {
+    await assertSucceeds(put(as('member'), 'avatars/member.jpg', jpeg(), 'image/jpeg'));
+    await assertSucceeds(put(as('member'), 'avatars/member.jpg', jpeg(200), 'image/jpeg'));
+    await assertSucceeds(deleteObject(ref(as('member'), 'avatars/member.jpg')));
+  });
+  it('även utan behörigheter (nyregistrerad)', async () => {
+    await assertSucceeds(put(as('nobody'), 'avatars/nobody.jpg', jpeg(), 'image/jpeg'));
+  });
+  it('ingen kan skriva eller radera någon annans bild, inte ens superadmin', async () => {
+    await assertFails(put(as('member'), 'avatars/publisher.jpg', jpeg(), 'image/jpeg'));
+    await assertFails(put(as('super'), 'avatars/member.jpg', jpeg(), 'image/jpeg'));
+    await assertSucceeds(put(as('member'), 'avatars/member.jpg', jpeg(), 'image/jpeg'));
+    await assertFails(deleteObject(ref(as('super'), 'avatars/member.jpg')));
+  });
+  it('bara JPEG, högst 500 kB, och bara filnamnet <uid>.jpg', async () => {
+    await assertFails(put(as('member'), 'avatars/member.jpg', jpeg(), 'image/png'));
+    await assertFails(put(as('member'), 'avatars/member.jpg', jpeg(500 * 1024 + 1), 'image/jpeg'));
+    await assertFails(put(as('member'), 'avatars/member2.jpg', jpeg(), 'image/jpeg'));
+    await assertFails(put(as('member'), 'avatars/member.png', jpeg(), 'image/jpeg'));
+  });
+  it('utloggade kan inte skriva eller läsa, ingen kan lista', async () => {
+    await assertFails(put(anon(), 'avatars/member.jpg', jpeg(), 'image/jpeg'));
+    await assertSucceeds(put(as('member'), 'avatars/member.jpg', jpeg(), 'image/jpeg'));
+    await assertFails(getBytes(ref(anon(), 'avatars/member.jpg')));
+    await assertSucceeds(getBytes(ref(as('publisher'), 'avatars/member.jpg')));
+    await assertFails(listAll(ref(as('publisher'), 'avatars')));
+  });
+});

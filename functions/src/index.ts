@@ -5,6 +5,9 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
+import { getAuth } from 'firebase-admin/auth';
+import { getStorage } from 'firebase-admin/storage';
+import { deleteAccountData, LastSuperadminError } from './delete-account.js';
 import { syncEventor } from './eventor-sync.js';
 
 initializeApp();
@@ -126,5 +129,28 @@ export const syncEventorNow = onCall({ secrets: [EVENTOR_API_KEY], timeoutSecond
   } catch (err) {
     logger.error('Eventor-hämtning misslyckades', err);
     throw new HttpsError('internal', 'Kunde inte hämta från Eventor.');
+  }
+});
+
+/** Högst så här gammal får inloggningen vara för att kontot ska få raderas (användaren bekräftar lösenordet precis före). */
+const MAX_AUTH_AGE_SECONDS = 10 * 60;
+
+/** Användaren raderar sitt eget konto och sina uppgifter permanent (beslut 0013). */
+export const deleteMyAccount = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Logga in.');
+  const authTime = Number(request.auth.token.auth_time ?? 0);
+  if (Date.now() / 1000 - authTime > MAX_AUTH_AGE_SECONDS) {
+    throw new HttpsError('failed-precondition', 'Logga in igen och försök på nytt.');
+  }
+  try {
+    await deleteAccountData(request.auth.uid, { db: getFirestore(), auth: getAuth(), bucket: getStorage().bucket() });
+    logger.info('Konto raderat', { uid: request.auth.uid });
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof LastSuperadminError) {
+      throw new HttpsError('failed-precondition', 'Du är den sista superadmin. Utse en till innan du raderar kontot.');
+    }
+    logger.error('Kontoradering misslyckades', err);
+    throw new HttpsError('internal', 'Kunde inte radera kontot. Försök igen.');
   }
 });

@@ -9,6 +9,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -171,6 +172,53 @@ describe('users: self update', () => {
     await assertFails(
       updateDoc(doc(as('member'), 'users', 'member'), { email: 'x@example.com' }),
     );
+  });
+});
+
+describe('users: profile settings', () => {
+  const mine = (uid = 'member') => doc(as(uid), 'users', uid);
+  const photo = (uid: string) =>
+    `https://firebasestorage.googleapis.com/v0/b/okeken.firebasestorage.app/o/avatars%2F${uid}.jpg?alt=media&token=abc`;
+  const verified = (uid: string, email: string) =>
+    env.authenticatedContext(uid, { email, email_verified: true }).firestore();
+
+  it('may change colour, default name privacy and photo for self', async () => {
+    await assertSucceeds(updateDoc(mine(), { avatarColor: 'green' }));
+    await assertSucceeds(updateDoc(mine(), { hideNameInRsvp: true }));
+    await assertSucceeds(updateDoc(mine(), { photoUrl: photo('member') }));
+    await assertSucceeds(updateDoc(mine(), { photoUrl: '' }));
+  });
+  it('denies colours outside the palette and non-boolean privacy flag', async () => {
+    await assertFails(updateDoc(mine(), { avatarColor: '#ff0000' }));
+    await assertFails(updateDoc(mine(), { avatarColor: 5 }));
+    await assertFails(updateDoc(mine(), { hideNameInRsvp: 'yes' }));
+  });
+  it('denies a photo url that is not the user\'s own avatar file', async () => {
+    await assertFails(updateDoc(mine(), { photoUrl: photo('publisher') }));
+    await assertFails(updateDoc(mine(), { photoUrl: 'https://evil.example.com/x.jpg' }));
+    await assertFails(updateDoc(mine(), { photoUrl: 5 }));
+  });
+  it('nobody can change another user\'s profile', async () => {
+    await assertFails(updateDoc(doc(as('member'), 'users', 'target'), { avatarColor: 'green' }));
+    await assertFails(updateDoc(doc(as('board'), 'users', 'target'), { avatarColor: 'green' }));
+    await assertFails(updateDoc(doc(as('super'), 'users', 'target'), { photoUrl: '' }));
+  });
+  it('email may follow a verified email change in the sign-in, nothing else', async () => {
+    const db = verified('member', 'new@example.com');
+    await assertSucceeds(updateDoc(doc(db, 'users', 'member'), { email: 'new@example.com' }));
+    await assertFails(updateDoc(doc(db, 'users', 'member'), { email: 'other@example.com' }));
+  });
+  it('email cannot be synced when the token email is not verified', async () => {
+    const db = env.authenticatedContext('member', { email: 'new@example.com' }).firestore();
+    await assertFails(updateDoc(doc(db, 'users', 'member'), { email: 'new@example.com' }));
+  });
+  it('cannot be combined with permissions', async () => {
+    await assertFails(updateDoc(mine(), { avatarColor: 'green', permissions: ['member', 'superadmin'] }));
+  });
+  it('may withdraw consent (remove the field) but not edit someone else\'s', async () => {
+    await assertSucceeds(updateDoc(mine(), { consent: { version: '2026-10-22', acceptedAt: serverTimestamp() } }));
+    await assertFails(updateDoc(doc(as('board'), 'users', 'member'), { consent: deleteField() }));
+    await assertSucceeds(updateDoc(mine(), { consent: deleteField() }));
   });
 });
 

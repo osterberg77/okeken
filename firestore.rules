@@ -694,6 +694,17 @@ service cloud.firestore {
 
     // ---- Användare ---------------------------------------------------------------
 
+    // Profilfärg (väljs ur en fast palett, se src/lib/avatar.ts) och profilbild (egen Storage-fil avatars/<uid>.jpg)
+    function avatarColors() {
+      return ['purple', 'green', 'gold', 'blue', 'red', 'teal', 'orange', 'grey'];
+    }
+
+    function validPhotoUrl(url, uid) {
+      return url == ''
+        || (url is string && url.size() <= 1000
+          && url.matches('^https://firebasestorage[.]googleapis[.]com/v0/b/[^/]+/o/avatars%2F' + uid + '[.]jpg[?].*$'));
+    }
+
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || has('board') || has('superadmin'));
 
@@ -710,11 +721,20 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
 
       allow update: if signedIn() && (
-        // Användaren själv: bara visningsnamn
+        // Användaren själv: profil och inställningar (aldrig behörigheter). E-post bara när den följt efter ett
+        // bekräftat e-postbyte i inloggningen (samma som token), så att users.email inte kan peka på någon annan.
         (request.auth.uid == uid
-          && onlyChanges(['displayName'])
-          && request.resource.data.displayName is string
-          && request.resource.data.displayName.size() <= 100)
+          && onlyChanges(['displayName', 'avatarColor', 'photoUrl', 'hideNameInRsvp', 'email'])
+          && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100))
+          && (!('avatarColor' in request.resource.data) || request.resource.data.avatarColor in avatarColors())
+          && (!('photoUrl' in request.resource.data) || validPhotoUrl(request.resource.data.photoUrl, uid))
+          && (!('hideNameInRsvp' in request.resource.data) || request.resource.data.hideNameInRsvp is bool)
+          && (request.resource.data.email == resource.data.email
+            || (request.auth.token.email_verified == true && request.resource.data.email == request.auth.token.email)))
+        // Användaren själv: ta tillbaka godkännandet av integritetspolicyn (tar bort fältet)
+        || (request.auth.uid == uid
+          && onlyChanges(['consent'])
+          && !('consent' in request.resource.data))
         // Användaren själv: godkännande av integritetspolicyn (version + tidpunkt från servern)
         || (request.auth.uid == uid
           && onlyChanges(['consent'])

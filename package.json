@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "check": "astro check",
     "emulators": "firebase emulators:start",
-    "test:rules": "firebase emulators:exec --config firebase.test.json --only firestore,storage --project demo-okeken \"vitest run tests/rules\"",
+    "test:rules": "firebase emulators:exec --config firebase.test.json --only firestore,storage,auth --project demo-okeken \"vitest run tests/rules tests/server\"",
     "dev:emu": "PUBLIC_FIREBASE_EMULATORS=true FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 astro dev"
   },
   "dependencies": {

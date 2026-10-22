@@ -15,3 +15,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | [0009](0009-styrelsens-protokoll.md) | Styrelsens protokoll i `protocols` (bara styrelse/superadmin), godkännande och lås i reglerna, omnämnanden `@[Namn](mention:uid)` | Beslutat |
 | [0011](0011-gdpr-godkannande.md) | Integritetspolicy på `/integritet` och godkännande per användare i `users/{uid}.consent`, med versionsstyrd omfråga | Beslutat |
 | [0012](0012-svar-pa-events.md) | Kommer/Kommer kanske/Kommer inte i `rsvps/{slug}/responses/{uid}`, bara medlemmar, dolt namn räknas ändå | Beslutat |
+| [0013](0013-profil-och-kontoradering.md) | Profilsida `/profil` (namn, färg, bild, e-post, lösenord, integritet) och permanent kontoradering via Cloud Function `deleteMyAccount` | Beslutat |

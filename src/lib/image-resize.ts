@@ -94,3 +94,31 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
     bitmap.close();
   }
 }
+
+export const AVATAR_EDGE = 256;
+export const AVATAR_QUALITY = 0.85;
+
+/** Profilbild: beskär mitten till en kvadrat, 256 px, alltid JPEG (vit botten för genomskinliga PNG). */
+export async function prepareAvatar(file: File): Promise<Blob> {
+  detectImageType(file);
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  } catch {
+    throw new ImageRejected('Filen går inte att läsa som en bild.');
+  }
+  try {
+    const side = Math.min(bitmap.width, bitmap.height);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = AVATAR_EDGE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Webbläsaren saknar stöd för att skala bilder.');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, AVATAR_EDGE, AVATAR_EDGE);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, AVATAR_EDGE, AVATAR_EDGE);
+    return await toBlob(canvas, 'image/jpeg', AVATAR_QUALITY);
+  } finally {
+    bitmap.close();
+  }
+}

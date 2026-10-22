@@ -103,6 +103,8 @@ uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utse
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 
+`avatarColor` (id ur paletten i `src/lib/avatar.ts`), `photoUrl` (token-URL till `avatars/<uid>.jpg`, tom sträng = ingen bild) och `hideNameInRsvp` (bool, standardval för namn i svar på events) är valfria och skrivs bara av användaren själv (beslut 0013). Raderas hela dokumentet av `deleteMyAccount`.
+
 `consent` (valfri): `{ version, acceptedAt }`, användarens godkännande av integritetspolicyn (beslut 0011). `version` är policyns datum (`CONSENT_VERSION` i `src/lib/consent.ts`), `acceptedAt` sätts av servern (`request.time`). Bara användaren själv kan skriva fältet, och inte vid kontoskapandet; styrelse och superadmin kan läsa det.
 
 ### `rsvps/{slug}/responses/{uid}`
@@ -122,6 +124,7 @@ templates/{templateId}.svg   # skrivs endast av Cloud Function
 ```
 
 - `courses/`: alla får hämta, ingen får lista. Banläggare, publicerare, styrelse och superadmin laddar upp nya PDF:er (max 10 MB). Ingen överskrivning eller radering.
+- `avatars/<uid>.jpg`: profilbild (beslut 0013). Bara ägaren skriver och raderar, JPEG högst 500 kB, inloggade får hämta, ingen listning. Raderas av `deleteMyAccount`.
 - `image_bank/`: platt mapp. Alla får hämta (bilderna visas för besökare via token-URL), ingen får lista. Publicerare, styrelse och superadmin laddar upp nya filer (JPEG/PNG/WebP, ändelsen ska stämma med typen, max 10 MB) och bara så länge posten `imageBank/<imageId>` inte finns. Radering är tillåten bara när posten är borta. Ingen överskrivning och ingen ändring av metadata.
 
 ## Senare
