@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { setGlobalOptions } from 'firebase-functions/v2';
-import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
@@ -9,6 +9,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
 import { deleteAccountData, LastSuperadminError } from './delete-account.js';
 import { syncEventor } from './eventor-sync.js';
+import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 
 initializeApp();
 setGlobalOptions({ region: 'europe-north1', maxInstances: 3 });
@@ -153,4 +154,14 @@ export const deleteMyAccount = onCall(async (request) => {
     logger.error('Kontoradering misslyckades', err);
     throw new HttpsError('internal', 'Kunde inte radera kontot. Försök igen.');
   }
+});
+
+/** Följer profilens val: ändrat namn eller ändrat val att dölja namnet uppdaterar användarens svar på alla events (beslut 0012). */
+export const onUserRsvpNameChanged = onDocumentUpdated('users/{uid}', async (event) => {
+  const before = event.data?.before.data();
+  const after = event.data?.after.data();
+  if (!before || !after) return;
+  if (before.displayName === after.displayName && before.hideNameInRsvp === after.hideNameInRsvp) return;
+  const updated = await syncRsvpNames(event.params.uid, rsvpName(after.displayName, after.hideNameInRsvp), getFirestore());
+  if (updated > 0) logger.info('Svarens namn uppdaterade', { uid: event.params.uid, updated });
 });

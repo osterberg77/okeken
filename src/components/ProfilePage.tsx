@@ -308,8 +308,8 @@ function PrivacySection({ session, profile }: { session: Session; profile: Profi
           }
         />
         <span>
-          Visa inte mitt namn för andra när jag svarar på events
-          <span className="block text-sm text-muted">Ditt svar räknas ändå. Styrelsen kan se vem som svarat. Du kan ändra per event.</span>
+          Visa inte mitt namn för andra på mina svar på events
+          <span className="block text-sm text-muted">Som standard visas ditt namn för andra inloggade medlemmar. Väljer du bort det räknas dina svar ändå, och styrelsen kan se vem som svarat. Gäller alla dina svar.</span>
         </span>
       </label>
 

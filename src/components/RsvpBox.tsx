@@ -3,6 +3,8 @@ import { rememberedSignIn } from '../lib/firebase/flags';
 import { RSVP_LABELS, RSVP_STATUSES, type RsvpResponse, type RsvpStatus } from '../types/rsvp';
 import type { Session } from '../types/user';
 
+const RSVP_ICONS: Record<RsvpStatus, string> = { yes: '👍', maybe: '🤔', no: '👎' };
+
 interface Props {
   /** Eventets stabila adress, nyckel för svaren */
   slug: string;
@@ -15,7 +17,6 @@ interface Props {
 export default function RsvpBox({ slug }: Props) {
   const [session, setSession] = useState<Session | null>(null);
   const [responses, setResponses] = useState<RsvpResponse[] | null>(null);
-  const [hideName, setHideName] = useState(false);
   const [showWho, setShowWho] = useState(false);
   const [boardNames, setBoardNames] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -51,12 +52,6 @@ export default function RsvpBox({ slug }: Props) {
   }, [isMember, slug]);
 
   const mine = responses?.find((r) => r.uid === session?.uid);
-  // Följer det sparade svaret så att rutan visar vad som gäller; utan svar gäller standardvalet i profilen
-  useEffect(() => {
-    if (mine) setHideName(mine.name === '');
-    else setHideName(session?.hideNameInRsvp === true);
-  }, [mine?.status, mine?.name, session?.hideNameInRsvp]);
-
   const hiddenUids = useMemo(
     () => (responses ?? []).filter((r) => r.name === '').map((r) => r.uid).sort().join(','),
     [responses],
@@ -84,60 +79,43 @@ export default function RsvpBox({ slug }: Props) {
     try {
       const { setRsvp, clearRsvp } = await import('../lib/firebase/rsvp');
       if (mine?.status === status) await clearRsvp(slug, session.uid);
-      else await setRsvp(slug, session.uid, status, hideName);
+      else await setRsvp(slug, session.uid, status, session.hideNameInRsvp === true);
     } catch {
       setError(true);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function toggleHide(next: boolean) {
-    setHideName(next);
-    if (!session || !mine) return;
-    setBusy(true);
-    setError(false);
-    try {
-      const { setRsvp } = await import('../lib/firebase/rsvp');
-      await setRsvp(slug, session.uid, mine.status, next);
-    } catch {
-      setError(true);
-      setHideName(!next);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section aria-label="Kommer du?" className="flex flex-col gap-3 rounded-[22px] bg-period/60 p-4">
-      <h3 className="m-0 font-display text-lg font-bold">Kommer du?</h3>
-      <div className="flex flex-wrap gap-2">
-        {RSVP_STATUSES.map((status) => {
-          const { named, anonymous, count } = namesFor(status);
-          const chosen = mine?.status === status;
-          const title = [...named, ...(anonymous ? [`+ ${anonymous} som inte visar sitt namn`] : [])].join(', ');
-          return (
-            <button
-              key={status}
-              type="button"
-              disabled={busy}
-              aria-pressed={chosen}
-              title={title || undefined}
-              onClick={() => choose(status)}
-              className={`cursor-pointer rounded-full border-[1.5px] px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
-                chosen ? 'border-accent bg-accent text-white' : 'border-ink/18 bg-white text-ink hover:border-accent hover:text-accent'
-              }`}
-            >
-              {RSVP_LABELS[status]} <span className={chosen ? 'text-white/85' : 'text-subtle'}>{count}</span>
-            </button>
-          );
-        })}
+    <section aria-label="Kommer du?" className="flex flex-col gap-2 rounded-[22px] bg-period/60 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h3 className="m-0 font-display text-lg font-bold">Kommer du?</h3>
+        <div className="flex gap-2">
+          {RSVP_STATUSES.map((status) => {
+            const { named, anonymous, count } = namesFor(status);
+            const chosen = mine?.status === status;
+            const who = [...named, ...(anonymous ? [`+ ${anonymous} som inte visar sitt namn`] : [])].join(', ');
+            return (
+              <button
+                key={status}
+                type="button"
+                disabled={busy}
+                aria-pressed={chosen}
+                aria-label={`${RSVP_LABELS[status]}, ${count} st`}
+                title={who ? `${RSVP_LABELS[status]}: ${who}` : RSVP_LABELS[status]}
+                onClick={() => choose(status)}
+                className={`flex cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${
+                  chosen ? 'border-accent bg-accent text-white' : 'border-ink/18 bg-white text-ink hover:border-accent'
+                }`}
+              >
+                <span aria-hidden="true" className="text-lg leading-none">{RSVP_ICONS[status]}</span>
+                <span className={chosen ? 'text-white/90' : 'text-subtle'}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
-
-      <label className="flex items-center gap-2 text-sm text-muted">
-        <input type="checkbox" checked={hideName} disabled={busy} onChange={(e) => toggleHide(e.target.checked)} />
-        Visa inte mitt namn för andra{isBoard ? '' : ' (styrelsen kan se det)'}
-      </label>
 
       {responses.length > 0 && (
         <div className="flex flex-col gap-2 text-sm">
