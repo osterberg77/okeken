@@ -180,6 +180,17 @@ function Editor({ session }: { session: Session }) {
               Det här visas i sajtens meny, i den här ordningen. Kalendern ligger alltid först. Använd pilarna för att ordna om.
               Att ta bort en post ur menyn tar inte bort sidan.
             </p>
+            <div className="mt-3 flex flex-col gap-1.5 rounded-2xl bg-period px-4 py-3 text-[14px] leading-[1.5]">
+              <strong>Rubrik eller sida med undersidor?</strong>
+              <span>
+                <strong>Rubrik:</strong> bara en text som öppnar en undermeny. Den leder inte till någon sida själv, och visas bara om minst en
+                undersida under den är publicerad.
+              </span>
+              <span>
+                <strong>Sida med undersidor:</strong> texten är en länk till sidan, och en liten pil bredvid öppnar undermenyn. Besökaren får
+                alltså både en egen sida och en undermeny.
+              </span>
+            </div>
             <p className="mt-2 mb-0 text-[13px] text-subtle">
               Högst {MAX_MENU_ITEMS} poster i menyn ({draft.length}/{MAX_MENU_ITEMS}) och högst {MAX_MENU_CHILDREN} undersidor under varje post. Det finns bara en nivå av undermeny.
             </p>
@@ -481,6 +492,10 @@ function AddPanel({ items, pages, inMenu, onChange }: { items: MenuItem[]; pages
             <select aria-label="Var i menyn" className={INPUT} value={slot.value} onChange={(e) => setWhere(e.target.value)}>
               {slots.map((s) => <option key={s.value} value={s.value} disabled={!s.ok}>{s.label}</option>)}
             </select>
+            <p className="m-0 text-[13px] text-muted">
+              "Egen post" blir en vanlig länk i menyn. "Undersida under …" hamnar i en undermeny: under en rubrik blir posten bara en meny, under en
+              sida får posten både en egen länk och en undermeny.
+            </p>
             <div className="flex flex-wrap items-center gap-3">
               <ActionButton onClick={addPage} disabled={!canAddPage}>Lägg till sidan</ActionButton>
               {!slot.ok && (
@@ -498,7 +513,7 @@ function AddPanel({ items, pages, inMenu, onChange }: { items: MenuItem[]; pages
 
       <div className="flex flex-col gap-2.5">
         <h2 className="m-0 font-display text-[20px] font-bold">Lägg till rubrik</h2>
-        <p className="m-0 text-[13px] text-muted">En rubrik samlar sidor i en undermeny. Lägg sidor under den efteråt.</p>
+        <p className="m-0 text-[13px] text-muted">En rubrik är bara en knapp som öppnar en undermeny, utan egen sida. Lägg sidor under den efteråt. Ska posten gå att klicka till en sida, lägg i stället till sidan som egen post och lägg undersidorna under den.</p>
         <div className="flex flex-wrap items-center gap-3">
           <input
             aria-label="Namn på rubrik"

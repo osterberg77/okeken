@@ -6,6 +6,7 @@ import PermissionTag from './PermissionTag';
 import ConsentDialog from './ConsentDialog';
 import Avatar from './Avatar';
 import { hasCurrentConsent, postponed, setPostponed } from '../lib/consent';
+import { readCachedAvatar, writeCachedAvatar, type CachedAvatar } from '../lib/avatar-cache';
 
 // Firebase laddas bara för den som varit inloggad på den här enheten,
 // så vanliga besökare får ingen extra JavaScript.
@@ -16,6 +17,17 @@ export default function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [passwordMail, setPasswordMail] = useState<'idle' | 'sent' | 'error'>('idle');
   const root = useRef<HTMLDivElement>(null);
+  // Senast kända avatar, ritas direkt medan sessionen laddas (annars blir det en tom bubbla som byts mot bilden)
+  const [cached, setCached] = useState<CachedAvatar | null>(null);
+  // 44 px på mobil, 56 px från sm och uppåt (som tidigare)
+  const [avatarSize, setAvatarSize] = useState(44);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const update = () => setAvatarSize(mq.matches ? 56 : 44);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
   // Frågan visas direkt efter inloggning och igen via menyn tills användaren godkänt
   const [consentAsked, setConsentAsked] = useState(() => postponed());
 
@@ -24,6 +36,7 @@ export default function AccountMenu() {
       setSession(null);
       return;
     }
+    setCached(readCachedAvatar());
     let stop = () => {};
     let cancelled = false;
     import('../lib/firebase/session').then(({ watchSession }) => {
@@ -34,6 +47,15 @@ export default function AccountMenu() {
       stop();
     };
   }, []);
+
+  useEffect(() => {
+    if (session === undefined) return;
+    if (session === null) writeCachedAvatar(null);
+    else {
+      const name = session.displayName || session.email;
+      writeCachedAvatar({ initial: name.charAt(0).toUpperCase(), color: session.avatarColor, photoUrl: session.photoUrl });
+    }
+  }, [session]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,16 +101,16 @@ export default function AccountMenu() {
     );
   }
 
+  // Sessionen laddas: rita senast kända avatar, eller en osynlig plats av samma storlek (ingen blinkande tom bubbla)
+  if (session === undefined) {
+    return cached ? (
+      <Avatar name={cached.initial} color={cached.color} photoUrl={cached.photoUrl} size={avatarSize} />
+    ) : (
+      <span aria-hidden="true" className="inline-block h-11 w-11 sm:h-14 sm:w-14" />
+    );
+  }
+
   const name = session?.displayName || session?.email || '';
-  // 44 px på mobil, 56 px från sm och uppåt (som tidigare)
-  const [avatarSize, setAvatarSize] = useState(44);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 640px)');
-    const update = () => setAvatarSize(mq.matches ? 56 : 44);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
   const needsConsent = !!session && !hasCurrentConsent(session.consent);
   return (
     <div ref={root} className="relative">
