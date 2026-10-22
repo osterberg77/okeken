@@ -84,6 +84,15 @@ function Editor({ session }: { session: Session }) {
     );
     return resolveMenu(draft ?? [], refs);
   }, [draft, pages]);
+  // Förhandsvisningen visar hela utkastet, även sidor som inte är publicerade än (märkta, de syns inte för besökare förrän
+  // sidan publicerats). Resultatet ovan är det som faktiskt blir synligt och styr varningarna.
+  const previewMenu = useMemo(() => {
+    const refs = (pages ?? []).map((p) => {
+      const live = p.status === 'published' && p.published && p.slug;
+      return { pageId: p.id, slug: live ? p.slug! : `${NOT_LIVE.slice(1)}${p.id}`, title: live ? p.published!.title : p.title || '(utan titel)' };
+    });
+    return resolveMenu(draft ?? [], refs).items;
+  }, [draft, pages]);
 
   if (record === undefined || !draft || !pages) {
     return <AdminPanel><p className="text-muted">Laddar…</p></AdminPanel>;
@@ -204,9 +213,9 @@ function Editor({ session }: { session: Session }) {
         <div className="flex flex-col gap-5 lg:sticky lg:top-28">
           <AdminPanel>
             <p className="m-0 text-xs font-semibold tracking-[.12em] text-subtle">FÖRHANDSVISNING – SÅ HÄR BLIR MENYN FÖR BESÖKARE</p>
-            <Preview menu={resolved.items} />
+            <Preview menu={previewMenu} />
             <p className="m-0 text-[13px] text-subtle">
-              Visar utkastet och bara sidor som är publicerade. Sidornas och menyns utseende på sajten kan skilja sig.
+              Visar hela utkastet. Poster märkta "ej publicerad" syns inte för besökare förrän sidan är publicerad. Sidornas och menyns utseende på sajten kan skilja sig.
             </p>
             {resolved.warnings.length > 0 && (
               <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Varningar">
@@ -234,6 +243,13 @@ function describeWarning(w: Parameters<typeof describeMenuWarning>[0], titleOf: 
   return w.pageId ? text.replace(w.pageId, `"${titleOf(w.pageId)}"`) : text;
 }
 
+/** Platshållare i adressen för sidor som inte är publicerade än (bara i förhandsvisningen; resolveMenu lägger själv till det första snedstrecket) */
+const NOT_LIVE = '/__not-live__/';
+
+function NotLive() {
+  return <span className="ml-1.5 text-xs font-normal text-[#8A6A00]">(ej publicerad)</span>;
+}
+
 function Preview({ menu }: { menu: ReturnType<typeof resolveMenu>['items'] }) {
   return (
     <ul className="m-0 flex list-none flex-col gap-1 rounded-2xl bg-period p-4 font-display text-[16px] font-semibold">
@@ -242,9 +258,15 @@ function Preview({ menu }: { menu: ReturnType<typeof resolveMenu>['items'] }) {
         <li key={i}>
           <span className={m.href ? '' : 'text-muted'}>{m.label}</span>
           {!m.href && <span className="ml-1.5 text-xs font-normal text-subtle">(rubrik)</span>}
+          {m.href?.startsWith(NOT_LIVE) && <NotLive />}
           {m.children.length > 0 && (
             <ul className="m-0 mt-1 mb-1 list-none border-l-2 border-ink/15 pl-4 text-[15px] font-medium">
-              {m.children.map((c, k) => <li key={k}>{c.label}</li>)}
+              {m.children.map((c, k) => (
+                <li key={k}>
+                  {c.label}
+                  {c.href.startsWith(NOT_LIVE) && <NotLive />}
+                </li>
+              ))}
             </ul>
           )}
         </li>
