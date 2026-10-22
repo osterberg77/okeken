@@ -13,7 +13,7 @@ export const PERMISSION_DESCRIPTIONS: Record<Permission, string> = {
   member: 'Inloggad medlem',
   course_setter: 'Laddar upp banor',
   publisher: 'Skapar och publicerar events och sidor',
-  board: 'Som publicerare, och tilldelar medlem, banläggare och publicerare',
+  board: 'Som publicerare, och tilldelar alla behörigheter utom superadmin',
   superadmin: 'Allt, inklusive styrelse och superadmin',
 };
 
@@ -26,7 +26,7 @@ export const PERMISSION_COLORS: Record<Permission, { fg: string; bg: string }> =
   superadmin: { fg: '#6A5A12', bg: '#F6F0D2' },
 };
 
-const BOARD_ASSIGNABLE: Permission[] = ['member', 'course_setter', 'publisher'];
+const BOARD_ASSIGNABLE: Permission[] = ['member', 'course_setter', 'publisher', 'board'];
 
 /** Vilka behörigheter en användare får ge/ta bort. Måste spegla firestore.rules. */
 export function assignableBy(own: readonly Permission[]): Permission[] {

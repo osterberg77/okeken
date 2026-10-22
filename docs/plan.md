@@ -12,7 +12,7 @@ Ersätta okeken.se (Wix) med en snabb, statisk och sökbar sajt plus ett enkelt 
 - **GitHub + GitHub Actions:** privat repo på Eriks konto, auto-deploy från `main`. Gratiskvoten (2 000 min/månad) räcker gott: ett bygge tar ca 2–3 min, nattbygge ≈ 90 min/månad, publiceringar några hundra minuter.
 - **Statisk prerender:** alla publika sidor (även varje event) byggs till HTML med korrekta Open Graph-taggar. Firestore är redigeringsbackend. Publicering startar en rebuild, ca 1–2 min till live (beslut 0004).
 - **Utkast och publicerat skiljs åt:** "Publicera" kopierar utkastet till `published`-snapshoten; bygget läser bara den (se `datamodell.md`).
-- **Roller som behörigheter** på vanliga konton, lagrade i Firestore (`users/{uid}.permissions`) och kontrollerade i reglerna (beslut 0005). Admin-sida för tilldelning. Ingen separat "admin": superadmin tilldelar allt; styrelse tilldelar `member`, `course_setter` och `publisher`.
+- **Roller som behörigheter** på vanliga konton, lagrade i Firestore (`users/{uid}.permissions`) och kontrollerade i reglerna (beslut 0005). Admin-sida för tilldelning. Ingen separat "admin": superadmin ensam tilldelar `superadmin`; styrelse tilldelar allt annat, även `board`.
 - **Mindre v1** (se nedan): sajten ska kunna ersätta Wix så snart som möjligt; resten byggs ovanpå en sajt i drift.
 - **Statiska sidor** redigeras i admin som Markdown (Firestore `pages`) med enkel editor och preview, samma pipeline som events. Startinnehåll seedas från `seed/` med ett engångsskript.
 - **Filer:** PDF:er från gamla sajten (Eken-Nytt, spårkartor, dokument) ligger i arkivet utanför repot. Det som behövs läggs i Storage vid migrering. Repot hålls litet: kod, dokumentation och `seed/` (Markdown/JSON).

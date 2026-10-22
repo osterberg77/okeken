@@ -23,7 +23,7 @@ service cloud.firestore {
 
     // Det styrelsen får tilldela och ta bort
     function boardAssignable() {
-      return ['member', 'course_setter', 'publisher'];
+      return ['member', 'course_setter', 'publisher', 'board'];
     }
 
     function onlyChanges(keys) {
@@ -691,7 +691,7 @@ service cloud.firestore {
           && onlyChanges(['permissions'])
           && validPermissions(request.resource.data.permissions)
           && keepsOwnSuperadmin(uid))
-        // Styrelse: bara member, course_setter, publisher
+        // Styrelse: allt utom superadmin (även ta bort sin egen styrelse)
         || (has('board')
           && onlyChanges(['permissions'])
           && validPermissions(request.resource.data.permissions)

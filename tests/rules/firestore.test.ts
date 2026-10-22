@@ -220,13 +220,13 @@ describe('users: superadmin', () => {
 });
 
 describe('users: board', () => {
-  it.each(['member', 'course_setter', 'publisher'])('can add and remove %s on others', async (p) => {
+  it.each(['member', 'course_setter', 'publisher', 'board'])('can add and remove %s on others', async (p) => {
     await setPerms('target', []);
     await assertSucceeds(updatePerms('board', 'target', [p]));
     await assertSucceeds(updatePerms('board', 'target', []));
   });
-  it('cannot add board', async () => {
-    await assertFails(updatePerms('board', 'target', ['member', 'board']));
+  it('can remove its own board', async () => {
+    await assertSucceeds(updatePerms('board', 'board', []));
   });
   it('cannot add superadmin', async () => {
     await assertFails(updatePerms('board', 'target', ['member', 'superadmin']));
@@ -234,17 +234,17 @@ describe('users: board', () => {
   it('cannot remove superadmin from someone', async () => {
     await assertFails(updatePerms('board', 'super', []));
   });
-  it('cannot remove board from someone', async () => {
-    await assertFails(updatePerms('board', 'board2', []));
+  it('can remove board from someone', async () => {
+    await assertSucceeds(updatePerms('board', 'board2', []));
   });
-  it('can modify a user who already has board when only assignable roles change', async () => {
+  it('can modify a user who already has board', async () => {
     await assertSucceeds(updatePerms('board', 'board2', ['board', 'publisher']));
     await assertSucceeds(updatePerms('board', 'board2', ['board']));
   });
   it('can modify a superadmin user when only assignable roles change', async () => {
     await assertSucceeds(updatePerms('board', 'super', ['superadmin', 'publisher']));
   });
-  it('cannot grant itself superadmin or other board powers', async () => {
+  it('cannot grant itself superadmin', async () => {
     await assertFails(updatePerms('board', 'board', ['board', 'superadmin']));
   });
   it('denies unknown permission and duplicates', async () => {

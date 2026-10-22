@@ -8,8 +8,8 @@ Behörigheter (funktioner) kopplas på vanliga konton – ett konto kan ha flera
 | medlem | `member` | Inloggad. Inget eget innehåll i v1 (medlemsinnehåll krockar med statiska sidor) |
 | banläggare | `course_setter` | Läsa events (även utkast), ladda upp PDF-banor och koppla dem till event (`courseFiles`, beslut 0006), (v1.1) mata in resultat |
 | publicerare | `publisher` | Skapa/redigera/publicera events och sidor, bildbanken (beslut 0007), dela till SoMe |
-| styrelse | `board` | Som publicerare + tilldela `member`, `course_setter`, `publisher` |
-| superadmin | `superadmin` | Allt, inklusive tilldelning av `board` och `superadmin`, (v1.2) mallar |
+| styrelse | `board` | Som publicerare + tilldela alla behörigheter utom `superadmin` (även `board`, och ta bort sin egen) |
+| superadmin | `superadmin` | Allt, och ensam om att tilldela `superadmin`, (v1.2) mallar |
 
 Beslut: ingen separat `admin`-roll.
 
@@ -32,7 +32,7 @@ function has(p)  { return request.auth != null && p in perms(); }
 
 - Användare får skapa sitt eget `users/{uid}` med `permissions: []` och ändra `displayName`, aldrig sin egen `permissions`.
 - `superadmin` får ändra `permissions` fritt.
-- `board` får bara lägga till/ta bort `member`, `course_setter`, `publisher`; skillnaden mellan före och efter (`diff`) får inte röra `board`/`superadmin`.
+- `board` får lägga till/ta bort allt utom `superadmin`, även `board` (också sin egen); skillnaden mellan före och efter (`diff`) får inte röra `superadmin`.
 - Storage-regler läser samma dokument via `firestore.get()`.
 - `course_setter` (beslut 0006): läsa `events` och uppdatera bara `courseFiles` (+ `updatedBy`/`updatedAt`). På ett publicerat event får samma skrivning sätta `published.courseFiles` till exakt utkastets lista; allt annat i `published` (även huvudbilden `image`), samt `publishedAt`, `status` och `slug`, måste vara oförändrat. Ingen åtkomst till `pages`, `menu` eller `meta/build`. Tester: `tests/rules/events.test.ts` ("banläggare").
 - `pages` (infosidor): bara `publisher`, `board`, `superadmin`, samma regler som events (`tests/rules/pages.test.ts`).

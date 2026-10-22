@@ -47,6 +47,7 @@ function UserList({ session }: { session: Session }) {
   const [pending, setPending] = useState<string | null>(null); // `${uid}:${permission}`
   const [error, setError] = useState('');
   const assignable = assignableBy(session.permissions);
+  const visible = visiblePermissions(session);
 
   useEffect(
     () =>
@@ -99,7 +100,7 @@ function UserList({ session }: { session: Session }) {
           </h1>
           <p className="mt-2 text-muted">
             Nya konton dyker upp här när personen loggat in första gången.
-            {!session.permissions.includes('superadmin') && ' Som styrelse kan du ge medlem, banläggare och publicerare.'}
+            {!session.permissions.includes('superadmin') && ' Som styrelse kan du ge alla behörigheter utom superadmin.'}
           </p>
         </div>
         <input
@@ -112,7 +113,7 @@ function UserList({ session }: { session: Session }) {
         />
       </div>
 
-      <PermissionHelp />
+      <PermissionHelp permissions={visible} />
 
       {error && (
         <p role="alert" className="rounded-2xl bg-[#FBEAEA] px-4 py-3 text-sm text-[#8A2B2B]">
@@ -134,7 +135,7 @@ function UserList({ session }: { session: Session }) {
                 {user.displayName && <div className="truncate text-[13px] text-subtle">{user.email}</div>}
               </div>
               <div className="flex flex-wrap gap-2">
-                {PERMISSIONS.map((p) => {
+                {visible.map((p) => {
                   const on = user.permissions.includes(p);
                   const lockedSelf = p === 'superadmin' && user.uid === session.uid; // reglerna nekar
                   const enabled = assignable.includes(p) && !lockedSelf && pending === null;
@@ -172,16 +173,21 @@ const PERMISSION_DETAILS: Record<Permission, string> = {
   member: 'Är inloggad medlem. Ger ingen åtkomst till adminsidorna än, men markerar att personen hör till klubben.',
   course_setter: 'Kan se alla events (även utkast) och ladda upp banor som PDF till ett event. Kan inte ändra något annat på eventet.',
   publisher: 'Kan skapa, redigera och publicera events och infosidor, ändra huvudmenyn och använda bildbanken.',
-  board: 'Allt en publicerare kan, plus läsa och skriva styrelsens protokoll. Kan ge och ta bort medlem, banläggare och publicerare.',
-  superadmin: 'Allt, inklusive att ge och ta bort styrelse och superadmin. Du kan inte ta bort din egen superadmin.',
+  board: 'Allt en publicerare kan, plus läsa och skriva styrelsens protokoll. Kan ge och ta bort alla behörigheter utom superadmin, även styrelse (också sin egen).',
+  superadmin: 'Allt, och är den enda som kan ge och ta bort superadmin. Du kan inte ta bort din egen superadmin.',
 };
 
-function PermissionHelp() {
+/** Superadmin syns bara för superadmin. */
+function visiblePermissions(session: Session): Permission[] {
+  return PERMISSIONS.filter((p) => p !== 'superadmin' || session.permissions.includes('superadmin'));
+}
+
+function PermissionHelp({ permissions }: { permissions: Permission[] }) {
   return (
     <details className="rounded-2xl bg-period px-5 py-4 text-sm">
       <summary className="cursor-pointer font-semibold">Vad betyder behörigheterna?</summary>
       <dl className="m-0 mt-3 flex flex-col gap-2">
-        {PERMISSIONS.map((p) => (
+        {permissions.map((p) => (
           <div key={p}>
             <dt className="inline font-semibold">{PERMISSION_LABELS[p]}: </dt>
             <dd className="m-0 inline text-muted">{PERMISSION_DETAILS[p]}</dd>

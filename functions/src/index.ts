@@ -100,6 +100,8 @@ function visibleEventor(s: Snapshot) {
     allDay: d.allDay,
     organiserName: d.organiserName,
     url: d.url,
+    lat: d.lat ?? null,
+    lng: d.lng ?? null,
   };
 }
 
