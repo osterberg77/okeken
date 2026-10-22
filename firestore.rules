@@ -688,6 +688,14 @@ service cloud.firestore {
           && onlyChanges(['displayName'])
           && request.resource.data.displayName is string
           && request.resource.data.displayName.size() <= 100)
+        // Användaren själv: godkännande av integritetspolicyn (version + tidpunkt från servern)
+        || (request.auth.uid == uid
+          && onlyChanges(['consent'])
+          && request.resource.data.consent is map
+          && request.resource.data.consent.keys().hasOnly(['version', 'acceptedAt'])
+          && request.resource.data.consent.version is string
+          && request.resource.data.consent.version.size() <= 20
+          && request.resource.data.consent.acceptedAt == request.time)
         // Superadmin: alla behörigheter
         || (has('superadmin')
           && onlyChanges(['permissions'])

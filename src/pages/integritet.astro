@@ -1,0 +1,67 @@
+---
+import PageDetail from '../components/PageDetail';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CONSENT_VERSION } from '../lib/consent';
+import { CLUB } from '../lib/club';
+
+// Texten är skriven för hand i HTML (inte Markdown) och ska följa CONSENT_VERSION: ändras policyn i sak, höj versionen
+// så att alla får godkänna igen. Fler stycken läggs till här när ny funktion samlar in uppgifter (t.ex. resultat, anmälan).
+const updated = new Date(`${CONSENT_VERSION}T12:00:00Z`).toLocaleDateString('sv-SE', { dateStyle: 'long', timeZone: 'Europe/Stockholm' });
+
+const bodyHtml = `
+<p><em>Senast uppdaterad ${updated}.</em></p>
+
+<p>Den här sidan förklarar vilka personuppgifter ${CLUB.fullName} sparar på hemsidan, varför, och vilka rättigheter du har. Vi försöker spara så lite som möjligt.</p>
+
+<h2>Vem ansvarar för uppgifterna?</h2>
+<p>${CLUB.fullName} (föreningen) är personuppgiftsansvarig. Frågor om dina uppgifter skickar du till <a href="mailto:${CLUB.email}">${CLUB.email}</a>.</p>
+
+<h2>Besökare som inte loggar in</h2>
+<p>Du behöver inte uppge något för att läsa hemsidan. Vi använder inga kakor för reklam eller spårning och har ingen webbstatistik som följer dig. Om vi senare inför statistik beskriver vi det här först.</p>
+
+<h2>Dig som har ett konto</h2>
+<p>Konton finns för dem som hjälper till att publicera innehåll, lägger banor eller sitter i styrelsen. När du skapar ett konto och loggar in sparar vi:</p>
+<ul>
+  <li>ditt <strong>namn</strong> (så som du angett det, eller från ditt Google-konto om du loggar in med Google),</li>
+  <li>din <strong>e-postadress</strong>,</li>
+  <li>vilken <strong>behörighet</strong> du har på sidan, som styrelsen ger dig,</li>
+  <li>när kontot skapades och <strong>när och vilken version av den här policyn du godkänt</strong>.</li>
+</ul>
+<p>Om du väljer inloggning med lösenord sparar inloggningstjänsten ditt lösenord i krypterad form. Vi kan inte läsa det.</p>
+<p>Vi sparar också det du själv lägger in som är kopplat till ditt konto, till exempel att du är angiven som ansvarig för ett event eller deltagare i ett styrelsemöte.</p>
+
+<h2>Varför sparar vi det?</h2>
+<p>Uppgifterna används för att du ska kunna logga in, för att styra vem som får ändra vad, och för att kunna nå dig om något är oklart i klubbens arbete med sidan. De används inte till marknadsföring och lämnas inte ut till andra, med undantag för de tjänster som driver sidan (se nedan).</p>
+
+<h2>Rättslig grund</h2>
+<p>Vi frågar efter ditt godkännande när du loggar in första gången. Utan godkännande kan vi inte vara säkra på att du har tagit del av den här informationen, och du får frågan igen varje gång du loggar in tills du godkänt. Kontot kan i vissa fall också behövas för föreningens berättigade intresse av att hålla ordning på vem som har behörighet att ändra innehållet.</p>
+
+<h2>Var sparas uppgifterna?</h2>
+<p>Hemsidan drivs med Googles tjänster (Firebase) och GitHub. Databasen med konton och innehåll ligger i Finland (EU). Google och GitHub kan behandla uppgifter även i andra länder enligt sina egna villkor och med skyddsåtgärder för överföring utanför EU. Hemsidans kod är öppen, men inga personuppgifter ligger i den.</p>
+
+<h2>Din webbläsare</h2>
+<p>Efter inloggning lagrar sidan en liten markering i din webbläsare (lokal lagring) så att den kommer ihåg att du varit inloggad, och, om du loggar in med länk i mejlet, tillfälligt din e-postadress. Frågan om att godkänna policyn kan skjutas upp till nästa inloggning med hjälp av webbläsarens sessionslagring. Inget av detta skickas till någon annan.</p>
+
+<h2>Hur länge sparar vi dem?</h2>
+<p>Så länge du har ett konto. Kontot tas bort på din begäran.</p>
+
+<h2>Dina rättigheter</h2>
+<p>Du har rätt att:</p>
+<ul>
+  <li>få veta vilka uppgifter vi har om dig och få en kopia,</li>
+  <li>få felaktiga uppgifter rättade,</li>
+  <li>få dina uppgifter raderade, och ta tillbaka ditt godkännande,</li>
+  <li>invända mot hur vi behandlar dem.</li>
+</ul>
+<p>Mejla <a href="mailto:${CLUB.email}">${CLUB.email}</a> så hjälper vi dig. Du har också rätt att klaga till Integritetsskyddsmyndigheten (IMY), <a href="https://www.imy.se" rel="noopener">imy.se</a>.</p>
+
+<h2>Bilder, resultat och anmälningar</h2>
+<p>När hemsidan får funktioner som visar namn i resultat, bilder på personer eller anmälningar (”Kommer/Kommer inte”) frågar vi om ditt val separat, och du ska kunna välja bort att visa ditt namn. För bilder på barn krävs vårdnadshavarens medgivande. Vi uppdaterar den här sidan innan sådana funktioner tas i bruk.</p>
+`;
+---
+
+<BaseLayout title="Integritetspolicy – OK Eken" description="Så hanterar OK Eken personuppgifter på hemsidan.">
+  <main class="mx-auto max-w-[860px] px-4 pt-6 pb-16 sm:px-8">
+    <PageDetail page={{ title: 'Integritetspolicy', bodyHtml }} />
+  </main>
+</BaseLayout>

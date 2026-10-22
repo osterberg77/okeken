@@ -174,6 +174,54 @@ describe('users: self update', () => {
   });
 });
 
+describe('users: privacy consent', () => {
+  const consent = (extra = {}) => ({ consent: { version: '2026-10-22', acceptedAt: serverTimestamp(), ...extra } });
+  it('may accept for self with server time', async () => {
+    await assertSucceeds(updateDoc(doc(as('member'), 'users', 'member'), consent()));
+  });
+  it('may accept again (new policy version)', async () => {
+    await assertSucceeds(updateDoc(doc(as('member'), 'users', 'member'), consent()));
+    await assertSucceeds(updateDoc(doc(as('member'), 'users', 'member'), consent({ version: '2027-01-01' })));
+  });
+  it('denies a client-chosen timestamp', async () => {
+    await assertFails(
+      updateDoc(doc(as('member'), 'users', 'member'), consent({ acceptedAt: Timestamp.fromMillis(0) })),
+    );
+  });
+  it('denies extra keys, non-string or too long version', async () => {
+    await assertFails(updateDoc(doc(as('member'), 'users', 'member'), consent({ admin: true })));
+    await assertFails(updateDoc(doc(as('member'), 'users', 'member'), consent({ version: 5 })));
+    await assertFails(updateDoc(doc(as('member'), 'users', 'member'), consent({ version: 'x'.repeat(21) })));
+    await assertFails(updateDoc(doc(as('member'), 'users', 'member'), { consent: 'yes' }));
+  });
+  it('cannot be combined with permissions', async () => {
+    await assertFails(
+      updateDoc(doc(as('member'), 'users', 'member'), { ...consent(), permissions: ['member', 'publisher'] }),
+    );
+  });
+  it('nobody can accept on behalf of another user, not even board or superadmin', async () => {
+    await assertFails(updateDoc(doc(as('member'), 'users', 'target'), consent()));
+    await assertFails(updateDoc(doc(as('board'), 'users', 'target'), consent()));
+    await assertFails(updateDoc(doc(as('super'), 'users', 'target'), consent()));
+  });
+  it('board can read who has accepted', async () => {
+    await assertSucceeds(updateDoc(doc(as('member'), 'users', 'member'), consent()));
+    await assertSucceeds(getDoc(doc(as('board'), 'users', 'member')));
+  });
+  it('cannot be set at account creation', async () => {
+    const db = env.authenticatedContext('new', { email: 'new@example.com', email_verified: true }).firestore();
+    await assertFails(
+      setDoc(doc(db, 'users', 'new'), {
+        displayName: '',
+        email: 'new@example.com',
+        permissions: [],
+        createdAt: serverTimestamp(),
+        ...consent(),
+      }),
+    );
+  });
+});
+
 describe('users: superadmin', () => {
   it('can add and remove any permission on others', async () => {
     for (const p of ['member', 'course_setter', 'publisher', 'board', 'superadmin']) {

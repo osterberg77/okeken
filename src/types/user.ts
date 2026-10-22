@@ -56,6 +56,8 @@ export interface Session {
   email: string;
   displayName: string;
   permissions: Permission[];
+  /** Godkänd version av integritetspolicyn, saknas tills användaren godkänt (se src/lib/consent.ts) */
+  consent?: { version: string };
 }
 
 export interface UserProfile {

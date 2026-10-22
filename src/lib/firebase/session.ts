@@ -13,7 +13,8 @@ import {
   updateProfile,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { CONSENT_VERSION, setPostponed } from '../consent';
 import { PERMISSIONS, type Permission, type Session } from '../../types/user';
 import { auth, db } from './client';
 import { setRememberedSignIn } from './flags';
@@ -102,8 +103,14 @@ export async function sendPasswordReset(email: string): Promise<void> {
   await sendPasswordResetEmail(auth, email, returnToLogin());
 }
 
+/** Sparar att användaren godkänt integritetspolicyn i nuvarande version (se firestore.rules). */
+export async function acceptConsent(uid: string): Promise<void> {
+  await updateDoc(doc(db, 'users', uid), { consent: { version: CONSENT_VERSION, acceptedAt: serverTimestamp() } });
+}
+
 export async function signOut(): Promise<void> {
   setRememberedSignIn(false);
+  setPostponed(false);
   await firebaseSignOut(auth);
 }
 
@@ -127,7 +134,8 @@ export function watchSession(callback: (session: Session | null) => void): () =>
       doc(db, 'users', user.uid),
       (snap) => {
         const data = snap.data();
-        callback({ ...base, displayName: data?.displayName || base.displayName, permissions: toPermissions(data?.permissions) });
+        const consent = typeof data?.consent?.version === 'string' ? { version: data.consent.version } : undefined;
+        callback({ ...base, displayName: data?.displayName || base.displayName, permissions: toPermissions(data?.permissions), consent });
       },
       () => callback({ ...base, permissions: [] }),
     );

@@ -103,6 +103,8 @@ uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utse
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 
+`consent` (valfri): `{ version, acceptedAt }`, användarens godkännande av integritetspolicyn (beslut 0011). `version` är policyns datum (`CONSENT_VERSION` i `src/lib/consent.ts`), `acceptedAt` sätts av servern (`request.time`). Bara användaren själv kan skriva fältet, och inte vid kontoskapandet; styrelse och superadmin kan läsa det.
+
 ### `meta/build`
 `lastBuildAt` (skrivs av Actions efter lyckad deploy, värdet är byggets starttid) och `requestedAt` (skrivs av Function när den begär ett bygge). Adminvyn visar grön om `lastBuildAt >= requestedAt`, gul om bygge pågår, röd om det gått mer än 10 minuter utan resultat. Ett event är delningsklart när `lastBuildAt > event.publishedAt`.
 

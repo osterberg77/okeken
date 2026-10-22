@@ -3,6 +3,8 @@ import { rememberedSignIn } from '../lib/firebase/flags';
 import type { Session } from '../types/user';
 import { hasAdminAccess } from '../lib/admin-nav';
 import PermissionTag from './PermissionTag';
+import ConsentDialog from './ConsentDialog';
+import { hasCurrentConsent, postponed, setPostponed } from '../lib/consent';
 
 // Firebase laddas bara för den som varit inloggad på den här enheten,
 // så vanliga besökare får ingen extra JavaScript.
@@ -13,6 +15,8 @@ export default function AccountMenu() {
   const [open, setOpen] = useState(false);
   const [passwordMail, setPasswordMail] = useState<'idle' | 'sent' | 'error'>('idle');
   const root = useRef<HTMLDivElement>(null);
+  // Frågan visas direkt efter inloggning och igen via menyn tills användaren godkänt
+  const [consentAsked, setConsentAsked] = useState(() => postponed());
 
   useEffect(() => {
     if (!rememberedSignIn()) {
@@ -75,8 +79,19 @@ export default function AccountMenu() {
   }
 
   const name = session?.displayName || session?.email || '';
+  const needsConsent = !!session && !hasCurrentConsent(session.consent);
   return (
     <div ref={root} className="relative">
+      {needsConsent && session && !consentAsked && (
+        <ConsentDialog
+          uid={session.uid}
+          onAccepted={() => setPostponed(false)}
+          onPostpone={() => {
+            setPostponed(true);
+            setConsentAsked(true);
+          }}
+        />
+      )}
       <button
         type="button"
         onClick={() => session && setOpen((o) => !o)}
@@ -119,6 +134,15 @@ export default function AccountMenu() {
                 ? `Vi har mejlat en länk till ${session.email} där du väljer lösenord.`
                 : 'Kunde inte skicka mejlet. Försök igen senare.'}
             </p>
+          )}
+          {needsConsent ? (
+            <button type="button" onClick={() => { setOpen(false); setConsentAsked(false); }} className="cursor-pointer py-1.5 text-left font-medium text-ink hover:text-accent">
+              Godkänn integritetspolicyn
+            </button>
+          ) : (
+            <a href="/integritet" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+              Integritetspolicy
+            </a>
           )}
           <button type="button" onClick={onSignOut} className="cursor-pointer py-1.5 text-left font-semibold text-accent">
             Logga ut

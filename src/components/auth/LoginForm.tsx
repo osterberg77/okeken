@@ -224,6 +224,13 @@ export default function LoginForm() {
           </Field>
         )}
 
+        {mode === 'create' && (
+          <p className="m-0 text-sm text-muted">
+            Vi sparar ditt namn och din e-postadress för inloggningen. Läs <a href="/integritet" target="_blank" rel="noopener" className="font-semibold text-accent">integritetspolicyn</a>.
+            Du får godkänna den när du loggat in första gången.
+          </p>
+        )}
+
         <button
           type="submit"
           disabled={busy}
