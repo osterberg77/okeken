@@ -40,17 +40,18 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 - Byggkanalen är WhatsApp-gruppen **"OK Eken - hemsidebygge"** (JID `120363413962914017@g.us`), nåbar via MCP-servern `whatsapp`. Där postas change-log vid större ändringar, och Erik ber ibland Claude läsa gruppen efter förslag och kommentarer som underlag för vidare bygge.
 - När Claude postar i gruppen börjar meddelandet alltid med **"🤖 AI-byggaren:"** så att alla ser att det är Claude och inte Erik som skriver.
 - Skriv på svenska, kort och för klubbmedlemmar (inte tekniskt). Posta bara det som är live, och bara när Erik bett om det eller godkänt texten.
+- Är ett förslag från en medlem tveksamt (oklart behov, stor ändring, krockar med annat, risk för bieffekter) får Claude i gruppen tagga personen, fråga om detaljerna och belysa konsekvenserna innan något byggs. Håll tonen vänlig och kort, och bygg inte förrän Erik sagt ja.
 
 ## Arbetssätt och modellval
 
-Orkestrera själv och delegera med subagenter där det sparar tid eller kontext. **Enklare fixar och små ändringar (en eller ett par filer, tydlig orsak, t.ex. z-index, texter, små buggar, regelrader) görs direkt i huvudsessionen utan subagent**: en agent startar utan kontext och kostar mer än den sparar. Använd agenter för större, avgränsade delar, parallellt arbete eller när säkerhetsgranskning kräver en oberoende part. Riktlinjer:
+**Gör arbetet i huvudsessionen som standard.** En subagent startar utan kontext och kostar ofta mer än den sparar, och projektet är litet. Använd agenter bara för stora, avgränsade delar, parallellt arbete eller rena uppslag. Modell:
 
 | Uppgift | Modell |
 |---|---|
 | Leta i kod/dokument, sammanställa fakta, läsa API-scheman (t.ex. Eventors `/api/schema`), inventera innehåll på gamla okeken.se, enkla mekaniska ändringar | **Haiku** |
-| Implementera väldefinierade delar med tydlig spec (CRUD, formulär, workflows, regeltester, seed-skript) | **Sonnet** |
-| Design och layout, arkitektur, säkerhetsregler och behörighetslogik, publiceringspipelinen, granskning av andras arbete, allt där fel blir dyrt | **Opus** |
+| Allt övrigt: implementation, UI, design och layout, regler, tester, seed-skript, arkitektur | **Sonnet** (standard) |
+| Bara när Erik uttryckligen ber om det | **Opus** |
 
 - Ge subagenter en avgränsad uppgift med filvägar och acceptanskriterier; de startar utan kontext.
-- Säkerhetsregler och rollogik granskas alltid av Opus innan de anses klara.
+- **Byggfasen kör med lättade säkerhetsregler.** Ingen automatisk Opus-granskning av regler och rollogik nu; ändra dem direkt i huvudsessionen (nya collections/sökvägar behöver fortfarande regler och regeltest enligt kärnprinciperna). Före skarp lansering görs en samlad skärpning och oberoende granskning av reglerna, men först då eller när Erik ber om det.
 - Verifiera visuellt i webbläsaren (mobil + desktop) innan UI-arbete rapporteras klart.

@@ -9,3 +9,4 @@ _to_delete/
 firebase-debug*.log
 *-debug.log
 functions/lib/
+.dirac-cache/
