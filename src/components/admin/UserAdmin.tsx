@@ -112,6 +112,8 @@ function UserList({ session }: { session: Session }) {
         />
       </div>
 
+      <PermissionHelp />
+
       {error && (
         <p role="alert" className="rounded-2xl bg-[#FBEAEA] px-4 py-3 text-sm text-[#8A2B2B]">
           {error}
@@ -163,6 +165,34 @@ function UserList({ session }: { session: Session }) {
         </ul>
       )}
     </Panel>
+  );
+}
+
+const PERMISSION_DETAILS: Record<Permission, string> = {
+  member: 'Är inloggad medlem. Ger ingen åtkomst till adminsidorna än, men markerar att personen hör till klubben.',
+  course_setter: 'Kan se alla events (även utkast) och ladda upp banor som PDF till ett event. Kan inte ändra något annat på eventet.',
+  publisher: 'Kan skapa, redigera och publicera events och infosidor, ändra huvudmenyn och använda bildbanken.',
+  board: 'Allt en publicerare kan, plus läsa och skriva styrelsens protokoll. Kan ge och ta bort medlem, banläggare och publicerare.',
+  superadmin: 'Allt, inklusive att ge och ta bort styrelse och superadmin. Du kan inte ta bort din egen superadmin.',
+};
+
+function PermissionHelp() {
+  return (
+    <details className="rounded-2xl bg-period px-5 py-4 text-sm">
+      <summary className="cursor-pointer font-semibold">Vad betyder behörigheterna?</summary>
+      <dl className="m-0 mt-3 flex flex-col gap-2">
+        {PERMISSIONS.map((p) => (
+          <div key={p}>
+            <dt className="inline font-semibold">{PERMISSION_LABELS[p]}: </dt>
+            <dd className="m-0 inline text-muted">{PERMISSION_DETAILS[p]}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 mb-0 text-muted">
+        En person kan ha flera behörigheter. Alla som ska kunna publicera behöver minst <em>Publicerare</em>; styrelsen
+        får det automatiskt.
+      </p>
+    </details>
   );
 }
 

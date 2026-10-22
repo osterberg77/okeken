@@ -60,7 +60,8 @@ export interface SyncResult {
 
 /** EventCenterPosition kommer som attribut: x = longitud, y = latitud (WGS84). Saknas eller är den trasig blir det null. */
 function centerPosition(e: FirebaseFirestore.DocumentData): { lat: number | null; lng: number | null } {
-  const pos = e.EventCenterPosition;
+  // Positionen ligger på varje EventRace (en per etapp/lopp), inte på tävlingen: ta första som har en
+  const pos = asList(e.EventRace).map((r) => r?.EventCenterPosition).find(Boolean) ?? e.EventCenterPosition;
   const lng = Number(pos?.['@_x']);
   const lat = Number(pos?.['@_y']);
   // Schemat tillåter även meter/fot (projicerade koordinater): bara WGS-84 (grader) kan vi använda
