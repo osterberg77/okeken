@@ -5,7 +5,7 @@ import { watchSession } from '../../lib/firebase/session';
 import {
   assignableBy,
   canManageUsers,
-  PERMISSION_DESCRIPTIONS,
+  highestPermission,
   PERMISSION_LABELS,
   PERMISSIONS,
   type Permission,
@@ -77,15 +77,20 @@ function UserList({ session }: { session: Session }) {
       .sort((a, b) => (a.displayName || a.email).localeCompare(b.displayName || b.email, 'sv'));
   }, [users, query]);
 
-  async function toggle(user: UserProfile, permission: Permission) {
-    const on = user.permissions.includes(permission);
-    const permissions = on ? user.permissions.filter((p) => p !== permission) : [...user.permissions, permission];
-    setPending(`${user.uid}:${permission}`);
+  // Reglerna nekar att ändra någon vars nuvarande nivå man inte själv får tilldela, och att ta bort sin egen superadmin
+  function canEdit(user: UserProfile) {
+    const current = highestPermission(user.permissions);
+    if (current === 'superadmin' && user.uid === session.uid) return false;
+    return current === null || assignable.includes(current);
+  }
+
+  async function setLevel(user: UserProfile, level: Permission | '') {
+    setPending(user.uid);
     setError('');
     try {
-      await updateDoc(doc(db, 'users', user.uid), { permissions });
+      await updateDoc(doc(db, 'users', user.uid), { permissions: level ? [level] : [] });
     } catch {
-      setError(`Ändringen för ${user.displayName || user.email} sparades inte. Du kanske saknar behörighet för den rollen.`);
+      setError(`Ändringen för ${user.displayName || user.email} sparades inte. Du kanske saknar behörighet för den nivån.`);
     } finally {
       setPending(null);
     }
@@ -134,31 +139,22 @@ function UserList({ session }: { session: Session }) {
                 </div>
                 {user.displayName && <div className="truncate text-[13px] text-subtle">{user.email}</div>}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {visible.map((p) => {
-                  const on = user.permissions.includes(p);
-                  const lockedSelf = p === 'superadmin' && user.uid === session.uid; // reglerna nekar
-                  const enabled = assignable.includes(p) && !lockedSelf && pending === null;
-                  return (
-                    <label
-                      key={p}
-                      title={PERMISSION_DESCRIPTIONS[p]}
-                      className={`inline-flex items-center gap-2 rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-semibold select-none ${
-                        on ? 'border-accent bg-white text-ink' : 'border-ink/12 bg-white/60 text-muted'
-                      } ${enabled ? 'cursor-pointer hover:border-accent' : 'cursor-not-allowed opacity-55'}`}
-                    >
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-[#8A4B9E]"
-                        checked={on}
-                        disabled={!enabled}
-                        onChange={() => toggle(user, p)}
-                      />
+              <div className="flex items-center gap-2">
+                <select
+                  aria-label={`Behörighet för ${user.displayName || user.email}`}
+                  value={highestPermission(user.permissions) ?? ''}
+                  disabled={!canEdit(user) || pending !== null}
+                  onChange={(e) => setLevel(user, e.target.value as Permission | '')}
+                  className="rounded-full border-[1.5px] border-ink/15 bg-white px-4 py-2 text-sm font-semibold outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  <option value="">Ingen behörighet</option>
+                  {PERMISSIONS.filter((p) => visible.includes(p) || p === highestPermission(user.permissions)).map((p) => (
+                    <option key={p} value={p} disabled={!assignable.includes(p)}>
                       {PERMISSION_LABELS[p]}
-                      {pending === `${user.uid}:${p}` && <span className="text-subtle">…</span>}
-                    </label>
-                  );
-                })}
+                    </option>
+                  ))}
+                </select>
+                {pending === user.uid && <span className="text-subtle">…</span>}
               </div>
             </li>
           ))}
@@ -195,8 +191,7 @@ function PermissionHelp({ permissions }: { permissions: Permission[] }) {
         ))}
       </dl>
       <p className="mt-3 mb-0 text-muted">
-        En person kan ha flera behörigheter. Alla som ska kunna publicera behöver minst <em>Publicerare</em>; styrelsen
-        får det automatiskt.
+        Varje person har en nivå, och varje nivå kan allt som nivåerna före den i listan kan. Välj den lägsta nivå personen behöver.
       </p>
     </details>
   );

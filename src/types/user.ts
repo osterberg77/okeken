@@ -9,14 +9,6 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   superadmin: 'Superadmin',
 };
 
-export const PERMISSION_DESCRIPTIONS: Record<Permission, string> = {
-  member: 'Inloggad medlem',
-  course_setter: 'Laddar upp banor',
-  publisher: 'Skapar och publicerar events och sidor',
-  board: 'Som publicerare, och tilldelar alla behörigheter utom superadmin',
-  superadmin: 'Allt, inklusive styrelse och superadmin',
-};
-
 // Taggfärger enligt designspec (lila/grön/gul)
 export const PERMISSION_COLORS: Record<Permission, { fg: string; bg: string }> = {
   member: { fg: '#6E3A82', bg: '#EFE3F5' },
@@ -33,6 +25,11 @@ export function assignableBy(own: readonly Permission[]): Permission[] {
   if (own.includes('superadmin')) return [...PERMISSIONS];
   if (own.includes('board')) return BOARD_ASSIGNABLE;
   return [];
+}
+
+/** Högsta nivån i en behörighetslista (nivåerna bygger på varandra, se docs/roller-och-behorigheter.md). */
+export function highestPermission(list: readonly Permission[]): Permission | null {
+  return [...PERMISSIONS].reverse().find((p) => list.includes(p)) ?? null;
 }
 
 /** Får skapa, redigera och publicera events och sidor. Måste spegla firestore.rules. */
