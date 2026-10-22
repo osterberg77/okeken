@@ -75,6 +75,7 @@ function recordFromFirestore(id: string, d: DocumentData): EventRecord {
     slug: d.slug ?? null,
     published: d.published ? contentFromFirestore(d.published) : null,
     publishedAt: d.publishedAt ? (d.publishedAt as Timestamp).toDate() : null,
+    publishAt: d.publishAt ? (d.publishAt as Timestamp).toDate() : null,
     updatedAt: d.updatedAt ? (d.updatedAt as Timestamp).toDate() : null,
   };
 }
@@ -84,12 +85,17 @@ export function sameContent(a: EventContent, b: EventContent): boolean {
 }
 
 /** Läget som statusbadgen visar */
-export type EventState = 'draft' | 'changed' | 'live' | 'unpublished';
+export type EventState = 'draft' | 'changed' | 'live' | 'unpublished' | 'scheduled';
 
 export function eventState(e: EventRecord, draft: EventContent = e): EventState {
   if (e.status === 'draft' || !e.published) return 'draft';
   if (e.status === 'unpublished') return 'unpublished';
   return sameContent(draft, e.published) ? 'live' : 'changed';
+}
+
+/** Läget i listor och editor: en schemalagd publicering går före de andra lägena */
+export function displayState(e: EventRecord, draft: EventContent = e): EventState {
+  return e.publishAt ? 'scheduled' : eventState(e, draft);
 }
 
 export function watchEvents(callback: (events: EventRecord[]) => void, onError: () => void): () => void {
@@ -164,6 +170,8 @@ export async function publishEvent(id: string, slug: string | null, content: Eve
     status: 'published',
     published: data,
     publishedAt: serverTimestamp(),
+    // Publicera nu ersätter en schemalagd publicering
+    publishAt: null,
     slug: slug ?? (await uniqueSlug(id, content)),
     ...stamp(uid),
   });
@@ -183,7 +191,12 @@ export async function saveCourseFiles(id: string, status: EventRecord['status'],
 }
 
 export async function unpublishEvent(id: string, uid: string): Promise<void> {
-  await updateDoc(doc(events, id), { status: 'unpublished', ...stamp(uid) });
+  await updateDoc(doc(events, id), { status: 'unpublished', publishAt: null, ...stamp(uid) });
+}
+
+/** Schemalägger publicering av utkastet (eller avbryter med null). Själva publiceringen görs av Function `publishScheduled`. */
+export async function scheduleEvent(id: string, at: Date | null, uid: string): Promise<void> {
+  await updateDoc(doc(events, id), { publishAt: at ? Timestamp.fromDate(at) : null, ...stamp(uid) });
 }
 
 /** Bara aldrig publicerade utkast (se firestore.rules) */

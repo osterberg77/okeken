@@ -872,3 +872,27 @@ describe('events: publicerat av (publisher)', () => {
     await assertFails(save('draft1', { publisher: 'abc123XYZ' }, 'setter'));
   });
 });
+
+describe('events: schemalagd publicering (publishAt)', () => {
+  const later = () => Timestamp.fromDate(new Date('2030-01-01T12:00:00Z'));
+  it('publicerare kan schemalägga, ändra och avbryta', async () => {
+    await assertSucceeds(save('draft1', { publishAt: later() }));
+    await assertSucceeds(save('draft1', { publishAt: Timestamp.fromDate(new Date('2031-01-01T12:00:00Z')) }));
+    await assertSucceeds(save('draft1', { publishAt: null }));
+  });
+  it('nytt event kan skapas med schema', async () => {
+    await assertSucceeds(setDoc(ev(as('publisher'), 'nytt-schema'), newEvent('publisher', { publishAt: later() })));
+  });
+  it('fel typ nekas', async () => {
+    for (const bad of ['2030-01-01', 42, true, { at: 1 }]) await assertFails(save('draft1', { publishAt: bad }));
+  });
+  it('banläggare och medlemmar kan inte schemalägga', async () => {
+    await assertFails(save('draft1', { publishAt: later() }, 'setter'));
+    await assertFails(save('draft1', { publishAt: later() }, 'member'));
+  });
+  it('schemat ingår inte i ögonblicksbilden: publicera nu med publishAt null går', async () => {
+    const c = content();
+    await assertSucceeds(save('draft2', { ...c, publishAt: null, status: 'published', slug: 'schema-nu', published: c, publishedAt: serverTimestamp() }));
+  });
+});
+

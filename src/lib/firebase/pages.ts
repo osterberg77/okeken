@@ -51,7 +51,7 @@ export function samePageContent(a: PageContent, b: PageContent): boolean {
 }
 
 /** Samma lägen som för events, så StatusLabel/StatusBadge kan delas */
-export function pageState(p: PageRecord, draft: PageContent = p): EventState {
+export function pageState(p: PageRecord, draft: PageContent = p): Exclude<EventState, 'scheduled'> {
   if (p.status === 'draft' || !p.published) return 'draft';
   if (p.status === 'unpublished') return 'unpublished';
   return samePageContent(draft, p.published) ? 'live' : 'changed';

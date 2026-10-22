@@ -3,8 +3,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEvent,
   deleteDraft,
+  displayState,
   eventState,
   publishEvent,
+  scheduleEvent,
   saveCourseFiles,
   sameContent,
   saveEvent,
@@ -37,6 +39,11 @@ export default function EventEditor() {
       {(session) => <Editor session={session} />}
     </AdminGate>
   );
+}
+
+/** '22 okt 18:30' i svensk tid */
+function formatSchedule(d: Date): string {
+  return d.toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 /** Nytt event: nästa tisdagsträning, banorna ute till söndag lunch */
@@ -182,7 +189,9 @@ function Editor({ session }: { session: Session }) {
     );
   }
 
-  const state = record ? eventState(record, draft) : 'draft';
+  const state = record ? displayState(record, draft) : 'draft';
+  // Läget utan schemaläggning: styr texterna på knapparna (publicera/ändringar)
+  const baseState = record ? eventState(record, draft) : 'draft';
   const isPublished = record?.status === 'published';
   const neverPublished = !record?.publishedAt;
   // Delning först när bygget som innehåller publiceringen är live (annars cachar Facebook en tom förhandsvisning)
@@ -308,6 +317,29 @@ function Editor({ session }: { session: Session }) {
     return 'Avpublicerat. Eventet försvinner från sajten vid nästa ombyggnad.';
   });
 
+  // Schemalagd publicering (beslut 0016): Function `publishScheduled` publicerar utkastet som det ser ut då
+  const [scheduleInput, setScheduleInput] = useState('');
+  useEffect(() => {
+    if (record?.publishAt) setScheduleInput(toStockholmInput(record.publishAt));
+  }, [record?.publishAt]);
+  const scheduleAt = scheduleInput ? fromStockholmInput(scheduleInput) : null;
+  const scheduleProblem =
+    !scheduleAt || Number.isNaN(scheduleAt.getTime()) ? 'Välj datum och tid.' : scheduleAt.getTime() < Date.now() + 60_000 ? 'Tiden måste ligga i framtiden.' : '';
+
+  const onSchedule = () => run('schedule', async () => {
+    const eventId = id ?? (await persist(draft));
+    if (id && dirty) await persist(draft);
+    await removeUnusedCourseFiles(draft.courseFiles);
+    await scheduleEvent(eventId, scheduleAt!, session.uid);
+    return `Schemalagt. Utkastet publiceras ${formatSchedule(scheduleAt!)} (kontrolleras var 15:e minut, sedan 1–2 min ombyggnad).`;
+  });
+
+  const onCancelSchedule = () => run('unschedule', async () => {
+    await scheduleEvent(id!, null, session.uid);
+    setScheduleInput('');
+    return 'Schemaläggningen är avbruten.';
+  });
+
   async function onDelete() {
     setBusy('delete');
     try {
@@ -320,7 +352,7 @@ function Editor({ session }: { session: Session }) {
     }
   }
 
-  const publishLabel = state === 'live' && !dirty ? 'Publicerad' : isPublished ? 'Publicera ändringar' : 'Publicera';
+  const publishLabel = baseState === 'live' && !dirty ? 'Publicerad' : isPublished ? 'Publicera ändringar' : 'Publicera';
 
   return (
     <div className="flex flex-col gap-5">
@@ -364,7 +396,7 @@ function Editor({ session }: { session: Session }) {
               <ActionButton onClick={onSave} disabled={!!busy || !dirty || !!problem} busy={busy === 'save'}>
                 Spara utkast
               </ActionButton>
-              <ActionButton primary onClick={onPublish} disabled={!!busy || !!problem || (state === 'live' && !dirty)} busy={busy === 'publish'}>
+              <ActionButton primary onClick={onPublish} disabled={!!busy || !!problem || (baseState === 'live' && !dirty)} busy={busy === 'publish'}>
                 {publishLabel}
               </ActionButton>
             </>
@@ -381,6 +413,29 @@ function Editor({ session }: { session: Session }) {
           </p>
         )}
       </div>
+
+      {!courseOnly && (
+        <div className="flex flex-wrap items-end gap-3 rounded-[22px] bg-white px-5 py-3.5 shadow-card">
+          <Field
+            label="Schemalägg publicering"
+            htmlFor="schedule"
+            hint={
+              record?.publishAt
+                ? `Publiceras ${formatSchedule(record.publishAt)}. Det är utkastet som det ser ut då som publiceras.`
+                : 'Utkastet publiceras automatiskt vid vald tid (svensk tid). Kontrolleras var 15:e minut.'
+            }
+          >
+            <input id="schedule" type="datetime-local" value={scheduleInput} onChange={(e) => setScheduleInput(e.target.value)} className={INPUT} />
+          </Field>
+          <ActionButton onClick={onSchedule} disabled={!!busy || !!problem || !!scheduleProblem} busy={busy === 'schedule'}>
+            {record?.publishAt ? 'Ändra tid' : 'Schemalägg'}
+          </ActionButton>
+          {record?.publishAt && (
+            <ActionButton onClick={onCancelSchedule} disabled={!!busy} busy={busy === 'unschedule'}>Avbryt schemaläggning</ActionButton>
+          )}
+          {scheduleProblem && scheduleInput && <span className="w-full text-[13px] text-[#8A2B2B]">{scheduleProblem}</span>}
+        </div>
+      )}
 
       <div className="flex gap-2 lg:hidden" role="tablist">
         {(['edit', 'preview'] as const).map((t) => (
@@ -641,7 +696,15 @@ function Editor({ session }: { session: Session }) {
 
       <StatusBadge
         state={state}
-        detail={state === 'changed' ? 'Publicera ändringarna för att visa dem för besökare' : state === 'draft' ? 'Syns inte för besökare' : undefined}
+        detail={
+          state === 'scheduled' && record?.publishAt
+            ? `Publiceras ${formatSchedule(record.publishAt)}`
+            : state === 'changed'
+              ? 'Publicera ändringarna för att visa dem för besökare'
+              : state === 'draft'
+                ? 'Syns inte för besökare'
+                : undefined
+        }
       />
     </div>
   );

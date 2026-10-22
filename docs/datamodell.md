@@ -23,6 +23,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `status` | `draft \| scheduled \| published \| unpublished` | Styr synlighet |
 | `publishAt` | timestamp? | Schemalagd publicering (status `scheduled`) |
 | `publisher` | `string \| null` | "Publicerat av": uid för en medlem i `members` (beslut 0015), eller `null`. Valfritt fält (äldre events saknar det; klienten skriver alltid `null` eller ett uid, 1–128 tecken A–Z/a–z/0–9). Förvalt är den som skapar eventet. Namn och bild slås upp vid bygget och visas bara om `members/{uid}.publicName` är sant. Ingår i `published`. Får inte ändras av banläggare |
+| `publishAt` | timestamp? | Schemalagd publicering (beslut 0016): när `publishScheduled` ska publicera utkastet. `null` eller saknas = ingen. Ingår inte i `published`. Töms vid publicering/avpublicering |
 | `published` | objekt? | **Snapshot** av innehållet som är live (title, body, tider, plats, courseFiles, image m.m.; `image` alltid med, `null` om bild saknas). "Publicera" kopierar utkastet hit. **Bygget läser bara detta fält.** Utkastet är fälten på dokumentet i övrigt |
 | `publishedAt` | timestamp? | Sätts vid Publicera. Delningsknappen jämför `meta/build.lastBuildAt` mot detta (inte `updatedAt`, som ändras vid varje sparat utkast) |
 | `createdBy`, `createdAt`, `updatedAt` | | |

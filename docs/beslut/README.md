@@ -19,3 +19,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | [0013](0013-profil-och-kontoradering.md) | Profilsida `/profil` (namn, färg, bild, e-post, lösenord, integritet) och permanent kontoradering via Cloud Function `deleteMyAccount` | Beslutat |
 | [0014](0014-besoksstatistik.md) | Egen besöksräknare: skript → Cloud Function `hit` → dagliga räknare i Firestore, unika via dagshash, ingen IP sparas | Beslutat |
 | [0015](0015-medlemslista.md) | Medlemslista `members/{uid}` (namn, bild, `publicName`) som Function håller i synk med `users`, läsbar för banläggare och uppåt | Beslutat |
+| [0016](0016-schemalagd-publicering.md) | Schemalagd publicering: `publishAt` på events, Function var 15:e minut publicerar utkastet | Beslutat |

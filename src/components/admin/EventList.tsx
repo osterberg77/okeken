@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { eventState, watchEvents } from '../../lib/firebase/events';
+import { displayState, watchEvents } from '../../lib/firebase/events';
 import { dayKey, formatEventTime, keyDayOfMonth, keyMonthShort, keyWeekdayShort } from '../../lib/time';
 import type { EventRecord } from '../../types/event';
 import { canPublish, canViewEvents } from '../../types/user';
@@ -84,7 +84,7 @@ function Section({ title, events, empty }: { title: string; events: EventRecord[
             <span className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="flex flex-wrap items-center gap-2">
                 <CategoryChip type={e.type} />
-                <StatusLabel state={eventState(e)} />
+                <StatusLabel state={displayState(e)} />
               </span>
               <span className="truncate font-display text-[17px] font-semibold">{e.title || '(utan titel)'}</span>
               <span className="truncate text-[13px] text-subtle">{meta}</span>

@@ -63,6 +63,8 @@ export interface EventRecord extends EventContent {
   slug: string | null;
   published: EventContent | null;
   publishedAt: Date | null;
+  /** Schemalagd publicering: utkastet publiceras av en Function när tiden passerat (beslut 0016). null = ingen. */
+  publishAt: Date | null;
   updatedAt: Date | null;
 }
 

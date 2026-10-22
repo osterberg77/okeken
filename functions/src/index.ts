@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
@@ -12,6 +13,7 @@ import { syncEventor } from './eventor-sync.js';
 import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 
 import { memberDoc } from './members.js';
+import { publishDueEvents } from './scheduled-publish.js';
 
 export { hit } from './stats.js';
 
@@ -177,4 +179,10 @@ export const onUserMemberWritten = onDocumentWritten('users/{uid}', async (event
   const next = memberDoc(event.data?.after.data());
   if (next) await ref.set(next);
   else await ref.delete();
+});
+
+/** Publicerar schemalagda events var 15:e minut (beslut 0016). Skrivningen startar bygget via onEventWritten. */
+export const publishScheduled = onSchedule({ schedule: 'every 15 minutes', timeZone: 'Europe/Stockholm' }, async () => {
+  const ids = await publishDueEvents(getFirestore());
+  if (ids.length > 0) logger.info('Schemalagda events publicerade', { ids });
 });

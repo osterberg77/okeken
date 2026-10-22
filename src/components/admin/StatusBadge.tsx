@@ -9,6 +9,7 @@ const LABELS: Record<EventState, { short: string; long: string }> = {
   changed: { short: 'Opublicerade ändringar', long: 'OPUBLICERADE ÄNDRINGAR – live-versionen skiljer sig' },
   unpublished: { short: 'Avpublicerad', long: 'AVPUBLICERAD – syns inte för besökare' },
   live: { short: 'Publicerad', long: 'PUBLICERAD' },
+  scheduled: { short: 'Schemalagd', long: 'SCHEMALAGD – publiceras automatiskt' },
 };
 
 /** Liten etikett för listor */
