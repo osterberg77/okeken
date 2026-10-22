@@ -170,9 +170,25 @@ function Editor({ session }: { session: Session }) {
   // Schemalagd publicering (beslut 0016): Function `publishScheduled` publicerar utkastet som det ser ut då.
   // Hooks måste ligga före de tidiga return nedan (annars React-fel 310).
   const [scheduleInput, setScheduleInput] = useState('');
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const scheduleRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (record?.publishAt) setScheduleInput(toStockholmInput(record.publishAt));
   }, [record?.publishAt]);
+  // Stäng schemaläggningsrutan vid klick utanför eller Escape
+  useEffect(() => {
+    if (!scheduleOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (scheduleRef.current && !scheduleRef.current.contains(e.target as Node)) setScheduleOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setScheduleOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [scheduleOpen]);
 
   const preview = useMemo(
     () => (draft ? toPreview(draft, record?.slug ?? null, toPublisher(members, draft.publisher)) : null),
@@ -335,12 +351,14 @@ function Editor({ session }: { session: Session }) {
     if (id && dirty) await persist(draft);
     await removeUnusedCourseFiles(draft.courseFiles);
     await scheduleEvent(eventId, scheduleAt!, session.uid);
+    setScheduleOpen(false);
     return `Schemalagt. Utkastet publiceras ${formatSchedule(scheduleAt!)} (kontrolleras var 15:e minut, sedan 1–2 min ombyggnad).`;
   });
 
   const onCancelSchedule = () => run('unschedule', async () => {
     await scheduleEvent(id!, null, session.uid);
     setScheduleInput('');
+    setScheduleOpen(false);
     return 'Schemaläggningen är avbruten.';
   });
 
@@ -400,9 +418,56 @@ function Editor({ session }: { session: Session }) {
               <ActionButton onClick={onSave} disabled={!!busy || !dirty || !!problem} busy={busy === 'save'}>
                 Spara utkast
               </ActionButton>
-              <ActionButton primary onClick={onPublish} disabled={!!busy || !!problem || (baseState === 'live' && !dirty)} busy={busy === 'publish'}>
-                {publishLabel}
-              </ActionButton>
+              {/* Delad knapp: Publicera till vänster, kalenderikon (schemalägg) till höger */}
+              <div ref={scheduleRef} className="relative inline-flex rounded-full bg-accent text-white shadow-[0_8px_18px_-8px_#8A4B9E]">
+                <button
+                  type="button"
+                  onClick={onPublish}
+                  disabled={!!busy || !!problem || (baseState === 'live' && !dirty)}
+                  className="cursor-pointer rounded-l-full py-2.5 pr-4 pl-5 text-sm font-semibold hover:brightness-110 disabled:cursor-default disabled:opacity-45"
+                >
+                  {busy === 'publish' ? 'Vänta…' : publishLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScheduleOpen((o) => !o)}
+                  aria-label={record?.publishAt ? `Schemalagd ${formatSchedule(record.publishAt)}. Ändra eller avbryt` : 'Schemalägg publicering'}
+                  aria-expanded={scheduleOpen}
+                  title={record?.publishAt ? `Schemalagd ${formatSchedule(record.publishAt)}` : 'Schemalägg publicering'}
+                  className="relative cursor-pointer rounded-r-full border-l border-white/40 py-2.5 pr-4 pl-3.5 hover:brightness-110"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="4.5" width="18" height="16.5" rx="3" />
+                    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+                  </svg>
+                  {record?.publishAt && <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-[#F9D932] ring-2 ring-accent" />}
+                </button>
+
+                {scheduleOpen && (
+                  <div role="dialog" aria-label="Schemalägg publicering" className="absolute top-full right-0 z-40 mt-2 flex w-[min(320px,calc(100vw-2rem))] flex-col gap-3 rounded-[22px] bg-white p-4 text-ink shadow-card ring-1 ring-ink/10">
+                    <Field
+                      label="Publicera automatiskt"
+                      htmlFor="schedule"
+                      hint={
+                        record?.publishAt
+                          ? `Publiceras ${formatSchedule(record.publishAt)}. Det är utkastet som det ser ut då som publiceras.`
+                          : 'Svensk tid. Kontrolleras var 15:e minut, sedan 1–2 min ombyggnad.'
+                      }
+                    >
+                      <input id="schedule" type="datetime-local" value={scheduleInput} onChange={(e) => setScheduleInput(e.target.value)} className={INPUT} />
+                    </Field>
+                    {scheduleProblem && scheduleInput && <span className="text-[13px] text-[#8A2B2B]">{scheduleProblem}</span>}
+                    <div className="flex flex-wrap gap-2">
+                      <ActionButton primary onClick={onSchedule} disabled={!!busy || !!problem || !!scheduleProblem} busy={busy === 'schedule'}>
+                        {record?.publishAt ? 'Ändra tid' : 'Schemalägg'}
+                      </ActionButton>
+                      {record?.publishAt && (
+                        <ActionButton onClick={onCancelSchedule} disabled={!!busy} busy={busy === 'unschedule'}>Avbryt schemaläggning</ActionButton>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -440,29 +505,6 @@ function Editor({ session }: { session: Session }) {
               Öppna startlista och resultat →
             </a>
           )}
-        </div>
-      )}
-
-      {!courseOnly && (
-        <div className="flex flex-wrap items-end gap-3 rounded-[22px] bg-white px-5 py-3.5 shadow-card">
-          <Field
-            label="Schemalägg publicering"
-            htmlFor="schedule"
-            hint={
-              record?.publishAt
-                ? `Publiceras ${formatSchedule(record.publishAt)}. Det är utkastet som det ser ut då som publiceras.`
-                : 'Utkastet publiceras automatiskt vid vald tid (svensk tid). Kontrolleras var 15:e minut.'
-            }
-          >
-            <input id="schedule" type="datetime-local" value={scheduleInput} onChange={(e) => setScheduleInput(e.target.value)} className={INPUT} />
-          </Field>
-          <ActionButton onClick={onSchedule} disabled={!!busy || !!problem || !!scheduleProblem} busy={busy === 'schedule'}>
-            {record?.publishAt ? 'Ändra tid' : 'Schemalägg'}
-          </ActionButton>
-          {record?.publishAt && (
-            <ActionButton onClick={onCancelSchedule} disabled={!!busy} busy={busy === 'unschedule'}>Avbryt schemaläggning</ActionButton>
-          )}
-          {scheduleProblem && scheduleInput && <span className="w-full text-[13px] text-[#8A2B2B]">{scheduleProblem}</span>}
         </div>
       )}
 
