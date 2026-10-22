@@ -6,6 +6,18 @@ import { toPublicImage } from '../event-image';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 
+function toLocation(l: { name?: string; mapUrl?: string; lat?: number; lng?: number } | undefined) {
+  if (!l) return undefined;
+  const hasCoords = typeof l.lat === 'number' && typeof l.lng === 'number';
+  if (!l.name && !hasCoords) return undefined;
+  return {
+    name: l.name ?? '',
+    mapUrl: l.mapUrl || undefined,
+    lat: hasCoords ? l.lat : undefined,
+    lng: hasCoords ? l.lng : undefined,
+  };
+}
+
 export async function loadPublishedEvents() {
   if (getApps().length === 0) initializeApp({ credential: applicationDefault(), projectId: 'okeken' });
 
@@ -30,7 +42,7 @@ export async function loadPublishedEvents() {
         title: p.title,
         startsAt: (p.startsAt as Timestamp).toDate(),
         endsAt: (p.endsAt as Timestamp).toDate(),
-        location: p.location?.name ? { name: p.location.name, mapUrl: p.location.mapUrl || undefined } : undefined,
+        location: toLocation(p.location),
         courseSetter: p.courseSetter || undefined,
         livelox: p.livelox || undefined,
         courseFiles: Array.isArray(p.courseFiles) && p.courseFiles.length ? toPublicCourseFiles(p.courseFiles) : undefined,

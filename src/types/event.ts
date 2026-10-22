@@ -1,3 +1,5 @@
+import type { EventRoute } from '../lib/geo';
+
 export const EVENT_TYPES = ['training', 'competition', 'meeting', 'info', 'happening'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -36,7 +38,8 @@ export interface EventContent {
   title: string;
   startsAt: Date;
   endsAt: Date;
-  location: { name: string; mapUrl: string };
+  /** `coords`: koordinater som text ("58.2, 16.0" eller en kartlänk); sparas som lat/lng i Firestore */
+  location: { name: string; mapUrl: string; coords: string };
   body: string;
   courseSetter: string;
   livelox: string;
@@ -62,6 +65,7 @@ export interface EventRecord extends EventContent {
 }
 
 export interface EventLocation {
+  /** Kan vara tom när bara koordinater finns */
   name: string;
   mapUrl?: string;
   lat?: number;
@@ -86,6 +90,8 @@ export interface PublicEvent {
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;
+  /** Bilväg från Åtvidaberg, räknad vid bygget; saknas utan koordinater eller om ruttjänsten svarade fel */
+  route?: EventRoute;
   /** Tävling från Eventor: kalenderposten länkar hit (Eventor) i stället för till en egen eventsida */
   externalUrl?: string;
   /** Eventor anger bara datum (ingen tid): visa då ingen tid i listan */

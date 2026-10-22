@@ -28,6 +28,8 @@ export async function loadSelectedEventorEvents() {
         endsAt: (e.endsAt as Timestamp).toDate(),
         allDay: e.allDay === true,
         organiserName: (e.organiserName as string) || undefined,
+        lat: typeof e.lat === 'number' ? e.lat : undefined,
+        lng: typeof e.lng === 'number' ? e.lng : undefined,
         url: e.url as string,
       },
     ];

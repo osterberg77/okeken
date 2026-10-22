@@ -1,12 +1,13 @@
 import { getCollection } from 'astro:content';
 import { renderMarkdown, toExcerpt } from './markdown';
 import type { PublicEvent } from '../types/event';
+import { getRoute } from './server/route';
 
 /** Alla publicerade events, sorterade på starttid. */
 export async function getPublicEvents(): Promise<PublicEvent[]> {
   const entries = await getCollection('events');
-  return entries
-    .map(({ id, data }) => ({
+  const events = entries
+    .map(({ id, data }): PublicEvent => ({
       slug: id,
       type: data.type,
       title: data.title,
@@ -21,6 +22,19 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
       excerpt: toExcerpt(data.body),
     }))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  return withRoutes(events);
+}
+
+/** Lägger bilvägen från Åtvidaberg på kommande events med koordinater (passerade behöver ingen rutt). */
+async function withRoutes(events: PublicEvent[]): Promise<PublicEvent[]> {
+  const now = new Date().toISOString();
+  for (const e of events) {
+    const at = e.location;
+    if (at?.lat === undefined || at.lng === undefined || e.endsAt < now) continue;
+    const route = await getRoute({ lat: at.lat, lng: at.lng });
+    if (route) e.route = route;
+  }
+  return events;
 }
 
 /** Egna publicerade events plus valda Eventor-tävlingar, sorterade på starttid. Bara för kalendern. */
@@ -37,6 +51,7 @@ export async function getCalendarEvents(): Promise<PublicEvent[]> {
     excerpt: '',
     externalUrl: data.url,
     organiser: data.organiserName,
+    location: data.lat !== undefined && data.lng !== undefined ? { name: '', lat: data.lat, lng: data.lng } : undefined,
   }));
-  return [...own, ...eventor].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  return [...own, ...(await withRoutes(eventor))].sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }

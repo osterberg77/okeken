@@ -185,6 +185,9 @@ describe('events: create', () => {
     ['location saknar mapUrl', { location: { name: 'a' } }],
     ['location.name inte sträng', { location: { name: 1, mapUrl: '' } }],
     ['location inte map', { location: 'Skogen' }],
+    ['lat utan lng', { location: { name: 'a', mapUrl: '', lat: 58.2 } }],
+    ['lat utanför intervallet', { location: { name: 'a', mapUrl: '', lat: 91, lng: 16 } }],
+    ['lng som sträng', { location: { name: 'a', mapUrl: '', lat: 58.2, lng: '16' } }],
     ['body över 20000 tecken', { body: 'x'.repeat(20001) }],
     ['courseSetter över 200 tecken', { courseSetter: 'x'.repeat(201) }],
     ['livelox över 500 tecken', { livelox: 'x'.repeat(501) }],
@@ -194,6 +197,12 @@ describe('events: create', () => {
       await assertFails(setDoc(ev(as('publisher'), 'new'), newEvent('publisher', over)));
     });
   }
+
+  it('koordinater (lat/lng som par) accepteras', async () => {
+    await assertSucceeds(
+      setDoc(ev(as('publisher'), 'coords'), newEvent('publisher', { location: { name: 'a', mapUrl: '', lat: 58.2025, lng: 16.0015 } })),
+    );
+  });
 
   it('gränsvärden accepteras', async () => {
     await assertSucceeds(

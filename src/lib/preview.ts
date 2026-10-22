@@ -1,8 +1,15 @@
+import { parseCoords } from './geo';
 import type { EventContent, PublicEvent } from '../types/event';
 import type { PageContent, PublicPage } from '../types/page';
 import { toPublicCourseFiles } from './courses';
 import { toPublicImage } from './event-image';
 import { renderMarkdown, toExcerpt } from './markdown';
+
+function previewLocation(l: EventContent['location']): PublicEvent['location'] {
+  const at = parseCoords(l.coords);
+  if (!l.name.trim() && !at) return undefined;
+  return { name: l.name.trim(), mapUrl: l.mapUrl.trim() || undefined, ...at };
+}
 
 /** Utkast/innehåll i publik form, för adminpreview och för utkast i kalendern. */
 export function toPreview(c: EventContent, slug: string | null): PublicEvent {
@@ -12,7 +19,7 @@ export function toPreview(c: EventContent, slug: string | null): PublicEvent {
     title: c.title.trim() || 'Titel saknas',
     startsAt: c.startsAt.toISOString(),
     endsAt: c.endsAt.toISOString(),
-    location: c.location.name.trim() ? { name: c.location.name.trim(), mapUrl: c.location.mapUrl.trim() || undefined } : undefined,
+    location: previewLocation(c.location),
     courseSetter: c.courseSetter.trim() || undefined,
     livelox: c.livelox.trim() || undefined,
     courseFiles: c.courseFiles.length ? toPublicCourseFiles(c.courseFiles) : undefined,

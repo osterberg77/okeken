@@ -126,13 +126,22 @@ service cloud.firestore {
           && i.thumbnailUrl.matches('https://firebasestorage[.]googleapis[.]com/v0/b/okeken[.]firebasestorage[.]app/o/image_bank%2F[A-Za-z0-9]{1,64}-thumbnail[.](jpg|png|webp)[?]alt=media&token=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'));
     }
 
+    // lat/lng är valfria men kommer alltid som par
+    function validCoords(l) {
+      return !('lat' in l) && !('lng' in l)
+        || ('lat' in l) && ('lng' in l)
+          && (l.lat is int || l.lat is float) && (l.lng is int || l.lng is float)
+          && l.lat >= -90 && l.lat <= 90 && l.lng >= -180 && l.lng <= 180;
+    }
+
     function validEventContent(d, eventId) {
       return d.type in ['training', 'competition', 'meeting', 'info', 'happening']
         && d.title is string && d.title.size() > 0 && d.title.size() <= 200
         && d.startsAt is timestamp && d.endsAt is timestamp && d.endsAt >= d.startsAt
-        && d.location is map && d.location.keys().hasOnly(['name', 'mapUrl'])
+        && d.location is map && d.location.keys().hasOnly(['name', 'mapUrl', 'lat', 'lng'])
         && d.location.name is string && d.location.name.size() <= 200
         && d.location.mapUrl is string && d.location.mapUrl.size() <= 500
+        && validCoords(d.location)
         && d.body is string && d.body.size() <= 20000
         && d.courseSetter is string && d.courseSetter.size() <= 200
         && d.livelox is string && d.livelox.size() <= 500

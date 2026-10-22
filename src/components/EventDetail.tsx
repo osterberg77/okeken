@@ -11,6 +11,7 @@ import {
 import { bankImageSrc } from '../lib/markdown';
 import type { PublicEvent } from '../types/event';
 import CategoryChip from './CategoryChip';
+import RouteMap from './RouteMap';
 
 interface Props {
   event: PublicEvent;
@@ -74,7 +75,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
             )}
           </span>
           {time && <span>{time}</span>}
-          {event.location && <span>{event.location.name}</span>}
+          {event.location?.name && <span>{event.location.name}</span>}
           {event.organiser && <span>Arrangör {event.organiser}</span>}
           {event.courseSetter && <span>Banläggare {event.courseSetter}</span>}
         </div>
@@ -84,6 +85,10 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         )}
 
         {event.bodyHtml && <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />}
+
+        {event.location?.lat !== undefined && event.location.lng !== undefined && (
+          <RouteMap to={{ lat: event.location.lat, lng: event.location.lng }} label={event.location.name || undefined} route={event.route} />
+        )}
 
         {event.courseFiles && event.courseFiles.length > 0 && (
           <div className="flex flex-col gap-2">

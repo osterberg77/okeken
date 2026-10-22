@@ -1,3 +1,4 @@
+import { parseCoords } from '../geo';
 import {
   addDoc,
   collection,
@@ -20,13 +21,19 @@ import { db } from './client';
 
 const events = collection(db, 'events');
 
+/** lat/lng skrivs bara när koordinaterna går att läsa (reglerna tillåter dem som valfria nycklar) */
+function locationToFirestore(l: EventContent['location']) {
+  const at = parseCoords(l.coords);
+  return { name: l.name.trim(), mapUrl: l.mapUrl.trim(), ...(at ? { lat: at.lat, lng: at.lng } : {}) };
+}
+
 function contentToFirestore(c: EventContent) {
   return {
     type: c.type,
     title: c.title.trim(),
     startsAt: Timestamp.fromDate(c.startsAt),
     endsAt: Timestamp.fromDate(c.endsAt),
-    location: { name: c.location.name.trim(), mapUrl: c.location.mapUrl.trim() },
+    location: locationToFirestore(c.location),
     body: c.body,
     courseSetter: c.courseSetter.trim(),
     livelox: c.livelox.trim(),
@@ -44,7 +51,11 @@ function contentFromFirestore(d: DocumentData): EventContent {
     title: d.title ?? '',
     startsAt: (d.startsAt as Timestamp).toDate(),
     endsAt: (d.endsAt as Timestamp).toDate(),
-    location: { name: d.location?.name ?? '', mapUrl: d.location?.mapUrl ?? '' },
+    location: {
+      name: d.location?.name ?? '',
+      mapUrl: d.location?.mapUrl ?? '',
+      coords: typeof d.location?.lat === 'number' && typeof d.location?.lng === 'number' ? `${d.location.lat}, ${d.location.lng}` : '',
+    },
     body: d.body ?? '',
     courseSetter: d.courseSetter ?? '',
     livelox: d.livelox ?? '',

@@ -1,3 +1,4 @@
+import { parseCoords } from '../../lib/geo';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createEvent,
@@ -46,7 +47,7 @@ function newEventContent(): EventContent {
     title: '',
     startsAt: fromStockholmInput(`${tuesday}T17:00`),
     endsAt: fromStockholmInput(`${addDays(tuesday, 5)}T12:00`),
-    location: { name: '', mapUrl: '' },
+    location: { name: '', mapUrl: '', coords: '' },
     body: '',
     courseSetter: '',
     livelox: '',
@@ -447,6 +448,19 @@ function Editor({ session }: { session: Session }) {
             </Field>
             <Field label="Kartlänk" htmlFor="map" hint="Valfri. Klistra in en länk från Google Maps.">
               <input id="map" type="url" value={draft.location.mapUrl} onChange={(e) => update({ location: { ...draft.location, mapUrl: e.target.value } })} placeholder="https://maps.app.goo.gl/…" className={INPUT} />
+            </Field>
+            <Field
+              label="Koordinater"
+              htmlFor="coords"
+              hint={
+                !draft.location.coords.trim()
+                  ? 'Valfri. Ger en karta med körsträcka från Åtvidaberg. Högerklicka på platsen i Google Maps och klicka på siffrorna, eller klistra in dem här.'
+                  : parseCoords(draft.location.coords)
+                    ? 'Kartan visas på eventsidan.'
+                    : 'Förstår inte koordinaterna. Skriv t.ex. 58.2025, 16.0015.'
+              }
+            >
+              <input id="coords" value={draft.location.coords} onChange={(e) => update({ location: { ...draft.location, coords: e.target.value } })} placeholder="58.2025, 16.0015" className={INPUT} />
             </Field>
           </div>
 

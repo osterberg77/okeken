@@ -18,6 +18,9 @@ export interface EventorEvent {
   url: string;
   /** Arrangörens egen webbadress, tom om den saknas */
   webUrl: string;
+  /** Tävlingscentrum (EventCenterPosition), WGS84; saknas hos många tävlingar */
+  lat?: number | null;
+  lng?: number | null;
   /** Matchar urvalsreglerna i settings/eventor vid senaste hämtningen */
   suggested: boolean;
   /** Finns inte längre hos Eventor men var vald: visas inte i kalendern, publicerare får ta ställning */

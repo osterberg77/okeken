@@ -17,6 +17,8 @@ const events = defineCollection({
       .object({
         name: z.string(),
         mapUrl: z.url().optional(),
+        lat: z.number().optional(),
+        lng: z.number().optional(),
       })
       .optional(),
     courseSetter: z.string().optional(),
@@ -62,6 +64,8 @@ const eventorEvents = defineCollection({
     endsAt: z.coerce.date(),
     allDay: z.boolean(),
     organiserName: z.string().optional(),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
     url: z.url(),
   }),
 });

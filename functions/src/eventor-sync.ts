@@ -58,6 +58,15 @@ export interface SyncResult {
   suggested: number;
 }
 
+/** EventCenterPosition kommer som attribut: x = longitud, y = latitud (WGS84). Saknas eller är den trasig blir det null. */
+function centerPosition(e: FirebaseFirestore.DocumentData): { lat: number | null; lng: number | null } {
+  const pos = e.EventCenterPosition;
+  const lng = Number(pos?.['@_x']);
+  const lat = Number(pos?.['@_y']);
+  const ok = pos && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat !== 0 || lng !== 0);
+  return ok ? { lat, lng } : { lat: null, lng: null };
+}
+
 export async function syncEventor(db: Firestore, key: string): Promise<SyncResult> {
   const snap = await db.doc('settings/eventor').get();
   const rules = { ...DEFAULTS, ...(snap.exists ? snap.data() : {}) };
@@ -103,6 +112,7 @@ export async function syncEventor(db: Firestore, key: string): Promise<SyncResul
       form: e['@_eventForm'] ?? '',
       url: `https://eventor.orientering.se/Events/Show/${id}`,
       webUrl: typeof e.WebURL === 'string' ? e.WebURL : '',
+      ...centerPosition(e),
       suggested:
         organiserId === rules.ownOrganisationId ||
         (rules.classificationIds.includes(classificationId) && rules.disciplineIds.includes(disciplineId)),

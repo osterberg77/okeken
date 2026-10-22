@@ -79,6 +79,7 @@ Beslut som togs i justeringarna:
 
 6. **Mindre menyrubriker** (Erik 2026-10-21: "lite i största laget, kanske dra ner till halva storleken"). Menytexten i headern är 15 px på alla skärmbredder (specen hade 30 px på desktop). Pillernas utfyllnad (16 px i sidled, 8 px uppåt/neråt) och chevronen (16 px) är nedskalade i samma proportion, och menyraden är nedflyttad så att den ligger i höjd med logotyp och profilknapp.
 7. **Relativ datummarkering i eventkortet** (Erik 2026-10-22). Bredvid datumet visas en liten lila pill: *Idag*, *Imorgon*, *Om n dagar*, *Pågående* för en flerdagsperiod som redan startat, och *Passerat* när eventet är förbi. Pillen räknas i webbläsaren, eftersom sidorna är förbyggda och "idag" från bygget vore fel dagen efter.
+8. **Karta med körsträcka i eventkortet** (Erik 2026-10-22). Event med koordinater får en SVG-karta i kalenderns kartbakgrund (avsnittet *Kartbakgrund*) med rutten i accentfärg, start som triangel (Åtvidaberg) och mål som dubbelring, samt text om km och körtid. Se `eventor.md`.
 
 ### Kartbakgrund i panelen
 
