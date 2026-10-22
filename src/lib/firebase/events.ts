@@ -76,6 +76,7 @@ function recordFromFirestore(id: string, d: DocumentData): EventRecord {
     published: d.published ? contentFromFirestore(d.published) : null,
     publishedAt: d.publishedAt ? (d.publishedAt as Timestamp).toDate() : null,
     publishAt: d.publishAt ? (d.publishAt as Timestamp).toDate() : null,
+    resultsEnabled: d.resultsEnabled === true,
     updatedAt: d.updatedAt ? (d.updatedAt as Timestamp).toDate() : null,
   };
 }
@@ -136,6 +137,8 @@ const stamp = (uid: string) => ({ updatedBy: uid, updatedAt: serverTimestamp() }
 export async function createEvent(content: EventContent, uid: string): Promise<string> {
   const ref = await addDoc(events, {
     ...contentToFirestore(content),
+    // Träningar får resultatvyn förvald (kan stängas av i editorn)
+    resultsEnabled: content.type === 'training',
     status: 'draft',
     slug: null,
     published: null,
@@ -192,6 +195,11 @@ export async function saveCourseFiles(id: string, status: EventRecord['status'],
 
 export async function unpublishEvent(id: string, uid: string): Promise<void> {
   await updateDoc(doc(events, id), { status: 'unpublished', publishAt: null, ...stamp(uid) });
+}
+
+/** Bockrutan "Resultat på träningen" (beslut 0017): sparas direkt, ingår inte i utkast/publicering */
+export async function setResultsEnabled(id: string, enabled: boolean, uid: string): Promise<void> {
+  await updateDoc(doc(events, id), { resultsEnabled: enabled, ...stamp(uid) });
 }
 
 /** Schemalägger publicering av utkastet (eller avbryter med null). Själva publiceringen görs av Function `publishScheduled`. */

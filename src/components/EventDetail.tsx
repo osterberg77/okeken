@@ -12,6 +12,7 @@ import { bankImageSrc } from '../lib/markdown';
 import type { PublicEvent } from '../types/event';
 import Avatar from './Avatar';
 import CategoryChip from './CategoryChip';
+import ResultsList from './ResultsList';
 import RouteMap from './RouteMap';
 import RsvpBox from './RsvpBox';
 
@@ -96,6 +97,8 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         )}
 
         {rsvp && !event.externalUrl && !isPast && <RsvpBox key={event.slug} slug={event.slug} />}
+
+        {event.results && event.results.length > 0 && <ResultsList entries={event.results} />}
 
         {event.courseFiles && event.courseFiles.length > 0 && (
           <div className="flex flex-col gap-2">

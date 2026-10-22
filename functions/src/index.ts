@@ -13,6 +13,7 @@ import { syncEventor } from './eventor-sync.js';
 import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 
 import { memberDoc } from './members.js';
+import { publishResults, unpublishResults } from './results.js';
 import { publishDueEvents } from './scheduled-publish.js';
 
 export { hit } from './stats.js';
@@ -189,3 +190,36 @@ export const publishScheduled = onSchedule({ schedule: 'every 15 minutes', timeZ
   const ids = await publishDueEvents(getFirestore());
   if (ids.length > 0) logger.info('Schemalagda events publicerade', { ids });
 });
+
+const RESULT_ROLES = ['course_setter', 'publisher', 'board', 'superadmin'];
+
+/**
+ * Publicerar eller drar tillbaka resultatlistan för ett event (beslut 0017). Bara banläggare, publicerare, styrelse och
+ * superadmin. Listan byggs här av de interna raderna så att ungdomsmarkering och medlemslänk aldrig blir publika.
+ */
+export const setResultsPublished = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Du måste vara inloggad.');
+  const uid = request.auth.uid;
+  const db = getFirestore();
+  const permissions: unknown = (await db.doc(`users/${uid}`).get()).data()?.permissions;
+  if (!Array.isArray(permissions) || !permissions.some((p) => RESULT_ROLES.includes(p))) {
+    throw new HttpsError('permission-denied', 'Du saknar behörighet.');
+  }
+  const { eventId, published } = (request.data ?? {}) as { eventId?: unknown; published?: unknown };
+  if (typeof eventId !== 'string' || !/^[A-Za-z0-9]{1,64}$/.test(eventId) || typeof published !== 'boolean') {
+    throw new HttpsError('invalid-argument', 'Ogiltigt anrop.');
+  }
+  if (!(await db.doc(`events/${eventId}`).get()).exists) throw new HttpsError('not-found', 'Eventet finns inte.');
+  if (published) return { count: await publishResults(db, eventId, uid) };
+  await unpublishResults(db, eventId);
+  return { count: 0 };
+});
+
+/** Bygger om sajten när den publika resultatlistan ändras (publicera, uppdatera, dra tillbaka). */
+export const onResultsPublishedWritten = onDocumentWritten(
+  { document: 'eventResultsPublished/{eventId}', secrets: [GITHUB_TOKEN] },
+  (event) =>
+    requestBuildIfChanged(event.data?.before.data()?.entries ?? null, event.data?.after.data()?.entries ?? null, {
+      eventId: event.params.eventId,
+    }),
+);

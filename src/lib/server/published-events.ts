@@ -44,6 +44,19 @@ export async function loadPublishedEvents() {
     };
   };
 
+  // Publicerade resultatlistor (eventResultsPublished/{eventId}, skrivs bara av Function setResultsPublished).
+  // Fälten plockas ut ett och ett så att inget annat kan följa med.
+  const resultDocs = await getFirestore().collection('eventResultsPublished').get();
+  const resultsOf = (eventId: string) => {
+    const entries = resultDocs.docs.find((r) => r.id === eventId)?.data().entries;
+    if (!Array.isArray(entries) || entries.length === 0) return undefined;
+    return entries.flatMap((e: Record<string, unknown>) =>
+      typeof e?.name === 'string' && typeof e.course === 'string'
+        ? [{ name: e.name, course: e.course, seconds: typeof e.seconds === 'number' ? e.seconds : null }]
+        : [],
+    );
+  };
+
   return snap.docs.flatMap((d) => {
     const { published: p, slug } = d.data();
     if (!p || !slug) return [];
@@ -60,6 +73,7 @@ export async function loadPublishedEvents() {
         courseFiles: Array.isArray(p.courseFiles) && p.courseFiles.length ? toPublicCourseFiles(p.courseFiles) : undefined,
         image: toPublicImage(p.image),
         publisher: publisherOf(p.publisher),
+        results: resultsOf(d.id),
         body: p.body ?? '',
       },
     ];

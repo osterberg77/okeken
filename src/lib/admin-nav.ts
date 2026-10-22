@@ -35,7 +35,7 @@ const GROUPS: GroupDef[] = [
   {
     title: 'Banläggning',
     allowed: (own) => canViewEvents(own) && !canPublish(own),
-    links: [{ href: '/admin/events', label: 'Banor på events', description: 'Ladda upp och byt PDF-banor på events' }],
+    links: [{ href: '/admin/events', label: 'Banor och resultat', description: 'Ladda upp PDF-banor och för in startlista och resultat på träningar' }],
   },
   {
     title: 'Styrelsen',

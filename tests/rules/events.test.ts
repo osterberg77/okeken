@@ -896,3 +896,15 @@ describe('events: schemalagd publicering (publishAt)', () => {
   });
 });
 
+describe('events: resultat på träningen (resultsEnabled)', () => {
+  it('publicerare kan slå på och av', async () => {
+    await assertSucceeds(save('draft1', { resultsEnabled: true }));
+    await assertSucceeds(save('draft1', { resultsEnabled: false }));
+    await assertSucceeds(setDoc(ev(as('publisher'), 'nytt-res'), newEvent('publisher', { resultsEnabled: true })));
+  });
+  it('fel typ nekas och banläggare kan inte ändra', async () => {
+    for (const bad of ['ja', 1, 'true', { a: 1 }]) await assertFails(save('draft1', { resultsEnabled: bad }));
+    await assertFails(save('draft1', { resultsEnabled: true }, 'setter'));
+  });
+});
+

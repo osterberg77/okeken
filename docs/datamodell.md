@@ -21,6 +21,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `eventorId` | string? | Vid speglad tävling |
 | `slug` | string \| null | Stabil adress, t.ex. `2026-10-21-tisdagstraning`. Sätts vid första publiceringen (`<startdatum>-<titel>`, `-2` vid krock) och låses därefter |
 | `status` | `draft \| scheduled \| published \| unpublished` | Styr synlighet |
+| `resultsEnabled` | bool? | Bockruta "Resultat på träningen" (beslut 0017): visar startlista/resultat i admin. Förvalt sant för träningar. Ingår inte i `published` |
 | `publishAt` | timestamp? | Schemalagd publicering (status `scheduled`) |
 | `publisher` | `string \| null` | "Publicerat av": uid för en medlem i `members` (beslut 0015), eller `null`. Valfritt fält (äldre events saknar det; klienten skriver alltid `null` eller ett uid, 1–128 tecken A–Z/a–z/0–9). Förvalt är den som skapar eventet. Namn och bild slås upp vid bygget och visas bara om `members/{uid}.publicName` är sant. Ingår i `published`. Får inte ändras av banläggare |
 | `publishAt` | timestamp? | Schemalagd publicering (beslut 0016): när `publishScheduled` ska publicera utkastet. `null` eller saknas = ingen. Ingår inte i `published`. Töms vid publicering/avpublicering |
@@ -30,8 +31,11 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 
 **Banläggare (`course_setter`, beslut 0006)** får läsa alla events och uppdatera ett event *bara* så att `courseFiles` ändras (plus `updatedBy`/`updatedAt`). Är eventet publicerat (`status == 'published'`) får samma skrivning sätta `published.courseFiles` till exakt utkastets `courseFiles`; resten av `published`, `publishedAt`, `status` och `slug` är orörda. Banorna går då live vid nästa bygge utan att andra utkastsändringar publiceras. På utkast och avpublicerade events ändras bara utkastets `courseFiles`. Banläggare kan inte skapa, radera, publicera eller avpublicera.
 
-### `events/{eventId}/results/{resultId}`
-Enkel digital variant av dagens papperslistor: `name`, `course?` (bana), `time?`, `note?`, `createdBy`. Ingen import. Visas som tabell på eventsidan (byggs statiskt).
+### `events/{eventId}/results/{entryId}` (beslut 0017)
+Intern startlista/resultatrad. Alla fält finns alltid. Banläggare, publicerare, styrelse och superadmin läser och skriver. Fält: `name` (1–100), `course` (fritext, högst 100), `memberUid` (uid eller `null`), `startAt`, `finishAt` (måltid) och `totalSeconds` (egen sluttid, 0–86400), alla `null` tills de är satta, `youth` (bool, LOK-stöd, aldrig publik), `show` (`time` | `participated` | `hidden`), `createdBy`/`createdAt`/`updatedBy`/`updatedAt`. Regler och tester: `tests/rules/results.test.ts`.
+
+### `eventResultsPublished/{eventId}` (beslut 0017)
+Den publika resultatlistan: `entries` (`{ name, course, seconds | null }`, sorterad), `publishedAt`, `publishedBy`. Skrivs bara av Function `setResultsPublished` (klienter nekas); läses av bygget (Admin SDK) och av dem som sköter resultat (status i adminvyn). Innehåller aldrig `youth` eller `memberUid`.
 
 ### `pages/{pageId}` (infosidor i Markdown)
 Samma publiceringsmodell som events: fälten på dokumentet är utkastet, `published` är den exakta kopian som är live. Alla fält finns alltid. Bara publicerare, styrelse och superadmin får läsa och skriva (inte banläggare). Regler och tester: `firestore.rules`, `tests/rules/pages.test.ts`. Typer: `src/types/page.ts`; bygget läser via `src/lib/server/published-pages.ts` och `src/lib/pages.ts` (`getPublicPages`). Var sidan visas i menyn styrs av `menu/main`, inte av sidan (beslut 0008).

@@ -1,4 +1,5 @@
 import type { EventRoute } from '../lib/geo';
+import type { PublicResultEntry } from './result';
 
 export const EVENT_TYPES = ['training', 'competition', 'meeting', 'info', 'happening'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
@@ -65,6 +66,8 @@ export interface EventRecord extends EventContent {
   publishedAt: Date | null;
   /** Schemalagd publicering: utkastet publiceras av en Function när tiden passerat (beslut 0016). null = ingen. */
   publishAt: Date | null;
+  /** Resultat på träningen: visar startlista/resultat i admin (beslut 0017). Ingår inte i ögonblicksbilden. */
+  resultsEnabled: boolean;
   updatedAt: Date | null;
 }
 
@@ -101,6 +104,8 @@ export interface PublicEvent {
   image?: { url: string; alt: string };
   /** "Publicerat av", bara när personen godkänt policyn och inte dolt sitt namn (members.publicName) */
   publisher?: PublicPublisher;
+  /** Publicerad resultatlista (sorterad på bana och tid), bara när resultat publicerats */
+  results?: PublicResultEntry[];
   bodyHtml: string;
   /** Kort klartext för listor och Open Graph */
   excerpt: string;

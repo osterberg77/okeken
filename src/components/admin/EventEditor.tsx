@@ -7,6 +7,7 @@ import {
   eventState,
   publishEvent,
   scheduleEvent,
+  setResultsEnabled,
   saveCourseFiles,
   sameContent,
   saveEvent,
@@ -413,6 +414,31 @@ function Editor({ session }: { session: Session }) {
           </p>
         )}
       </div>
+
+      {id && record && (record.resultsEnabled || !courseOnly) && (
+        <div className="flex flex-wrap items-center gap-4 rounded-[22px] bg-white px-5 py-3.5 shadow-card">
+          {!courseOnly && (
+            <label className="flex items-center gap-3 text-[15px] font-semibold">
+              <input
+                type="checkbox"
+                checked={record.resultsEnabled}
+                disabled={!!busy}
+                onChange={(e) => void run('results', async () => {
+                  await setResultsEnabled(id, e.target.checked, session.uid);
+                  return e.target.checked ? 'Resultat är påslaget för det här eventet.' : 'Resultat är avstängt.';
+                })}
+                className="h-5 w-5 accent-[#8A4B9E]"
+              />
+              Resultat på den här träningen
+            </label>
+          )}
+          {record.resultsEnabled && (
+            <a href={`/admin/resultat?event=${id}`} className="text-sm font-semibold text-accent no-underline hover:underline">
+              Öppna startlista och resultat →
+            </a>
+          )}
+        </div>
+      )}
 
       {!courseOnly && (
         <div className="flex flex-wrap items-end gap-3 rounded-[22px] bg-white px-5 py-3.5 shadow-card">
