@@ -665,6 +665,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ---- Medlemslista (beslut 0015) -----------------------------------------------------------
+    // members/{uid}: namn, profilbild och om namnet får visas publikt. Skrivs bara av Function `onUserMemberWritten`.
+    // Läses av banläggare, publicerare, styrelse och superadmin (namnsökning i resultat, "publicerat av").
+    match /members/{uid} {
+      allow read: if isCourseSetter() || canPublish();
+      allow write: if false;
+    }
+
     // ---- Besöksstatistik (beslut 0014) -----------------------------------------------------
     // statsPages/{datum}__{sida} och statsDownloads/{datum}__{sida|fil}: dagliga räknare som bara Cloud Function
     // `hit` skriver (Admin SDK). Publicerare, styrelse och superadmin läser. statsSeen (hashar för unika besökare)

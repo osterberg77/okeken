@@ -18,3 +18,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | [0012](0012-svar-pa-events.md) | Kommer/Kommer kanske/Kommer inte i `rsvps/{slug}/responses/{uid}`, bara medlemmar, dolt namn räknas ändå | Beslutat |
 | [0013](0013-profil-och-kontoradering.md) | Profilsida `/profil` (namn, färg, bild, e-post, lösenord, integritet) och permanent kontoradering via Cloud Function `deleteMyAccount` | Beslutat |
 | [0014](0014-besoksstatistik.md) | Egen besöksräknare: skript → Cloud Function `hit` → dagliga räknare i Firestore, unika via dagshash, ingen IP sparas | Beslutat |
+| [0015](0015-medlemslista.md) | Medlemslista `members/{uid}` (namn, bild, `publicName`) som Function håller i synk med `users`, läsbar för banläggare och uppåt | Beslutat |

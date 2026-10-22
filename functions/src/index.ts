@@ -11,6 +11,8 @@ import { deleteAccountData, LastSuperadminError } from './delete-account.js';
 import { syncEventor } from './eventor-sync.js';
 import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 
+import { memberDoc } from './members.js';
+
 export { hit } from './stats.js';
 
 initializeApp();
@@ -166,4 +168,13 @@ export const onUserRsvpNameChanged = onDocumentUpdated('users/{uid}', async (eve
   if (before.displayName === after.displayName && before.hideNameInRsvp === after.hideNameInRsvp) return;
   const updated = await syncRsvpNames(event.params.uid, rsvpName(after.displayName, after.hideNameInRsvp), getFirestore());
   if (updated > 0) logger.info('Svarens namn uppdaterade', { uid: event.params.uid, updated });
+});
+
+/** Håller medlemslistan (members/{uid}) i synk med users: skapas, ändras och tas bort med kontot eller behörigheten (beslut 0015). */
+export const onUserMemberWritten = onDocumentWritten('users/{uid}', async (event) => {
+  const db = getFirestore();
+  const ref = db.doc(`members/${event.params.uid}`);
+  const next = memberDoc(event.data?.after.data());
+  if (next) await ref.set(next);
+  else await ref.delete();
 });

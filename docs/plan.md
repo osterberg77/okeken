@@ -47,6 +47,7 @@ Astro + React-öar, Tailwind 4 (DM Sans + Inter, se `skisser/kalender-och-kontro
 - **Schemalagd publicering** (`publishAt`, schemalagd Function).
 - Egen besöksräknare (väg B, se Besöksstatistik) flyttad till v1.
 
+- **Medlemslistan `members` är byggd (beslut 0015, 2026-10-22):** Function, regler och tester klara; efter deploy ska `node scripts/sync-members.mjs` köras en gång. Resultat och "publicerat av" bygger på den.
 - **"Publicerat av" på events och infosidor** (önskemål 2026-10-22, ej byggt). Fält i editorn: vem som står som publicerare. Förvalt är den inloggade, men man kan välja ingen eller en annan person (sökning i samma `members`-lista som namnsökningen i resultaten). Kortet och detaljvyn visar en liten profilbild med "Publicerat av <namn>". Att granska när det byggs: namn och bild hamnar i publik, prerenderad HTML och i Firestore-snapshoten, så det ska bara gälla den som godkänt policyn och inte valt att dölja sitt namn; uppdatera `/integritet`; byggs om när personen byter namn/bild eller raderar sitt konto (`deleteMyAccount` ska rensa fältet).
 
 ## V1.2
