@@ -715,7 +715,8 @@ service cloud.firestore {
         && d.categories is list && d.categories.size() <= 8
         && (d.family == null || (d.family is map && d.family.amount is int && d.family.amount >= 0
           && d.family.amount <= 100000 && d.family.minPeople is int && d.family.minPeople >= 2
-          && d.family.minPeople <= 12))
+          && d.family.minPeople <= 12
+          && d.family.maxAdults is int && d.family.maxAdults >= 1 && d.family.maxAdults <= 12))
         && d.updatedBy == request.auth.uid
         && d.updatedAt == request.time;
     }

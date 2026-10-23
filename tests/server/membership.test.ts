@@ -1,28 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { calculate as serverCalc, newReference, parseRequest, InvalidMembershipRequest } from '../../functions/src/membership';
-import { calculate, swishDeepLink, swishMessage, swishQrValue } from '../../src/lib/membership';
+import { calculate, defaultFees, swishDeepLink, swishMessage, swishQrValue } from '../../src/lib/membership';
 
 const categories = [
-  { id: 'adult', label: 'Vuxen', amount: 300, hint: '' },
-  { id: 'youth', label: 'Ungdom', amount: 150, hint: '' },
+  { id: 'adult', label: 'Vuxen', amount: 200, hint: '', adult: true },
+  { id: 'youth', label: 'Ungdom', amount: 100, hint: '' },
 ];
-const family = { amount: 600, minPeople: 3 };
+const family = { amount: 450, minPeople: 3, maxAdults: 2 };
 
-describe('calculate', () => {
-  it('summerar per person', () => expect(calculate(categories, null, ['adult', 'youth']).amount).toBe(450));
-  it('familjetak slår till från minPeople när det blir billigare', () => {
-    const r = calculate(categories, family, ['adult', 'adult', 'youth']);
-    expect(r).toEqual({ amount: 600, full: 750, familyApplied: true });
+describe('calculate (klubbens regler: vuxen 200, ungdom 100, familj 450)', () => {
+  it('summerar per person', () => expect(calculate(categories, null, ['adult', 'youth']).amount).toBe(300));
+  it('familjetak: 2 vuxna + barn blir 450 i stället för mer', () => {
+    expect(calculate(categories, family, ['adult', 'adult', 'youth'])).toEqual({ amount: 450, full: 500, familyApplied: true });
+    expect(calculate(categories, family, ['adult', 'adult', 'youth', 'youth', 'youth']).amount).toBe(450);
   });
-  it('familjetak gäller inte under minPeople eller när det inte är billigare', () => {
-    expect(calculate(categories, family, ['adult', 'adult']).amount).toBe(600);
-    expect(calculate(categories, family, ['adult', 'adult']).familyApplied).toBe(false);
-    expect(calculate(categories, family, ['youth', 'youth', 'youth']).amount).toBe(450);
+  it('1 vuxen + ungdomar och 2 vuxna utan barn blir aldrig dyrare än taket men slås inte upp i onödan', () => {
+    expect(calculate(categories, family, ['adult', 'youth', 'youth']).amount).toBe(400);
+    expect(calculate(categories, family, ['adult', 'adult']).amount).toBe(400);
+    expect(calculate(categories, family, ['youth', 'youth', 'youth']).amount).toBe(300);
+  });
+  it('tre vuxna är inte en familj', () => {
+    expect(calculate(categories, family, ['adult', 'adult', 'adult']).amount).toBe(600);
+    expect(calculate(categories, family, ['adult', 'adult', 'adult', 'youth']).familyApplied).toBe(false);
   });
   it('klient och server räknar lika', () => {
-    for (const ids of [['adult'], ['adult', 'youth'], ['adult', 'adult', 'youth'], ['youth', 'youth', 'youth', 'youth']]) {
+    for (const ids of [['adult'], ['adult', 'youth'], ['adult', 'adult', 'youth'], ['adult', 'adult', 'adult', 'youth'], ['youth', 'youth', 'youth', 'youth']]) {
       expect(serverCalc(categories, family, ids)).toEqual(calculate(categories, family, ids));
     }
+  });
+  it('förvalda avgifter följer reglerna', () => {
+    const d = defaultFees(2027);
+    expect(calculate(d.categories, d.family, ['adult', 'adult', 'youth', 'youth']).amount).toBe(450);
   });
 });
 

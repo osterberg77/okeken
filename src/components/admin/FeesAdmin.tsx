@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { currentYear, getFees, saveFees } from '../../lib/firebase/membership';
-import { emptyFees } from '../../lib/membership';
+import { defaultFees } from '../../lib/membership';
 import { FEE_LIMITS, type FeeCategory, type MembershipFees } from '../../types/membership';
 import { canManageMembership, type Session } from '../../types/user';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
@@ -34,7 +34,7 @@ function Fees({ session }: { session: Session }) {
         if (f) return setFees(f);
         // Nytt år: utgå från förra årets tabell
         const prev = await getFees(year - 1).catch(() => null);
-        setFees(prev ? { ...prev, year } : emptyFees(year));
+        setFees(prev ? { ...prev, year } : defaultFees(year));
       },
       () => setError('Kunde inte läsa avgifterna.'),
     );
@@ -48,6 +48,7 @@ function Fees({ session }: { session: Session }) {
   const valid =
     /^\d{6,15}$/.test(fees.swishNumber.replace(/\D/g, '')) &&
     fees.categories.length > 0 &&
+    (fees.family === null || (fees.family.maxAdults >= 1 && fees.family.minPeople >= 2)) &&
     fees.categories.every((c) => c.label.trim() && Number.isInteger(c.amount) && c.amount >= 0 && c.amount <= FEE_LIMITS.maxAmount);
 
   async function save() {
@@ -90,7 +91,7 @@ function Fees({ session }: { session: Session }) {
       <section className="flex flex-col gap-3">
         <h2 className="m-0 font-display text-xl font-bold">Avgiftsklasser</h2>
         {fees.categories.map((c, i) => (
-          <div key={c.id} className="grid gap-2 rounded-2xl bg-period p-3 sm:grid-cols-[1fr_120px_1fr_auto] sm:items-center">
+          <div key={c.id} className="grid gap-2 rounded-2xl bg-period p-3 sm:grid-cols-[1fr_120px_1fr_auto_auto] sm:items-center">
             <input className={INPUT} aria-label="Namn" placeholder="Namn, t.ex. Vuxen" value={c.label} maxLength={60} onChange={(e) => setCategory(i, { label: e.target.value })} />
             <input
               className={INPUT}
@@ -101,6 +102,10 @@ function Fees({ session }: { session: Session }) {
               onChange={(e) => setCategory(i, { amount: Number(e.target.value.replace(/\D/g, '')) })}
             />
             <input className={INPUT} aria-label="Förklaring" placeholder="Förklaring, t.ex. t.o.m. 20 år" value={c.hint} maxLength={80} onChange={(e) => setCategory(i, { hint: e.target.value })} />
+            <label className="flex items-center gap-1.5 text-sm">
+              <input type="checkbox" checked={c.adult === true} onChange={(e) => setCategory(i, { adult: e.target.checked })} />
+              Vuxen
+            </label>
             <button type="button" onClick={() => setFees({ ...fees, categories: fees.categories.filter((_, j) => j !== i) })} className="cursor-pointer rounded-full px-3 py-2 text-sm font-semibold text-[#A33A3A] hover:bg-white">
               Ta bort
             </button>
@@ -116,11 +121,14 @@ function Fees({ session }: { session: Session }) {
       <section className="flex flex-col gap-3">
         <h2 className="m-0 font-display text-xl font-bold">Familjetak</h2>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={fees.family !== null} onChange={(e) => setFees({ ...fees, family: e.target.checked ? { amount: 0, minPeople: 3 } : null })} />
+          <input type="checkbox" checked={fees.family !== null} onChange={(e) => setFees({ ...fees, family: e.target.checked ? { amount: 0, minPeople: 3, maxAdults: 2 } : null })} />
           Familjepris när många är med
         </label>
         {fees.family && (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Högst antal vuxna" htmlFor="max-adults" hint="Markera vilka klasser som är vuxna ovan.">
+              <input id="max-adults" className={INPUT} inputMode="numeric" value={fees.family.maxAdults} onChange={(e) => setFees({ ...fees, family: { ...fees.family!, maxAdults: Number(e.target.value.replace(/\D/g, '')) } })} />
+            </Field>
             <Field label="Från antal personer" htmlFor="min-people">
               <input id="min-people" className={INPUT} inputMode="numeric" value={fees.family.minPeople} onChange={(e) => setFees({ ...fees, family: { ...fees.family!, minPeople: Number(e.target.value.replace(/\D/g, '')) } })} />
             </Field>

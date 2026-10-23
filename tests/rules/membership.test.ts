@@ -59,7 +59,7 @@ const fees = (over: Record<string, unknown> = {}) => ({
   year: 2026,
   swishNumber: '1234567890',
   categories: [{ id: 'adult', label: 'Vuxen', amount: 300, hint: '' }],
-  family: { amount: 600, minPeople: 3 },
+  family: { amount: 450, minPeople: 3, maxAdults: 2 },
   updatedBy: 'board',
   updatedAt: serverTimestamp(),
   ...over,
@@ -82,8 +82,10 @@ describe('membershipFees', () => {
     await assertFails(setDoc(doc(as('board'), 'membershipFees', 'abc'), fees()));
   });
   it('familjetaket måste vara rimligt', async () => {
-    await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: -1, minPeople: 3 } })));
-    await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: 600, minPeople: 1 } })));
+    await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: -1, minPeople: 3, maxAdults: 2 } })));
+    await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: 450, minPeople: 1, maxAdults: 2 } })));
+    await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: 450, minPeople: 3, maxAdults: 0 } })));
+    await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: 450, minPeople: 3 } })));
   });
 });
 

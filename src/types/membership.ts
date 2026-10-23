@@ -7,12 +7,15 @@ export interface FeeCategory {
   amount: number;
   /** Kort förklaring, t.ex. "t.o.m. 20 år" */
   hint: string;
+  /** Räknas som vuxen för familjetaket */
+  adult?: boolean;
 }
 
-/** Familjetak: från och med `minPeople` personer kostar det aldrig mer än `amount` */
+/** Familjetak: från och med `minPeople` personer, med högst `maxAdults` vuxna, kostar det aldrig mer än `amount` */
 export interface FamilyFee {
   amount: number;
   minPeople: number;
+  maxAdults: number;
 }
 
 /** membershipFees/{år} */

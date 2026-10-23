@@ -72,7 +72,7 @@ En post per bild. Alla fält finns alltid. Bara publicerare, styrelse och supera
 Uppladdning i UI:t: ta fram id (`doc(collection(db, 'imageBank')).id`), skala i webbläsaren, ladda upp de tre filerna, skapa sedan posten. Radering: radera posten först, sedan filerna (Storage tillåter bara radering av filer som saknar post). Bilder infogas i Markdown som `![alt](webUrl)`; en raderad bild blir en trasig bild på publicerade sidor som använder den.
 
 ### `membershipFees/{år}` och `membershipPayments/{id}` (beslut 0020)
-`membershipFees/{år}`: `year`, `swishNumber` (siffror), `categories[]` (`id`, `label`, `amount` kr, `hint`; max 8), `family` (`{ amount, minPeople }` eller `null`), `updatedBy`, `updatedAt`. Publik läsning, skrivs av styrelse/superadmin.
+`membershipFees/{år}`: `year`, `swishNumber` (siffror), `categories[]` (`id`, `label`, `amount` kr, `hint`, `adult` = räknas som vuxen; max 8), `family` (`{ amount, minPeople, maxAdults }` eller `null`; taket gäller från `minPeople` personer med högst `maxAdults` vuxna), `updatedBy`, `updatedAt`. Publik läsning, skrivs av styrelse/superadmin.
 `membershipPayments/{id}`: `year`, `reference` (`OKE-XXXX`, tom vid manuell), `payerName`, `payerEmail`, `uid` (eller `null`), `people[]` (`name`, `categoryId`, `categoryLabel`), `amount` (kr), `status` (`pending|paid|cancelled`), `source` (`web|manual`), `note`, `createdAt/createdBy/updatedAt`, `paidAt/paidBy`. Läses av styrelse/superadmin och betalaren; webbetalningar skapas bara av Function `createMembershipPayment`; styrelsen ändrar bara `status`, `note`, `paidAt`, `paidBy`. Betalda kan inte raderas. Tester: `tests/rules/membership.test.ts`, `tests/server/membership.test.ts`.
 
 ### `templates/{templateId}`

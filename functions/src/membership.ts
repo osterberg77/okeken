@@ -9,16 +9,23 @@ export interface FeeCategory {
   label: string;
   amount: number;
   hint: string;
+  adult?: boolean;
 }
 export interface FamilyFee {
   amount: number;
   minPeople: number;
+  maxAdults: number;
 }
 
 export function calculate(categories: readonly FeeCategory[], family: FamilyFee | null, categoryIds: readonly string[]) {
   let full = 0;
-  for (const id of categoryIds) full += categories.find((c) => c.id === id)?.amount ?? 0;
-  const familyApplied = family !== null && categoryIds.length >= family.minPeople && full > family.amount;
+  let adults = 0;
+  for (const id of categoryIds) {
+    const c = categories.find((x) => x.id === id);
+    full += c?.amount ?? 0;
+    if (c?.adult) adults++;
+  }
+  const familyApplied = family !== null && categoryIds.length >= family.minPeople && adults <= family.maxAdults && full > family.amount;
   return { amount: familyApplied ? family.amount : full, full, familyApplied };
 }
 

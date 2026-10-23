@@ -12,8 +12,13 @@ export interface Calculation {
 
 export function calculate(categories: readonly FeeCategory[], family: FamilyFee | null, categoryIds: readonly string[]): Calculation {
   let full = 0;
-  for (const id of categoryIds) full += categories.find((c) => c.id === id)?.amount ?? 0;
-  const familyApplied = family !== null && categoryIds.length >= family.minPeople && full > family.amount;
+  let adults = 0;
+  for (const id of categoryIds) {
+    const c = categories.find((x) => x.id === id);
+    full += c?.amount ?? 0;
+    if (c?.adult) adults++;
+  }
+  const familyApplied = family !== null && categoryIds.length >= family.minPeople && adults <= family.maxAdults && full > family.amount;
   return { amount: familyApplied ? family.amount : full, full, familyApplied };
 }
 
@@ -42,4 +47,13 @@ export function swishDeepLink(payee: string, kronor: number, message: string): s
   return `swish://payment?data=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
-export const emptyFees = (year: number): MembershipFees => ({ year, swishNumber: '', categories: [], family: null });
+/** Klubbens avgifter som förval när inget år är sparat; justeras i /admin/medlemsavgift */
+export const defaultFees = (year: number): MembershipFees => ({
+  year,
+  swishNumber: '',
+  categories: [
+    { id: 'adult', label: 'Vuxen', amount: 200, hint: '', adult: true },
+    { id: 'youth', label: 'Ungdom', amount: 100, hint: 't.o.m. 16 år' },
+  ],
+  family: { amount: 450, minPeople: 3, maxAdults: 2 },
+});

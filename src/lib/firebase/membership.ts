@@ -31,7 +31,7 @@ function feesFromFirestore(year: number, d: DocumentData): MembershipFees {
     year,
     swishNumber: typeof d.swishNumber === 'string' ? d.swishNumber : '',
     categories: Array.isArray(d.categories) ? d.categories : [],
-    family: d.family && typeof d.family.amount === 'number' ? { amount: d.family.amount, minPeople: d.family.minPeople } : null,
+    family: d.family && typeof d.family.amount === 'number' ? { amount: d.family.amount, minPeople: d.family.minPeople, maxAdults: d.family.maxAdults ?? 2 } : null,
   };
 }
 
@@ -45,7 +45,7 @@ export async function saveFees(fees: MembershipFees, uid: string): Promise<void>
   await setDoc(doc(db, 'membershipFees', String(fees.year)), {
     year: fees.year,
     swishNumber: fees.swishNumber.replace(/\D/g, ''),
-    categories: fees.categories.map((c) => ({ id: c.id, label: c.label.trim(), amount: c.amount, hint: c.hint.trim() })),
+    categories: fees.categories.map((c) => ({ id: c.id, label: c.label.trim(), amount: c.amount, hint: c.hint.trim(), adult: c.adult === true })),
     family: fees.family,
     updatedBy: uid,
     updatedAt: serverTimestamp(),
