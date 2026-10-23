@@ -79,7 +79,7 @@ export default function RsvpBox({ slug }: Props) {
     try {
       const { setRsvp, clearRsvp } = await import('../lib/firebase/rsvp');
       if (mine?.status === status) await clearRsvp(slug, session.uid);
-      else await setRsvp(slug, session.uid, status, session.hideNameInRsvp === true);
+      else await setRsvp(slug, session.uid, status, session.hidden === true);
     } catch {
       setError(true);
     } finally {

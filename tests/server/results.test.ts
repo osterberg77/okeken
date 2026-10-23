@@ -24,14 +24,15 @@ describe('entrySeconds', () => {
 });
 
 describe('publicEntries', () => {
-  it('släpper aldrig igenom ungdomsmarkering eller medlemslänk', () => {
+  it('släpper aldrig igenom ungdomsmarkering; medlemslänken följer bara med i det icke-publika dokumentet (beslut 0018)', () => {
     const [e] = publicEntries([row()]);
-    expect(Object.keys(e).sort()).toEqual(['course', 'name', 'seconds']);
-    expect(JSON.stringify(e)).not.toMatch(/youth|memberUid|uid1/);
+    expect(Object.keys(e).sort()).toEqual(['course', 'memberUid', 'name', 'seconds']);
+    expect(e.memberUid).toBe('uid1');
+    expect(JSON.stringify(e)).not.toMatch(/youth/);
   });
   it('dolda rader tas inte med, deltagit visas utan tid', () => {
     const out = publicEntries([row({ show: 'hidden' }), row({ name: 'Bo', show: 'participated', finishAt: null })]);
-    expect(out).toEqual([{ name: 'Bo', course: 'Röd', seconds: null }]);
+    expect(out).toEqual([{ name: 'Bo', memberUid: 'uid1', course: 'Röd', seconds: null }]);
   });
   it('visa tid utan tid (inte i mål) utelämnas', () => {
     expect(publicEntries([row({ finishAt: null })])).toEqual([]);

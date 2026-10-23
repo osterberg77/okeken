@@ -2,12 +2,15 @@ import type { Firestore } from 'firebase-admin/firestore';
 
 // Publicering av resultat (beslut 0017). Rader i events/{id}/results är interna (inkl. `youth`, `memberUid`,
 // pågående starter). Det som blir publikt är ett separat dokument, eventResultsPublished/{id}, som bara den här
-// koden skriver. Fälten plockas ut ett och ett: `youth` och `memberUid` kan därför aldrig följa med.
+// koden skriver. Fälten plockas ut ett och ett: `youth` kan aldrig följa med. `memberUid` följer med i det icke-publika
+// dokumentet så att bygget kan utelämna dolda personer (beslut 0018), men når aldrig sidorna.
 
 export type ShowMode = 'time' | 'participated' | 'hidden';
 
 export interface PublishedResultEntry {
   name: string;
+  /** Medlemslänk (users/{uid}). Dokumentet läses bara av Admin SDK och resultatansvariga; bygget använder uid:t för att utelämna dolda (beslut 0018) och tar aldrig med det på sidan. */
+  memberUid: string | null;
   course: string;
   /** Total tid i sekunder, bara för rader som visas med tid */
   seconds: number | null;
@@ -36,10 +39,11 @@ export function publicEntries(rows: FirebaseFirestore.DocumentData[]): Published
     const name = typeof r.name === 'string' ? r.name.trim() : '';
     if (!name || r.show === 'hidden') continue;
     const course = typeof r.course === 'string' ? r.course.trim() : '';
-    if (r.show === 'participated') out.push({ name, course, seconds: null });
+    const memberUid = typeof r.memberUid === 'string' && r.memberUid ? r.memberUid : null;
+    if (r.show === 'participated') out.push({ name, memberUid, course, seconds: null });
     else if (r.show === 'time') {
       const seconds = entrySeconds(r);
-      if (seconds !== null) out.push({ name, course, seconds });
+      if (seconds !== null) out.push({ name, memberUid, course, seconds });
     }
   }
   return out.sort(

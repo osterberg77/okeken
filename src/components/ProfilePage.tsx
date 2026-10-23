@@ -98,7 +98,7 @@ function ProfileSection({ session, profile }: { session: Session; profile: Profi
   const save = (e: FormEvent) => {
     e.preventDefault();
     run(
-      () => profile.saveProfile(session.uid, { displayName: name.trim(), avatarColor: color, hideNameInRsvp: session.hideNameInRsvp === true }),
+      () => profile.saveProfile(session.uid, { displayName: name.trim(), avatarColor: color, hidden: session.hidden === true }),
       'Sparat.',
     );
   };
@@ -293,7 +293,7 @@ function PrivacySection({ session, profile }: { session: Session; profile: Profi
         <input
           type="checkbox"
           className="mt-1.5"
-          checked={session.hideNameInRsvp === true}
+          checked={session.hidden === true}
           disabled={busy}
           onChange={(e) =>
             run(
@@ -301,15 +301,15 @@ function PrivacySection({ session, profile }: { session: Session; profile: Profi
                 profile.saveProfile(session.uid, {
                   displayName: session.displayName,
                   avatarColor: isAvatarColor(session.avatarColor) ? session.avatarColor : DEFAULT_AVATAR_COLOR,
-                  hideNameInRsvp: e.target.checked,
+                  hidden: e.target.checked,
                 }),
               'Sparat.',
             )
           }
         />
         <span>
-          Visa inte mitt namn för andra på mina svar på events
-          <span className="block text-sm text-muted">Som standard visas ditt namn för andra inloggade medlemmar. Väljer du bort det räknas dina svar ändå, och styrelsen kan se vem som svarat. Gäller alla dina svar.</span>
+          Dölj mig
+          <span className="block text-sm text-muted">Ditt namn tas bort helt från sidor som visas för besökare och andra medlemmar, till exempel resultat, svar på events och "publicerat av". Styrelsen och de som ansvarar för ett event där du deltar ser dig fortfarande. Dina svar räknas ändå. Ändringen syns på publika sidor efter ett par minuter (när sajten byggts om). Eventor och andra tjänster utanför okeken.se påverkas inte.</span>
         </span>
       </label>
 

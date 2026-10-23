@@ -43,6 +43,16 @@ function visibleContent(s: Snapshot) {
   return state?.status === 'published' ? state : null;
 }
 
+/** Det besökarna ser av en användare: bara "Dölj mig" och om namnet får visas. Övriga profiländringar startar inget bygge. */
+function visibleUser(s: Snapshot) {
+  const d = s?.data();
+  if (!d) return null;
+  const hidden = d.hidden === true;
+  const publicName = memberDoc(d)?.publicName ?? false;
+  // Vanliga medlemmar som varken är dolda eller visas publikt påverkar inga sidor (ingen ombyggnad vid nya konton)
+  return hidden || publicName ? { hidden, publicName } : null;
+}
+
 /** Det besökarna ser av menyn (menu/main): bara `published`. Utkastet (`items`) ska inte starta bygge */
 function visibleMenu(s: Snapshot) {
   return s?.data()?.published ?? null;
@@ -168,18 +178,23 @@ export const onUserRsvpNameChanged = onDocumentUpdated('users/{uid}', async (eve
   const before = event.data?.before.data();
   const after = event.data?.after.data();
   if (!before || !after) return;
-  if (before.displayName === after.displayName && before.hideNameInRsvp === after.hideNameInRsvp) return;
-  const updated = await syncRsvpNames(event.params.uid, rsvpName(after.displayName, after.hideNameInRsvp), getFirestore());
+  if (before.displayName === after.displayName && before.hidden === after.hidden) return;
+  const updated = await syncRsvpNames(event.params.uid, rsvpName(after.displayName, after.hidden), getFirestore());
   if (updated > 0) logger.info('Svarens namn uppdaterade', { uid: event.params.uid, updated });
 });
 
-/** Håller medlemslistan (members/{uid}) i synk med users: skapas, ändras och tas bort med kontot eller behörigheten (beslut 0015). */
-export const onUserMemberWritten = onDocumentWritten('users/{uid}', async (event) => {
+/**
+ * Håller medlemslistan (members/{uid}) i synk med users: skapas, ändras och tas bort med kontot eller behörigheten
+ * (beslut 0015). Ändras "Dölj mig" eller publicName byggs sajten om, så att personen försvinner (eller återkommer) i
+ * resultat och "publicerat av" (beslut 0018).
+ */
+export const onUserMemberWritten = onDocumentWritten({ document: 'users/{uid}', secrets: [GITHUB_TOKEN] }, async (event) => {
   const db = getFirestore();
   const ref = db.doc(`members/${event.params.uid}`);
   const next = memberDoc(event.data?.after.data());
   if (next) await ref.set(next);
   else await ref.delete();
+  await requestBuildIfChanged(visibleUser(event.data?.before), visibleUser(event.data?.after), { memberId: event.params.uid });
 });
 
 /**

@@ -828,11 +828,11 @@ service cloud.firestore {
         // Användaren själv: profil och inställningar (aldrig behörigheter). E-post bara när den följt efter ett
         // bekräftat e-postbyte i inloggningen (samma som token), så att users.email inte kan peka på någon annan.
         (request.auth.uid == uid
-          && onlyChanges(['displayName', 'avatarColor', 'photoUrl', 'hideNameInRsvp', 'email'])
+          && onlyChanges(['displayName', 'avatarColor', 'photoUrl', 'hidden', 'email'])
           && (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100))
           && (!('avatarColor' in request.resource.data) || request.resource.data.avatarColor in avatarColors())
           && (!('photoUrl' in request.resource.data) || validPhotoUrl(request.resource.data.photoUrl, uid))
-          && (!('hideNameInRsvp' in request.resource.data) || request.resource.data.hideNameInRsvp is bool)
+          && (!('hidden' in request.resource.data) || request.resource.data.hidden is bool)
           && (request.resource.data.email == resource.data.email
             || (request.auth.token.email_verified == true && request.resource.data.email == request.auth.token.email)))
         // Användaren själv: ta tillbaka godkännandet av integritetspolicyn (tar bort fältet)

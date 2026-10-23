@@ -1,8 +1,8 @@
 import type { Firestore } from 'firebase-admin/firestore';
 
 /** Namnet som sparas på ett svar: användarens visningsnamn, eller '' när användaren dolt det (beslut 0012). */
-export function rsvpName(displayName: unknown, hideNameInRsvp: unknown): string {
-  return hideNameInRsvp === true || typeof displayName !== 'string' ? '' : displayName;
+export function rsvpName(displayName: unknown, hidden: unknown): string {
+  return hidden === true || typeof displayName !== 'string' ? '' : displayName;
 }
 
 /**

@@ -50,7 +50,7 @@ async function confirmPassword(password: string): Promise<void> {
 export interface ProfileFields {
   displayName: string;
   avatarColor: string;
-  hideNameInRsvp: boolean;
+  hidden: boolean;
 }
 
 export async function saveProfile(uid: string, fields: ProfileFields): Promise<void> {

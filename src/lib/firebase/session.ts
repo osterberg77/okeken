@@ -146,7 +146,7 @@ export function watchSession(callback: (session: Session | null) => void): () =>
           consent,
           avatarColor: typeof data?.avatarColor === 'string' ? data.avatarColor : undefined,
           photoUrl: typeof data?.photoUrl === 'string' && data.photoUrl ? data.photoUrl : undefined,
-          hideNameInRsvp: data?.hideNameInRsvp === true,
+          hidden: data?.hidden === true,
         });
       },
       () => callback({ ...base, permissions: [] }),

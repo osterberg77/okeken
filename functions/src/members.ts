@@ -11,6 +11,8 @@ export interface MemberDoc {
    * valt att dölja sitt namn. Interna listor visar alla medlemmar ändå.
    */
   publicName: boolean;
+  /** Har personen valt "Dölj mig" (beslut 0018)? Dolda utelämnas i publika och medlemsvyer; bara behöriga ser dem. */
+  hidden: boolean;
 }
 
 /** Medlemsposten för ett användardokument, eller null om personen inte (längre) är medlem eller saknar namn */
@@ -22,7 +24,8 @@ export function memberDoc(user: FirebaseFirestore.DocumentData | undefined): Mem
   if (!name) return null;
   const out: MemberDoc = {
     displayName: name.slice(0, 100),
-    publicName: typeof user.consent?.version === 'string' && user.hideNameInRsvp !== true,
+    publicName: typeof user.consent?.version === 'string' && user.hidden !== true,
+    hidden: user.hidden === true,
   };
   if (typeof user.photoUrl === 'string' && user.photoUrl.startsWith('https://')) out.photoUrl = user.photoUrl;
   if (typeof user.avatarColor === 'string') out.avatarColor = user.avatarColor;

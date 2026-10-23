@@ -184,14 +184,14 @@ describe('users: profile settings', () => {
 
   it('may change colour, default name privacy and photo for self', async () => {
     await assertSucceeds(updateDoc(mine(), { avatarColor: 'green' }));
-    await assertSucceeds(updateDoc(mine(), { hideNameInRsvp: true }));
+    await assertSucceeds(updateDoc(mine(), { hidden: true }));
     await assertSucceeds(updateDoc(mine(), { photoUrl: photo('member') }));
     await assertSucceeds(updateDoc(mine(), { photoUrl: '' }));
   });
   it('denies colours outside the palette and non-boolean privacy flag', async () => {
     await assertFails(updateDoc(mine(), { avatarColor: '#ff0000' }));
     await assertFails(updateDoc(mine(), { avatarColor: 5 }));
-    await assertFails(updateDoc(mine(), { hideNameInRsvp: 'yes' }));
+    await assertFails(updateDoc(mine(), { hidden: 'yes' }));
   });
   it('denies a photo url that is not the user\'s own avatar file', async () => {
     await assertFails(updateDoc(mine(), { photoUrl: photo('publisher') }));

@@ -10,13 +10,19 @@ describe('memberDoc', () => {
   });
   it('tar aldrig med e-post eller behörigheter', () => {
     const m = memberDoc({ displayName: 'Anna', email: 'a@b.se', permissions: ['board'] });
-    expect(m).toEqual({ displayName: 'Anna', publicName: false });
+    expect(m).toEqual({ displayName: 'Anna', publicName: false, hidden: false });
   });
   it('publicName kräver godkänd policy och att namnet inte är dolt', () => {
     const base = { displayName: 'Anna', permissions: ['member'] };
     expect(memberDoc({ ...base, consent: { version: 'x' } })?.publicName).toBe(true);
-    expect(memberDoc({ ...base, consent: { version: 'x' }, hideNameInRsvp: true })?.publicName).toBe(false);
+    expect(memberDoc({ ...base, consent: { version: 'x' }, hidden: true })?.publicName).toBe(false);
     expect(memberDoc(base)?.publicName).toBe(false);
+  });
+  it('hidden följer användarens val', () => {
+    const base = { displayName: 'Anna', permissions: ['member'] };
+    expect(memberDoc({ ...base, hidden: true })?.hidden).toBe(true);
+    expect(memberDoc({ ...base, hidden: false })?.hidden).toBe(false);
+    expect(memberDoc(base)?.hidden).toBe(false);
   });
   it('släpper bara igenom https-bilder', () => {
     expect(memberDoc({ displayName: 'A', permissions: ['member'], photoUrl: 'http://x/a.jpg' })?.photoUrl).toBeUndefined();

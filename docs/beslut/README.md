@@ -21,3 +21,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | [0015](0015-medlemslista.md) | Medlemslista `members/{uid}` (namn, bild, `publicName`) som Function håller i synk med `users`, läsbar för banläggare och uppåt | Beslutat |
 | [0016](0016-schemalagd-publicering.md) | Schemalagd publicering: `publishAt` på events, Function var 15:e minut publicerar utkastet | Beslutat |
 | [0017](0017-resultat-pa-traningar.md) | Resultat på träningar: interna rader per event, publik lista byggs av en Function, ungdomsmarkering aldrig publik | Beslutat |
+| [0018](0018-dolj-mig.md) | "Dölj mig": `users.hidden` ersätter `hideNameInRsvp`, dolda utelämnas helt ur publika vyer, bygget filtrerar resultat, `docs/integritet.md` är facit | Beslutat |

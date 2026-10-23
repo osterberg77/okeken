@@ -61,7 +61,7 @@ export interface Session {
   /** Profilfärg (id i src/lib/avatar.ts), profilbild och standardval för namn i svar på events */
   avatarColor?: string;
   photoUrl?: string;
-  hideNameInRsvp?: boolean;
+  hidden?: boolean;
 }
 
 export interface UserProfile {

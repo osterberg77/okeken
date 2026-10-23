@@ -35,7 +35,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 Intern startlista/resultatrad. Alla fält finns alltid. Banläggare, publicerare, styrelse och superadmin läser och skriver. Fält: `name` (1–100), `course` (fritext, högst 100), `memberUid` (uid eller `null`), `startAt`, `finishAt` (måltid) och `totalSeconds` (egen sluttid, 0–86400), alla `null` tills de är satta, `youth` (bool, LOK-stöd, aldrig publik), `show` (`time` | `participated` | `hidden`), `createdBy`/`createdAt`/`updatedBy`/`updatedAt`. Regler och tester: `tests/rules/results.test.ts`.
 
 ### `eventResultsPublished/{eventId}` (beslut 0017)
-Den publika resultatlistan: `entries` (`{ name, course, seconds | null }`, sorterad), `publishedAt`, `publishedBy`. Skrivs bara av Function `setResultsPublished` (klienter nekas); läses av bygget (Admin SDK) och av dem som sköter resultat (status i adminvyn). Innehåller aldrig `youth` eller `memberUid`.
+Den publika resultatlistan: `entries` (`{ name, memberUid | null, course, seconds | null }`, sorterad), `publishedAt`, `publishedBy`. Skrivs bara av Function `setResultsPublished` (klienter nekas); läses av bygget (Admin SDK) och av dem som sköter resultat (status i adminvyn). `entries` har även `memberUid` (uid eller `null`) så att bygget kan utelämna dolda (beslut 0018); det tas bort innan data når sidorna. Innehåller aldrig `youth`.
 
 ### `pages/{pageId}` (infosidor i Markdown)
 Samma publiceringsmodell som events: fälten på dokumentet är utkastet, `published` är den exakta kopian som är live. Alla fält finns alltid. Bara publicerare, styrelse och superadmin får läsa och skriva (inte banläggare). Regler och tester: `firestore.rules`, `tests/rules/pages.test.ts`. Typer: `src/types/page.ts`; bygget läser via `src/lib/server/published-pages.ts` och `src/lib/pages.ts` (`getPublicPages`). Var sidan visas i menyn styrs av `menu/main`, inte av sidan (beslut 0008).
@@ -109,7 +109,7 @@ Ogiltiga eller dubblerade id på att göra-punkter (t.ex. `nybörjare-träff` me
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 
-`avatarColor` (id ur paletten i `src/lib/avatar.ts`), `photoUrl` (token-URL till `avatars/<uid>.jpg`, tom sträng = ingen bild) och `hideNameInRsvp` (bool, standardval för namn i svar på events) är valfria och skrivs bara av användaren själv (beslut 0013). Raderas hela dokumentet av `deleteMyAccount`.
+`avatarColor` (id ur paletten i `src/lib/avatar.ts`), `photoUrl` (token-URL till `avatars/<uid>.jpg`, tom sträng = ingen bild) och `hidden` (bool, "Dölj mig", beslut 0018; ersatte `hideNameInRsvp`) är valfria och skrivs bara av användaren själv (beslut 0013). Raderas hela dokumentet av `deleteMyAccount`.
 
 `consent` (valfri): `{ version, acceptedAt }`, användarens godkännande av integritetspolicyn (beslut 0011). `version` är policyns datum (`CONSENT_VERSION` i `src/lib/consent.ts`), `acceptedAt` sätts av servern (`request.time`). Bara användaren själv kan skriva fältet, och inte vid kontoskapandet; styrelse och superadmin kan läsa det.
 
