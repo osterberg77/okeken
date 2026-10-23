@@ -745,12 +745,102 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ---- Medlemslista (beslut 0015) -----------------------------------------------------------
-    // members/{uid}: namn, profilbild och om namnet får visas publikt. Skrivs bara av Function `onUserMemberWritten`.
-    // Läses av banläggare, publicerare, styrelse och superadmin (namnsökning i resultat, "publicerat av").
+    // ---- Medlemslista (beslut 0015, 0018) --------------------------------------------------------
+    // members/{uid}: namn, profilbild, om namnet får visas publikt och om personen valt "Dölj mig". Skrivs bara av
+    // Function `onUserMemberWritten`. Banläggare, publicerare, styrelse och superadmin läser alla (namnsökning i
+    // resultat, "publicerat av"; need to know). Vanliga medlemmar läser bara dem som inte är dolda (en listfråga måste
+    // ha where('hidden', '==', false)) och sig själva. Alla inloggade läser den de har en konversation med (även en dold
+    // person som skrivit till dem), så att namnet kan visas i meddelandena.
+
+    function canSeeHidden() {
+      return isCourseSetter() || canPublish();
+    }
+
+    // Konversationens id: de två uid:na i ordning, åtskilda med understreck (beslut 0019)
+    function pairId(a, b) {
+      return a < b ? a + '_' + b : b + '_' + a;
+    }
+
     match /members/{uid} {
-      allow read: if isCourseSetter() || canPublish();
+      allow read: if canSeeHidden()
+        || (signedIn() && exists(/databases/$(database)/documents/conversations/$(pairId(request.auth.uid, uid))))
+        || (isMember() && (resource.data.hidden == false || uid == request.auth.uid));
       allow write: if false;
+    }
+
+    // ---- Meddelanden (beslut 0019) ---------------------------------------------------------------
+    // conversations/{a_b}: en konversation per par, med uid:na i ordning. Dokumentet har `participants`, en kort
+    // sammanfattning av senaste meddelandet och `readAt` (när var och en senast läste). conversations/{id}/messages/{id}
+    // är själva meddelandena (oföränderliga). Avsändaren är alltid den inloggade. Bara deltagarna läser.
+    // Nya konversationer startas av medlemmar mot den som inte är dold (banläggare och uppåt kan nå alla, de ser dem
+    // ändå); att svara i en befintlig konversation kräver bara att man är deltagare.
+
+    function recipientAllowed(other) {
+      return exists(/databases/$(database)/documents/users/$(other))
+        && (canSeeHidden() || get(/databases/$(database)/documents/users/$(other)).data.get('hidden', false) == false);
+    }
+
+    function validNewConversation(id) {
+      let d = request.resource.data;
+      let me = request.auth.uid;
+      return d.keys().hasOnly(['participants', 'lastMessageAt', 'lastSenderUid', 'lastText', 'readAt'])
+        && d.participants is list && d.participants.size() == 2
+        && me in d.participants
+        && d.participants[0] != d.participants[1]
+        && id == pairId(d.participants[0], d.participants[1])
+        && d.lastSenderUid == me
+        && d.lastMessageAt == request.time
+        && d.lastText is string && d.lastText.size() <= 200
+        && d.readAt.keys().hasOnly([me])
+        && d.readAt[me] == request.time;
+    }
+
+    match /conversations/{id} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+
+      allow create: if isMember()
+        && validNewConversation(id)
+        && recipientAllowed(request.resource.data.participants.removeAll([request.auth.uid])[0]);
+
+      allow update: if signedIn() && request.auth.uid in resource.data.participants
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.readAt.diff(resource.data.readAt).affectedKeys().hasOnly([request.auth.uid])
+        && request.resource.data.readAt[request.auth.uid] == request.time
+        && (
+          // Markera som läst
+          onlyChanges(['readAt'])
+          // Skicka ett nytt meddelande (skrivs i samma batch som meddelandet)
+          || (onlyChanges(['lastMessageAt', 'lastSenderUid', 'lastText', 'readAt'])
+            && request.resource.data.lastSenderUid == request.auth.uid
+            && request.resource.data.lastMessageAt == request.time
+            && request.resource.data.lastText is string && request.resource.data.lastText.size() <= 200)
+        );
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if signedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(id)).data.participants;
+
+        allow create: if signedIn()
+          && request.auth.uid in getAfter(/databases/$(database)/documents/conversations/$(id)).data.participants
+          && getAfter(/databases/$(database)/documents/conversations/$(id)).data.lastMessageAt == request.time
+          && getAfter(/databases/$(database)/documents/conversations/$(id)).data.lastSenderUid == request.auth.uid
+          && request.resource.data.keys().hasOnly(['senderUid', 'text', 'kind', 'link', 'createdAt'])
+          && request.resource.data.keys().hasAll(['senderUid', 'text', 'kind', 'createdAt'])
+          && request.resource.data.senderUid == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() >= 1 && request.resource.data.text.size() <= 1000
+          && request.resource.data.createdAt == request.time
+          && (
+            (request.resource.data.kind == 'text' && !('link' in request.resource.data))
+            // Automatiskt meddelande om en ändring (ny behörighet, ny ansvarig …), bara från dem som gör sådana ändringar
+            || (request.resource.data.kind == 'notice' && canSeeHidden()
+              && (!('link' in request.resource.data)
+                || (request.resource.data.link is string && request.resource.data.link.matches('^/[^/].*') && request.resource.data.link.size() <= 200)))
+          );
+
+        allow update, delete: if false;
+      }
     }
 
     // ---- Besöksstatistik (beslut 0014) -----------------------------------------------------

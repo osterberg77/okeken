@@ -135,3 +135,6 @@ templates/{templateId}.svg   # skrivs endast av Cloud Function
 
 ## Senare
 `attendance/{eventId}/entries/{id}` för närvaroregistrering (namn utan konto ska gå att registrera).
+
+### `conversations/{a_b}` och `conversations/{a_b}/messages/{id}` (beslut 0019)
+Konversation mellan två användare, id = de två uid:na i ordning åtskilda med `_`. Fält: `participants` (två uid), `lastMessageAt`, `lastSenderUid`, `lastText` (≤ 200), `readAt` (karta uid → tid för senaste läsning). Meddelande: `senderUid`, `text` (1–1000), `kind` (`text` | `notice`), valfri `link` (adress på sajten, bara `notice`), `createdAt` (servertid). Bara deltagarna läser; meddelanden går inte att ändra eller radera från klienten. Regler och tester: `tests/rules/messages.test.ts`. Raderas av `deleteMyAccount`.

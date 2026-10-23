@@ -15,6 +15,7 @@ type Session$ = Session | null | undefined; // undefined = laddar
 export default function AccountMenu() {
   const [session, setSession] = useState<Session$>(undefined);
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const [passwordMail, setPasswordMail] = useState<'idle' | 'sent' | 'error'>('idle');
   const root = useRef<HTMLDivElement>(null);
   // Senast kända avatar, ritas direkt medan sessionen laddas (annars blir det en tom bubbla som byts mot bilden)
@@ -56,6 +57,22 @@ export default function AccountMenu() {
       writeCachedAvatar({ initial: name.charAt(0).toUpperCase(), color: session.avatarColor, photoUrl: session.photoUrl });
     }
   }, [session]);
+
+  // Antal konversationer med olästa meddelanden (röd badge, beslut 0019)
+  const uid = session?.uid;
+  useEffect(() => {
+    if (!uid) return;
+    let stop = () => {};
+    let cancelled = false;
+    import('../lib/firebase/messages').then(({ watchUnreadCount }) => {
+      if (!cancelled) stop = watchUnreadCount(uid, setUnread);
+    });
+    return () => {
+      cancelled = true;
+      stop();
+      setUnread(0);
+    };
+  }, [uid]);
 
   useEffect(() => {
     if (!open) return;
@@ -130,9 +147,18 @@ export default function AccountMenu() {
         aria-label="Min profil"
         aria-haspopup="true"
         aria-expanded={open}
-        className="cursor-pointer rounded-full"
+        className="relative cursor-pointer rounded-full"
       >
         <Avatar name={name} color={session?.avatarColor} photoUrl={session?.photoUrl} size={avatarSize} />
+        {unread > 0 && (
+          <span
+            role="status"
+            aria-label={`${unread} olästa meddelanden`}
+            className="absolute -top-1 -right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#D6322E] px-1 text-[11px] leading-none font-bold text-white ring-2 ring-white"
+          >
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
       </button>
       {open && session && (
         <div className="absolute top-[56px] right-0 z-20 flex w-[272px] flex-col gap-3 rounded-[22px] bg-white p-[18px] shadow-[0_24px_48px_-20px_rgba(43,40,56,.45),0_2px_8px_rgba(43,40,56,.08)] sm:top-[68px]">
@@ -148,6 +174,10 @@ export default function AccountMenu() {
             )}
           </div>
           <div className="h-px bg-line" />
+          <a href="/meddelanden" className="flex items-center justify-between py-1.5 font-medium text-ink no-underline hover:text-accent">
+            Meddelanden
+            {unread > 0 && <span className="rounded-full bg-[#D6322E] px-2 py-0.5 text-xs font-bold text-white">{unread}</span>}
+          </a>
           <a href="/profil" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
             Profil och inställningar
           </a>

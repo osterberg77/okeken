@@ -13,7 +13,7 @@ const bucket = getStorage(app).bucket();
 const services = { db, auth, bucket };
 
 async function clear() {
-  for (const col of ['users', 'rsvps', 'protocols', 'events', 'eventResultsPublished']) await db.recursiveDelete(db.collection(col));
+  for (const col of ['users', 'rsvps', 'protocols', 'events', 'eventResultsPublished', 'conversations']) await db.recursiveDelete(db.collection(col));
   for (const u of (await auth.listUsers()).users) await auth.deleteUser(u.uid);
 }
 
@@ -81,6 +81,20 @@ describe('deleteAccountData', () => {
     expect(JSON.stringify(published)).not.toMatch(/Anna|"anna"/);
     // e2 var inte publicerat och ska förbli opublicerat
     expect((await db.doc('eventResultsPublished/e2').get()).exists).toBe(false);
+  });
+
+  it('deletes every conversation the user takes part in, with messages, and no one else\'s', async () => {
+    for (const uid of ['anna', 'bo', 'cy']) await createUser(uid, ['member']);
+    for (const [a, b] of [['anna', 'bo'], ['anna', 'cy'], ['bo', 'cy']]) {
+      await db.doc(`conversations/${a}_${b}`).set({ participants: [a, b], lastText: 'Hej' });
+      await db.doc(`conversations/${a}_${b}/messages/m1`).set({ senderUid: a, text: 'Hej' });
+    }
+    await deleteAccountData('anna', services);
+    expect((await db.doc('conversations/anna_bo').get()).exists).toBe(false);
+    expect((await db.doc('conversations/anna_bo/messages/m1').get()).exists).toBe(false);
+    expect((await db.doc('conversations/anna_cy').get()).exists).toBe(false);
+    expect((await db.doc('conversations/bo_cy').get()).exists).toBe(true);
+    expect((await db.doc('conversations/bo_cy/messages/m1').get()).exists).toBe(true);
   });
 
   it('clears "published by" in draft and published event content', async () => {

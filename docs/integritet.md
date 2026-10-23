@@ -8,7 +8,8 @@ Facit om någon frågar. **Varje ny vy som visar en person läggs in här** (och
 | Intern startlista/resultat (adminvy) | Namn, bana, tider, ungdom, medlemslänk | – | – | Alla, även dolda (för sitt event) | Alla | Syns för behöriga, märks inte på publik sida |
 | "Publicerat av" på event | Namn och bild | Bara om godkänd policy och inte dold | Samma | Samma | Samma | Visas inte |
 | Svar på events (Kommer…) | Namn, status | – | Namn utom dolda ("n vill inte visa namn") | – | Alla, dolda märkta "(dolt)" | Räknas, namn `''` |
-| Medlemslistan `members` | Namn, bild, `hidden` | – | Ej idag (planerat: bara `hidden == false`, beslut 0019) | Alla (för namnsökning) | Alla | Ej sökbar för medlemmar |
+| Medlemslistan `members` | Namn, bild, `hidden` | – | Bara `hidden == false`, sig själv och den man har konversation med (beslut 0019) | Alla (för namnsökning) | Alla | Ej sökbar för medlemmar; syns för den hen skrivit till |
+| Meddelanden (`conversations`) | Text, avsändare, tid, läst | – | Bara egna konversationer | Bara egna | Bara egna (styrelsen läser inte andras) | Avslöjar sig för mottagaren av meddelanden hen själv skickar |
 | Profil (`users`) | E-post, behörigheter, samtycke | – | Bara egen | – | Alla | – |
 | Styrelsens protokoll | Omnämnanden | – | – | – | Styrelse/superadmin | Föreningens handlingar, hanteras manuellt |
 | `courseSetter` på event | Fritext | Visas som skrivet | – | – | – | **Filtreras inte** (fritext) |

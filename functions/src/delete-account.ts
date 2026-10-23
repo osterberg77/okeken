@@ -22,8 +22,8 @@ export const DELETED_NAME = 'Borttagen';
 /**
  * Raderar en användares uppgifter permanent (beslut 0013, 0018). Ordningen gör att ett avbrott kan köras om:
  * 1. svar på events (rsvps/*\/responses/<uid>), 2. resultatrader (namn blir "Borttagen", länken tas bort) och publicerade
- * resultatlistor byggs om, 3. "Publicerat av" på events rensas, 4. profilbilden, 5. användardokumentet (namn, e-post,
- * behörigheter, godkännande), 6. inloggningskontot sist. Det som medvetet blir kvar: uid i createdBy/updatedBy/uploadedBy och i
+ * resultatlistor byggs om, 3. "Publicerat av" på events rensas, 4. personens konversationer med alla meddelanden raderas (beslut 0019),
+ * 5. profilbilden, 6. användardokumentet (namn, e-post, behörigheter, godkännande), 7. inloggningskontot sist. Det som medvetet blir kvar: uid i createdBy/updatedBy/uploadedBy och i
  * styrelseprotokoll (närvaro, att göra, sekreterare/justerare), med de namn som stod där när protokollet skrevs.
  * Utan användardokument och konto går ett uid inte att koppla till en person; protokoll är föreningens handlingar.
  */
@@ -45,6 +45,7 @@ export async function deleteAccountData(uid: string, { db, auth, bucket }: Servi
 
   await anonymizeResults(uid, db);
   await clearPublisher(uid, db);
+  await deleteConversations(uid, db);
 
   await bucket.file(`avatars/${uid}.jpg`).delete({ ignoreNotFound: true });
   await db.doc(`users/${uid}`).delete();
@@ -85,4 +86,10 @@ async function clearPublisher(uid: string, db: Firestore): Promise<void> {
     const events = await db.collection('events').where(field, '==', uid).get();
     for (const e of events.docs) await e.ref.update({ [field]: null });
   }
+}
+
+/** Hela konversationer där personen deltar raderas, med alla meddelanden (motpartens också: de hör ihop). */
+async function deleteConversations(uid: string, db: Firestore): Promise<void> {
+  const convs = await db.collection('conversations').where('participants', 'array-contains', uid).get();
+  for (const c of convs.docs) await db.recursiveDelete(c.ref);
 }
