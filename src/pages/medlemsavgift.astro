@@ -1,0 +1,10 @@
+---
+import MembershipForm from '../components/MembershipForm';
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Medlemsavgift – OK Eken" noindex>
+  <main class="mx-auto max-w-[860px] px-4 pt-6 pb-16 sm:px-8">
+    <MembershipForm client:only="react" />
+  </main>
+</BaseLayout>

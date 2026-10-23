@@ -23,3 +23,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | [0017](0017-resultat-pa-traningar.md) | Resultat på träningar: interna rader per event, publik lista byggs av en Function, ungdomsmarkering aldrig publik | Beslutat |
 | [0018](0018-dolj-mig.md) | "Dölj mig": `users.hidden` ersätter `hideNameInRsvp`, dolda utelämnas helt ur publika vyer, bygget filtrerar resultat, `docs/integritet.md` är facit | Beslutat |
 | [0019](0019-meddelanden.md) | Meddelanden: `conversations/{a_b}` med `messages`, personlig avsändare, en läsmarkering per konversation, röd badge, dolda nås inte i sökningen | Beslutat |
+| [0020](0020-medlemsavgift-och-betalningar.md) | Medlemsavgift: avgiftstabell per år, betalning via Swish-länk/QR utan avtal, väntande betalningar som styrelsen prickar av, status per person och år | Beslutat |

@@ -32,6 +32,7 @@ export const RESERVED_PAGE_SLUGS: readonly string[] = [
   'index',
   'kalender',
   'traningskalender',
+  'medlemsavgift',
 ];
 
 export const isReservedPageSlug = (slug: string) => RESERVED_PAGE_SLUGS.includes(slug);

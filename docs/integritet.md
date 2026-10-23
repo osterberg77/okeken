@@ -11,6 +11,7 @@ Facit om någon frågar. **Varje ny vy som visar en person läggs in här** (och
 | Medlemslistan `members` | Namn, bild, `hidden` | – | Bara `hidden == false`, sig själv och den man har konversation med (beslut 0019) | Alla (för namnsökning) | Alla | Ej sökbar för medlemmar; syns för den hen skrivit till |
 | Meddelanden (`conversations`) | Text, avsändare, tid, läst | – | Bara egna konversationer | Bara egna | Bara egna (styrelsen läser inte andras) | Avslöjar sig för mottagaren av meddelanden hen själv skickar |
 | Profil (`users`) | E-post, behörigheter, samtycke | – | Bara egen | – | Alla | – |
+| Medlemsbetalningar (`membershipPayments`) | Betalare, e-post, namn och klass för dem som betalar för | – | Bara egna betalningar | – | Alla | Gäller inte (bokföringsunderlag); `uid` kopplas bort vid kontoradering |
 | Styrelsens protokoll | Omnämnanden | – | – | – | Styrelse/superadmin | Föreningens handlingar, hanteras manuellt |
 | `courseSetter` på event | Fritext | Visas som skrivet | – | – | – | **Filtreras inte** (fritext) |
 

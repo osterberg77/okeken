@@ -13,6 +13,7 @@ import { syncEventor } from './eventor-sync.js';
 import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 
 import { memberDoc } from './members.js';
+import { createPayment, InvalidMembershipRequest, parseRequest } from './membership.js';
 import { publishResults, unpublishResults } from './results.js';
 import { publishDueEvents } from './scheduled-publish.js';
 
@@ -238,3 +239,26 @@ export const onResultsPublishedWritten = onDocumentWritten(
       eventId: event.params.eventId,
     }),
 );
+
+/**
+ * Skapar en väntande medlemsbetalning (beslut 0020). Öppen för alla, även utan inloggning; beloppet räknas här från
+ * årets avgiftstabell. Är besökaren inloggad kopplas betalningen till kontot.
+ */
+export const createMembershipPayment = onCall(async (request) => {
+  let parsed;
+  try {
+    parsed = parseRequest(request.data);
+  } catch (err) {
+    if (err instanceof InvalidMembershipRequest) throw new HttpsError('invalid-argument', 'Kontrollera uppgifterna och försök igen.');
+    throw err;
+  }
+  try {
+    return await createPayment(getFirestore(), parsed, request.auth?.uid ?? null);
+  } catch (err) {
+    if (err instanceof InvalidMembershipRequest) {
+      throw new HttpsError('failed-precondition', 'Medlemsavgiften för det här året är inte fastställd ännu.');
+    }
+    logger.error('Medlemsbetalning kunde inte skapas', err);
+    throw new HttpsError('internal', 'Kunde inte skapa betalningen. Försök igen.');
+  }
+});

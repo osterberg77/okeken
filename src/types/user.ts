@@ -70,3 +70,8 @@ export interface UserProfile {
   displayName: string;
   permissions: Permission[];
 }
+
+/** Får se och pricka av medlemsbetalningar och sätta årets avgifter (beslut 0020). Måste spegla canManageMembership i firestore.rules. */
+export function canManageMembership(own: readonly Permission[]): boolean {
+  return own.includes('board') || own.includes('superadmin');
+}

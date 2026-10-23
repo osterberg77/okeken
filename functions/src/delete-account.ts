@@ -45,6 +45,7 @@ export async function deleteAccountData(uid: string, { db, auth, bucket }: Servi
 
   await anonymizeResults(uid, db);
   await clearPublisher(uid, db);
+  await unlinkPayments(uid, db);
   await deleteConversations(uid, db);
 
   await bucket.file(`avatars/${uid}.jpg`).delete({ ignoreNotFound: true });
@@ -86,6 +87,15 @@ async function clearPublisher(uid: string, db: Firestore): Promise<void> {
     const events = await db.collection('events').where(field, '==', uid).get();
     for (const e of events.docs) await e.ref.update({ [field]: null });
   }
+}
+
+/**
+ * Medlemsbetalningar (beslut 0020) behålls som underlag för föreningens bokföring, men kopplingen till kontot (uid)
+ * tas bort. Namn och belopp som angavs vid betalningen står kvar.
+ */
+async function unlinkPayments(uid: string, db: Firestore): Promise<void> {
+  const payments = await db.collection('membershipPayments').where('uid', '==', uid).get();
+  for (const p of payments.docs) await p.ref.update({ uid: null });
 }
 
 /** Hela konversationer där personen deltar raderas, med alla meddelanden (motpartens också: de hör ihop). */
