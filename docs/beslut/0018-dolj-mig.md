@@ -8,7 +8,8 @@
 - **Resultat:** raderna i `eventResultsPublished` har `memberUid` (dokumentet läses bara av Admin SDK och resultatansvariga). Bygget (`src/lib/server/published-events.ts`) läser `users where hidden == true`, utelämnar rader med dolt `memberUid` och rader utan länk vars namn är exakt en dold persons visningsnamn (fritext). `memberUid` tas bort innan data når sidorna. Det räknas om vid varje bygge, så även historiska resultat döljs, och placeringarna numreras om i `ResultsList` när raden är borta.
 - **Ombyggnad:** `onUserMemberWritten` begär bygge när `hidden` eller `publicName` ändras (inte vid vanliga profiländringar eller nya konton).
 - **Dokumentation:** `docs/integritet.md` är facit över var namn visas och för vilka nivåer. Varje ny vy som visar personer läggs in där.
-- **Avgränsning (kommer senare, egna beslut):** kontoradering utökas (resultatrader → "Borttagen", ompublicering), och meddelanden (0019) söker bara bland `hidden == false`.
+- **Kontoradering (retroaktivt):** `deleteAccountData` sätter `name: "Borttagen"` och `memberUid: null` på personens interna resultatrader (raden och placeringen finns kvar), bygger om publicerade listor som innehåller personen och nollställer "Publicerat av" i utkast och publicerat innehåll. Frågan görs per event (inget collection group-index) och går att köra om. Ingen tombstone behövs: användardokumentet raderas, och bygget utelämnar eller nollställer det som pekade på det. Opt-out är motsatsen: flaggan kan slås på och av, raden utelämnas men finns kvar internt.
+- **Avgränsning (egna beslut):** meddelanden (0019) söker bara bland `hidden == false`, och kontoradering tar då även bort personens konversationer.
 
 **Konsekvenser:**
 - Slår igenom på publika sidor efter ett bygge (1–2 min); texten i profilen säger det.

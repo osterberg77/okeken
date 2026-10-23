@@ -13,7 +13,7 @@ const bucket = getStorage(app).bucket();
 const services = { db, auth, bucket };
 
 async function clear() {
-  for (const col of ['users', 'rsvps', 'protocols']) await db.recursiveDelete(db.collection(col));
+  for (const col of ['users', 'rsvps', 'protocols', 'events', 'eventResultsPublished']) await db.recursiveDelete(db.collection(col));
   for (const u of (await auth.listUsers()).users) await auth.deleteUser(u.uid);
 }
 
@@ -56,6 +56,41 @@ describe('deleteAccountData', () => {
     await deleteAccountData('ghost', services);
     await deleteAccountData('ghost', services);
     expect((await db.doc('users/ghost').get()).exists).toBe(false);
+  });
+
+  it('renames result rows to "Borttagen", rebuilds published lists and keeps the row', async () => {
+    await createUser('anna', ['member']);
+    await createUser('bo', ['member']);
+    const t = (iso: string) => new Date(iso);
+    const base = { course: 'Röd', youth: false, show: 'time', startAt: t('2026-10-27T16:00:00Z'), finishAt: t('2026-10-27T16:40:00Z'), totalSeconds: null };
+    await db.doc('events/e1/results/a').set({ ...base, name: 'Anna Andersson', memberUid: 'anna' });
+    await db.doc('events/e1/results/b').set({ ...base, name: 'Bo Berg', memberUid: 'bo', finishAt: t('2026-10-27T16:50:00Z') });
+    await db.doc('events/e2/results/a').set({ ...base, name: 'Anna Andersson', memberUid: 'anna' });
+    await db.doc('eventResultsPublished/e1').set({
+      entries: [{ name: 'Anna Andersson', memberUid: 'anna', course: 'Röd', seconds: 2400 }],
+      publishedBy: 'bo',
+    });
+
+    await deleteAccountData('anna', services);
+
+    expect((await db.doc('events/e1/results/a').get()).data()).toMatchObject({ name: 'Borttagen', memberUid: null });
+    expect((await db.doc('events/e2/results/a').get()).data()).toMatchObject({ name: 'Borttagen', memberUid: null });
+    const published = (await db.doc('eventResultsPublished/e1').get()).data();
+    expect(published?.publishedBy).toBe('bo');
+    expect(published?.entries.map((e: { name: string }) => e.name)).toEqual(['Borttagen', 'Bo Berg']);
+    expect(JSON.stringify(published)).not.toMatch(/Anna|"anna"/);
+    // e2 var inte publicerat och ska förbli opublicerat
+    expect((await db.doc('eventResultsPublished/e2').get()).exists).toBe(false);
+  });
+
+  it('clears "published by" in draft and published event content', async () => {
+    await createUser('anna', ['publisher']);
+    await createUser('bo', ['publisher']);
+    await db.doc('events/e1').set({ status: 'published', publisher: 'anna', published: { title: 'A', publisher: 'anna' } });
+    await db.doc('events/e2').set({ status: 'draft', publisher: 'bo' });
+    await deleteAccountData('anna', services);
+    expect((await db.doc('events/e1').get()).data()).toMatchObject({ publisher: null, published: { title: 'A', publisher: null } });
+    expect((await db.doc('events/e2').get()).data()?.publisher).toBe('bo');
   });
 
   it('leaves protocols (association records) untouched', async () => {

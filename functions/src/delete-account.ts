@@ -1,5 +1,6 @@
 import type { Auth } from 'firebase-admin/auth';
 import type { Firestore } from 'firebase-admin/firestore';
+import { publishResults } from './results.js';
 
 /** Det raderingen behöver av Storage (strukturell typ så att den går att testa mot emulatorn). */
 export interface FileBucket {
@@ -15,10 +16,14 @@ export interface Services {
 /** Sista superadmin får inte radera sig själv: då kan ingen längre dela ut behörigheter. */
 export class LastSuperadminError extends Error {}
 
+/** Namnet som ersätter en raderad person i resultat (beslut 0018). Raden och placeringen finns kvar. */
+export const DELETED_NAME = 'Borttagen';
+
 /**
- * Raderar en användares uppgifter permanent (beslut 0013). Ordningen gör att ett avbrott kan köras om:
- * 1. svar på events (rsvps/*\/responses/<uid>), 2. profilbilden, 3. användardokumentet (namn, e-post, behörigheter,
- * godkännande), 4. inloggningskontot sist. Det som medvetet blir kvar: uid i createdBy/updatedBy/uploadedBy och i
+ * Raderar en användares uppgifter permanent (beslut 0013, 0018). Ordningen gör att ett avbrott kan köras om:
+ * 1. svar på events (rsvps/*\/responses/<uid>), 2. resultatrader (namn blir "Borttagen", länken tas bort) och publicerade
+ * resultatlistor byggs om, 3. "Publicerat av" på events rensas, 4. profilbilden, 5. användardokumentet (namn, e-post,
+ * behörigheter, godkännande), 6. inloggningskontot sist. Det som medvetet blir kvar: uid i createdBy/updatedBy/uploadedBy och i
  * styrelseprotokoll (närvaro, att göra, sekreterare/justerare), med de namn som stod där när protokollet skrevs.
  * Utan användardokument och konto går ett uid inte att koppla till en person; protokoll är föreningens handlingar.
  */
@@ -38,11 +43,46 @@ export async function deleteAccountData(uid: string, { db, auth, bucket }: Servi
     await batch.commit();
   }
 
+  await anonymizeResults(uid, db);
+  await clearPublisher(uid, db);
+
   await bucket.file(`avatars/${uid}.jpg`).delete({ ignoreNotFound: true });
   await db.doc(`users/${uid}`).delete();
   try {
     await auth.deleteUser(uid);
   } catch (err) {
     if ((err as { code?: string }).code !== 'auth/user-not-found') throw err;
+  }
+}
+
+/**
+ * Resultatrader (events/{id}/results) med personens memberUid får namnet "Borttagen" och förlorar länken. Publicerade
+ * listor (eventResultsPublished) som innehåller personen byggs om av de interna raderna. Frågan görs per event, så
+ * inget collection group-index behövs. Går att köra om: publicerade listor med memberUid hittas även om raderna redan
+ * är omskrivna.
+ */
+async function anonymizeResults(uid: string, db: Firestore): Promise<void> {
+  const events = await db.collection('events').listDocuments();
+  for (const event of events) {
+    const rows = await event.collection('results').where('memberUid', '==', uid).get();
+    for (let i = 0; i < rows.docs.length; i += 400) {
+      const batch = db.batch();
+      for (const row of rows.docs.slice(i, i + 400)) batch.update(row.ref, { name: DELETED_NAME, memberUid: null });
+      await batch.commit();
+    }
+    const published = await db.doc(`eventResultsPublished/${event.id}`).get();
+    const entries: unknown = published.data()?.entries;
+    const listed = Array.isArray(entries) && entries.some((e: { memberUid?: unknown }) => e?.memberUid === uid);
+    if (published.exists && (rows.size > 0 || listed)) {
+      await publishResults(db, event.id, String(published.data()?.publishedBy ?? ''));
+    }
+  }
+}
+
+/** "Publicerat av" pekar inte längre på en raderad person, varken i utkastet eller i det publicerade (startar ombyggnad) */
+async function clearPublisher(uid: string, db: Firestore): Promise<void> {
+  for (const field of ['publisher', 'published.publisher']) {
+    const events = await db.collection('events').where(field, '==', uid).get();
+    for (const e of events.docs) await e.ref.update({ [field]: null });
   }
 }

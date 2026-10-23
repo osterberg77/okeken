@@ -21,3 +21,5 @@
 - Ingen "ladda ner mina uppgifter" i appen än; kopia ges på begäran via e-post (se policyn).
 - Profilbilder visas bara på profilsidan och i kontomenyn. Visning bredvid namn i listor kan läggas till senare.
 - Ny `getFunctions`-klient pekar på Functions-emulatorn när `PUBLIC_FIREBASE_EMULATORS=true`, så att raderingen går att prova lokalt.
+
+**Tillägg (beslut 0018):** radering skriver även om resultatrader till "Borttagen", bygger om publicerade resultat och rensar "Publicerat av".
