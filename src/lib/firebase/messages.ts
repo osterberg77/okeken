@@ -12,6 +12,7 @@ import {
   writeBatch,
   type Timestamp,
 } from 'firebase/firestore';
+import { noticeRecipients, type NoticePlan } from '../notify';
 import { cleanMessage, isUnread, isSafeLink, pairId, previewText, type ConversationSummary } from '../messages';
 import { db } from './client';
 
@@ -151,4 +152,22 @@ export async function loadPerson(uid: string): Promise<Person | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Skickar ett automatiskt meddelande till varje mottagare (kuvert-ikonen, beslut 0019). Kastar aldrig: en notis som inte
+ * gick fram ska inte stoppa det den hör till. Returnerar antal skickade och misslyckade.
+ */
+export async function sendNotices(me: string, plan: NoticePlan): Promise<{ sent: number; failed: number }> {
+  let sent = 0;
+  let failed = 0;
+  for (const to of noticeRecipients(plan, me)) {
+    try {
+      await sendMessage(me, to, plan.text, { link: plan.link });
+      sent++;
+    } catch {
+      failed++;
+    }
+  }
+  return { sent, failed };
 }

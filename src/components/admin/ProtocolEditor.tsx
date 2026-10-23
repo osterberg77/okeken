@@ -10,6 +10,7 @@ import {
   watchProtocols,
 } from '../../lib/firebase/protocols';
 import {
+  approvedAtOf,
   canApprove,
   canDeleteProtocol,
   canEditProtocol,
@@ -17,6 +18,7 @@ import {
   carryOverTodos,
   copyProtocolContent,
   displayNameOf,
+  mentionedUids,
   newProtocolContent,
   newTodoId,
   protocolState,
@@ -34,6 +36,8 @@ import {
 } from '../../types/protocol';
 import { canViewProtocols, type Session, type UserProfile } from '../../types/user';
 import { ActionButton, Field, INPUT } from './AdminUi';
+import NotifyToggle from '../NotifyToggle';
+import { noticeRecipients } from '../../lib/notify';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
 import MarkdownField from './MarkdownField';
 import ProtocolView, { formatMeeting } from './ProtocolView';
@@ -179,6 +183,8 @@ function Editor({ session, id }: { session: Session; id: string }) {
   const [message, setMessage] = useState<Message>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmCopy, setConfirmCopy] = useState(false);
+  // Kuvertet vid sista godkännandet (hook före tidiga return)
+  const [notifyTagged, setNotifyTagged] = useState(true);
   const [tab, setTab] = useState<'edit' | 'read'>('edit');
   const loaded = useRef(false);
 
@@ -252,8 +258,19 @@ function Editor({ session, id }: { session: Session; id: string }) {
     await saveProtocol(id, draft, session.uid);
     return hasApproval ? 'Sparat. Godkännandena är nollställda.' : 'Sparat.';
   });
+  // De som är omnämnda eller har fått en att göra-punkt i det sparade protokollet (kuvertet, när justeringen låser det)
+  const tagged = noticeRecipients({ recipients: [...mentionedUids(record.body), ...record.todos.map((t) => t.assigneeUid)] }, session.uid);
   const onApprove = (role: 'secretary' | 'adjuster') => run('approve', async () => {
+    const completes = approvedAtOf(record, role === 'secretary' ? 'adjuster' : 'secretary') !== null;
     await approveProtocol(id, role);
+    if (completes && notifyTagged && tagged.length > 0) {
+      const { sendNotices } = await import('../../lib/firebase/messages');
+      await sendNotices(session.uid, {
+        recipients: tagged,
+        text: `Protokollet från styrelsemötet ${formatMeeting(record.meetingAt)} är justerat. Du är omnämnd eller har en uppgift i det.`,
+        link: `/admin/styrelsemote?id=${id}`,
+      });
+    }
     return 'Godkänt.';
   });
   const onRevoke = (role: 'secretary' | 'adjuster') => run('revoke', async () => {
@@ -551,6 +568,14 @@ function Editor({ session, id }: { session: Session; id: string }) {
             <ActionButton primary onClick={() => onApprove(approveRole)} disabled={!!busy || dirty} busy={busy === 'approve'}>
               Godkänn som {approveRole === 'secretary' ? 'sekreterare' : 'justerare'}
             </ActionButton>
+          )}
+          {approveRole && tagged.length > 0 && approvedAtOf(record, approveRole === 'secretary' ? 'adjuster' : 'secretary') !== null && (
+            <NotifyToggle
+              enabled={notifyTagged}
+              onChange={setNotifyTagged}
+              summary={`När du godkänner låses protokollet och ${tagged.length} omnämnda eller ansvariga får ett meddelande.`}
+              disabled={!!busy}
+            />
           )}
           {revokeRole && (
             <ActionButton onClick={() => onRevoke(revokeRole)} disabled={!!busy} busy={busy === 'revoke'}>

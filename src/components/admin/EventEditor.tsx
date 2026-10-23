@@ -33,6 +33,7 @@ import ImagePicker from './ImagePicker';
 import LocationPicker from './LocationPicker';
 import MarkdownField from './MarkdownField';
 import StatusBadge, { StatusLabel } from './StatusBadge';
+import NotifyToggle from '../NotifyToggle';
 
 export default function EventEditor() {
   return (
@@ -109,6 +110,10 @@ function Editor({ session }: { session: Session }) {
   // Filer som laddats upp i den här vyn men kanske aldrig sparats på eventet (hook: måste ligga före tidiga return)
   const uploadedPaths = useRef(new Set<string>());
   const fileInput = useRef<HTMLInputElement>(null);
+  // Kuvertet vid "Publicerat av" (hooks före tidiga return). `notified` minns vem som redan fått meddelandet så att
+  // flera sparningar i rad inte skickar om det.
+  const [notifyPublisher, setNotifyPublisher] = useState(true);
+  const notified = useRef<string | null>(null);
   const [targets, setTargets] = useState<LinkTarget[] | null>(null);
   useEffect(() => {
     loadLinkTargets().then(setTargets).catch(() => setTargets([]));
@@ -276,12 +281,27 @@ function Editor({ session }: { session: Session }) {
   async function persist(content: EventContent): Promise<string> {
     if (id) {
       await saveEvent(id, content, session.uid);
+      await noticeNewPublisher(id, content);
       return id;
     }
     const newId = await createEvent(content, session.uid);
     setId(newId);
     history.replaceState(null, '', `?id=${newId}`);
+    await noticeNewPublisher(newId, content);
     return newId;
+  }
+
+  /** Kuvertet: den som pekas ut som "Publicerat av" (och inte är en själv) får ett meddelande efter lyckad sparning */
+  async function noticeNewPublisher(eventId: string, content: EventContent) {
+    const to = content.publisher;
+    if (!notifyPublisher || !to || to === session.uid || to === (notified.current ?? record?.publisher ?? null)) return;
+    notified.current = to;
+    const { sendNotices } = await import('../../lib/firebase/messages');
+    await sendNotices(session.uid, {
+      recipients: [to],
+      text: `Du är angiven som ansvarig (publicerat av) för eventet "${content.title.trim() || 'Namnlöst event'}".`,
+      link: `/admin/event?id=${eventId}`,
+    });
   }
 
   function moveCourseFile(i: number, delta: -1 | 1) {
@@ -626,6 +646,7 @@ function Editor({ session }: { session: Session }) {
             htmlFor="publisher"
             hint="Visas som liten profilbild och namn på eventet. Bara medlemmar som godkänt policyn och inte dolt sitt namn visas för besökare."
           >
+            <div className="flex items-center gap-2">
             <select
               id="publisher"
               value={draft.publisher ?? ''}
@@ -643,6 +664,14 @@ function Editor({ session }: { session: Session }) {
                 </option>
               ))}
             </select>
+            {!courseOnly && draft.publisher && draft.publisher !== session.uid && (
+              <NotifyToggle
+                enabled={notifyPublisher}
+                onChange={setNotifyPublisher}
+                summary={`${members?.find((m) => m.uid === draft.publisher)?.displayName ?? 'Personen'} får ett meddelande när du sparar.`}
+              />
+            )}
+            </div>
           </Field>
 
           <MainImageField

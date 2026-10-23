@@ -1,5 +1,7 @@
 import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useEffect, useMemo, useState } from 'react';
+import { permissionNotice } from '../../lib/notify';
+import NotifyToggle from '../NotifyToggle';
 import { db } from '../../lib/firebase/client';
 import { watchSession } from '../../lib/firebase/session';
 import {
@@ -46,6 +48,8 @@ function UserList({ session }: { session: Session }) {
   const [query, setQuery] = useState('');
   const [pending, setPending] = useState<string | null>(null); // `${uid}:${permission}`
   const [error, setError] = useState('');
+  // Kuvertet per användare: skicka ett meddelande om den nya behörigheten (på som standard)
+  const [notify, setNotify] = useState<Record<string, boolean>>({});
   const assignable = assignableBy(session.permissions);
   const visible = visiblePermissions(session);
 
@@ -89,6 +93,14 @@ function UserList({ session }: { session: Session }) {
     setError('');
     try {
       await updateDoc(doc(db, 'users', user.uid), { permissions: level ? [level] : [] });
+      if (notify[user.uid] !== false && user.uid !== session.uid) {
+        const { sendNotices } = await import('../../lib/firebase/messages');
+        await sendNotices(session.uid, {
+          recipients: [user.uid],
+          text: permissionNotice(highestPermission(user.permissions), level || null),
+          link: '/profil',
+        });
+      }
     } catch {
       setError(`Ändringen för ${user.displayName || user.email} sparades inte. Du kanske saknar behörighet för den nivån.`);
     } finally {
@@ -154,6 +166,14 @@ function UserList({ session }: { session: Session }) {
                     </option>
                   ))}
                 </select>
+                {user.uid !== session.uid && (
+                  <NotifyToggle
+                    enabled={notify[user.uid] !== false}
+                    onChange={(on) => setNotify((n) => ({ ...n, [user.uid]: on }))}
+                    summary={`${user.displayName || user.email} får ett meddelande när du ändrar behörigheten.`}
+                    disabled={pending !== null}
+                  />
+                )}
                 {pending === user.uid && <span className="text-subtle">…</span>}
               </div>
             </li>
