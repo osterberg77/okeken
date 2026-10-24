@@ -73,6 +73,13 @@ describe('resultatrader', () => {
     ];
     for (const [i, over] of bad.entries()) await assertFails(setDoc(res('setter', `bad${i}`), entry('setter', over)));
   });
+  it('rader från självregistrering (rating, source) kan skapas och rättas av personalen; ogiltiga värden nekas', async () => {
+    await assertSucceeds(setDoc(res('setter', 'self1'), entry('setter', { rating: 4, source: 'guest' })));
+    await assertSucceeds(updateDoc(res('setter', 'self1'), { course: 'Blå', updatedBy: 'setter', updatedAt: serverTimestamp() }));
+    for (const [i, over] of [{ rating: 0 }, { rating: 6 }, { rating: 3.5 }, { rating: 'bra' }, { source: 'bot' }].entries()) {
+      await assertFails(setDoc(res('setter', `badself${i}`), entry('setter', over)));
+    }
+  });
   it('saknad eller extra nyckel nekas', async () => {
     const { youth: _y, ...noYouth } = entry('setter');
     await assertFails(setDoc(res('setter', 'a'), noYouth));

@@ -47,6 +47,12 @@ export function swishDeepLink(payee: string, kronor: number, message: string): s
   return `swish://payment?data=${encodeURIComponent(JSON.stringify(payload))}`;
 }
 
+/** Swish-länk utan belopp: betalaren fyller i summan själv (frivilligt bidrag) */
+export function swishOpenLink(payee: string, message: string): string {
+  const payload = { version: 1, payee: { value: cleanPayee(payee) }, message: { value: message, editable: true } };
+  return `swish://payment?data=${encodeURIComponent(JSON.stringify(payload))}`;
+}
+
 /** Klubbens avgifter som förval när inget år är sparat; justeras i /admin/medlemsavgift */
 export const defaultFees = (year: number): MembershipFees => ({
   year,

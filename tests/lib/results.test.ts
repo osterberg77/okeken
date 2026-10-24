@@ -12,6 +12,8 @@ const row = (over: Partial<ResultRow> = {}): ResultRow => ({
   totalSeconds: null,
   youth: true,
   show: 'time',
+  source: 'staff',
+  rating: null,
   updatedAt: null,
   ...over,
 });

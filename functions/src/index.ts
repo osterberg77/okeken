@@ -15,6 +15,7 @@ import { rsvpName, syncRsvpNames } from './rsvp-names.js';
 import { memberDoc } from './members.js';
 import { createPayment, InvalidMembershipRequest, parseRequest } from './membership.js';
 import { publishResults, unpublishResults } from './results.js';
+import { EventNotOpen, GuestLimitReached, InvalidSelfResult, parseSelfResult, registerParticipation } from './self-result.js';
 import { publishDueEvents } from './scheduled-publish.js';
 
 export { hit } from './stats.js';
@@ -229,6 +230,29 @@ export const setResultsPublished = onCall(async (request) => {
   if (published) return { count: await publishResults(db, eventId, uid) };
   await unpublishResults(db, eventId);
   return { count: 0 };
+});
+
+/**
+ * Självregistrering på en träning (QR-koden vid start, beslut 0022). Öppen för alla, även utan inloggning; är besökaren
+ * inloggad medlem blir raden hens egen (en per träning, kan skrivas över), annars en gästrad.
+ */
+export const registerSelfResult = onCall(async (request) => {
+  let parsed;
+  try {
+    parsed = parseSelfResult(request.data);
+  } catch (err) {
+    if (err instanceof InvalidSelfResult) throw new HttpsError('invalid-argument', 'Kontrollera uppgifterna och försök igen.');
+    throw err;
+  }
+  try {
+    return await registerParticipation(getFirestore(), parsed, request.auth?.uid ?? null);
+  } catch (err) {
+    if (err instanceof InvalidSelfResult) throw new HttpsError('invalid-argument', 'Fyll i ditt namn.');
+    if (err instanceof EventNotOpen) throw new HttpsError('failed-precondition', 'Det går inte att registrera sig på den här träningen just nu.');
+    if (err instanceof GuestLimitReached) throw new HttpsError('resource-exhausted', 'Det har kommit för många registreringar. Hör av dig till klubben.');
+    logger.error('Självregistrering misslyckades', err);
+    throw new HttpsError('internal', 'Kunde inte spara. Försök igen.');
+  }
 });
 
 /** Bygger om sajten när den publika resultatlistan ändras (publicera, uppdatera, dra tillbaka). */

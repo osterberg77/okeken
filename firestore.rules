@@ -134,6 +134,26 @@ service cloud.firestore {
           && l.lat >= -90 && l.lat <= 90 && l.lng >= -180 && l.lng <= 180;
     }
 
+    // Ikon för huvudplatsen och extra platser på kartan (valfria, äldre events saknar dem)
+    function validPlaceIcon(i) {
+      return i in ['start', 'parking', 'toilet', 'finish', 'gathering', 'water', 'firstaid', 'other'];
+    }
+
+    function validPlace(p) {
+      let lat = p.get('lat', null);
+      let lng = p.get('lng', null);
+      return p is map && p.keys().hasOnly(['icon', 'label', 'lat', 'lng'])
+        && validPlaceIcon(p.get('icon', null))
+        && p.get('label', null) is string && p.label.size() <= 100
+        && lat is number && lat >= -90 && lat <= 90
+        && lng is number && lng >= -180 && lng <= 180;
+    }
+
+    function validPlaces(ps) {
+      return ps is list && ps.size() <= 3 && (ps.size() < 1 || validPlace(ps[0])) && (ps.size() < 2 || validPlace(ps[1]))
+        && (ps.size() < 3 || validPlace(ps[2]));
+    }
+
     // "Publicerat av": null eller medlemmens uid (valfritt fält, äldre events saknar det). Att medlemmen finns
     // kontrolleras inte; bygget visar bara medlemmar med members.publicName (beslut 0015).
     function publisherOf(d) {
@@ -161,11 +181,13 @@ service cloud.firestore {
       return d.type in ['training', 'competition', 'meeting', 'info', 'happening']
         && d.title is string && d.title.size() > 0 && d.title.size() <= 200
         && d.startsAt is timestamp && d.endsAt is timestamp && d.endsAt >= d.startsAt
-        && d.location is map && d.location.keys().hasOnly(['name', 'mapUrl', 'lat', 'lng'])
+        && d.location is map && d.location.keys().hasOnly(['name', 'mapUrl', 'lat', 'lng', 'icon', 'places'])
         && d.location.name is string && d.location.name.size() <= 200
         && d.location.mapUrl is string && d.location.mapUrl.size() <= 500
         && (d.location.mapUrl == '' || d.location.mapUrl.matches('https://.*'))
         && validCoords(d.location)
+        && validPlaceIcon(d.location.get('icon', 'start'))
+        && validPlaces(d.location.get('places', []))
         && d.body is string && d.body.size() <= 20000
         && d.courseSetter is string && d.courseSetter.size() <= 200
         && d.livelox is string && d.livelox.size() <= 500
@@ -277,6 +299,11 @@ service cloud.firestore {
         'createdBy', 'createdAt', 'updatedBy', 'updatedAt'];
     }
 
+    // rating och source skrivs bara av Function registerSelfResult (beslut 0022); personalens rader saknar dem
+    function resultAllowedKeys() {
+      return resultKeys().concat(['rating', 'source']);
+    }
+
     function validResult(d) {
       return d.name is string && d.name.size() > 0 && d.name.size() <= 100
         && d.course is string && d.course.size() <= 100
@@ -285,14 +312,16 @@ service cloud.firestore {
         && (d.finishAt == null || d.finishAt is timestamp)
         && (d.totalSeconds == null || (d.totalSeconds is int && d.totalSeconds >= 0 && d.totalSeconds <= 86400))
         && d.youth is bool
-        && d.show in ['time', 'participated', 'hidden'];
+        && d.show in ['time', 'participated', 'hidden']
+        && (d.get('rating', null) == null || (d.rating is int && d.rating >= 1 && d.rating <= 5))
+        && d.get('source', 'staff') in ['staff', 'member', 'guest'];
     }
 
     match /events/{eventId}/results/{entryId} {
       allow read, delete: if canManageResults();
 
       allow create: if canManageResults()
-        && request.resource.data.keys().hasOnly(resultKeys())
+        && request.resource.data.keys().hasOnly(resultAllowedKeys())
         && request.resource.data.keys().hasAll(resultKeys())
         && validResult(request.resource.data)
         && request.resource.data.createdBy == request.auth.uid
@@ -301,7 +330,7 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
 
       allow update: if canManageResults()
-        && request.resource.data.keys().hasOnly(resultKeys())
+        && request.resource.data.keys().hasOnly(resultAllowedKeys())
         && request.resource.data.keys().hasAll(resultKeys())
         && validResult(request.resource.data)
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['createdBy', 'createdAt'])

@@ -32,6 +32,8 @@ function fromFirestore(id: string, d: DocumentData): ResultRow {
     totalSeconds: typeof d.totalSeconds === 'number' ? d.totalSeconds : null,
     youth: d.youth === true,
     show: SHOW_MODES.includes(d.show) ? (d.show as ShowMode) : 'time',
+    source: d.source === 'member' || d.source === 'guest' ? d.source : 'staff',
+    rating: typeof d.rating === 'number' ? d.rating : null,
     updatedAt: toDate(d.updatedAt),
   };
 }
@@ -98,4 +100,21 @@ export function watchPublishedResults(eventId: string, callback: (info: Publishe
 export async function setResultsPublished(eventId: string, published: boolean): Promise<number> {
   const call = httpsCallable<{ eventId: string; published: boolean }, { count: number }>(getFunctions(app, 'europe-north1'), 'setResultsPublished');
   return (await call({ eventId, published })).data.count;
+}
+
+export interface SelfResultInput {
+  slug: string;
+  /** Bara för gäster; inloggade medlemmar får namnet från sitt konto */
+  name: string;
+  course: string;
+  totalSeconds: number | null;
+  show: ShowMode;
+  rating: number | null;
+  trap: string;
+}
+
+/** Registrerar att man sprungit (QR-koden vid start, beslut 0022). Fungerar utan inloggning; en Function sköter skrivningen. */
+export async function registerSelfResult(input: SelfResultInput): Promise<{ updated: boolean }> {
+  const call = httpsCallable<SelfResultInput, { updated: boolean }>(getFunctions(app, 'europe-north1'), 'registerSelfResult');
+  return (await call(input)).data;
 }

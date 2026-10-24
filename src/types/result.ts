@@ -25,6 +25,10 @@ export interface ResultRow {
   totalSeconds: number | null;
   youth: boolean;
   show: ShowMode;
+  /** Vem som förde in raden: personalen, en inloggad medlem eller en gäst via QR-koden (beslut 0022) */
+  source: 'staff' | 'member' | 'guest';
+  /** Löparens betyg på banan, 1–5. Bara internt. */
+  rating: number | null;
   updatedAt: Date | null;
 }
 

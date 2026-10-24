@@ -74,6 +74,8 @@ function Results({ session }: { session: Session }) {
     return [...names];
   }, [event, rows]);
 
+  const ratings = (rows ?? []).flatMap((r) => (r.rating === null ? [] : [r.rating]));
+
   if (!eventId) return <AdminPanel><p>Inget event valt. Öppna startlistan från eventets sida i admin.</p></AdminPanel>;
   if (event === undefined) return <AdminPanel><p className="text-muted">Laddar…</p></AdminPanel>;
   if (event === null) return <AdminPanel><p>Eventet finns inte.</p></AdminPanel>;
@@ -139,6 +141,11 @@ function Results({ session }: { session: Session }) {
             {out.length > 0 && ` – ${out.map((r) => r.name).join(', ')}`}
           </span>
         </div>
+        {ratings.length > 0 && (
+          <p className="m-0 text-sm text-muted">
+            Betyg på banan (syns bara här): snitt {(ratings.reduce((a, b) => a + b, 0) / ratings.length).toLocaleString('sv-SE', { maximumFractionDigits: 1 })} av 5 från {ratings.length} {ratings.length === 1 ? 'person' : 'personer'}.
+          </p>
+        )}
         {rows === null && <p className="text-muted">Laddar…</p>}
         {rows && list.length === 0 && <p className="text-muted">Ingen har skrivit upp sig än.</p>}
         <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
@@ -289,7 +296,13 @@ function RowItem({
   const day = row.startAt ? dayKey(row.startAt) : eventDay;
 
   const status =
-    seconds !== null ? `I mål ${formatDuration(seconds)}` : row.startAt && row.startAt.getTime() > now ? 'Ej startad' : 'Ute i skogen';
+    seconds !== null
+      ? `I mål ${formatDuration(seconds)}`
+      : !row.startAt
+        ? 'Registrerad'
+        : row.startAt.getTime() > now
+          ? 'Ej startad'
+          : 'Ute i skogen';
   const statusStyle = seconds !== null ? 'bg-[#E3F0DC] text-[#2F5A2B]' : status === 'Ute i skogen' ? 'bg-[#FFF3C4] text-[#7A5A00]' : 'bg-period text-muted';
 
   return (
@@ -297,6 +310,9 @@ function RowItem({
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-display text-[18px] font-semibold">{row.name}</span>
         {row.memberUid && <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-muted">Medlem</span>}
+        {row.source === 'guest' && <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-muted">Gäst (QR)</span>}
+        {row.source === 'member' && <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-muted">Registrerade sig själv</span>}
+        {row.rating !== null && <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-accent" title="Betyg på banan (syns bara här)">{'★'.repeat(row.rating)}{'☆'.repeat(5 - row.rating)}</span>}
         {row.youth && <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-white">Ungdom</span>}
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${statusStyle}`}>{status}</span>
         <span className="text-[13px] text-subtle">{row.startAt ? `start ${clock(row.startAt)}` : ''}</span>
