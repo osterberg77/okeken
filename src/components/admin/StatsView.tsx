@@ -54,14 +54,17 @@ function Stats() {
 
   const views = stats?.pages.reduce((n, p) => n + p.views, 0) ?? 0;
   const unique = stats?.pages.reduce((n, p) => n + p.unique, 0) ?? 0;
+  const memberViews = stats?.pages.reduce((n, p) => n + p.memberViews, 0) ?? 0;
+  const memberUnique = stats?.pages.reduce((n, p) => n + p.memberUnique, 0) ?? 0;
   const downloads = stats?.downloads.reduce((n, d) => n + d.count, 0) ?? 0;
+  const share = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)} % inloggade` : undefined);
 
   return (
     <AdminPanel>
       <div>
         <AdminTitle>Besöksstatistik</AdminTitle>
         <p className="mt-2 max-w-[60ch] text-muted">
-          Räknas utan kakor och utan att spara IP-adresser. Inloggade och bottar räknas inte. "Unika" är besökare per sida och dag, så samma person kan räknas på flera sidor.
+          Räknas utan kakor och utan att spara IP-adresser. Bottar räknas inte. Inloggade medlemmar räknas med och visas som andel (bara ja/nej, aldrig vem). Statistik före 24 oktober saknar uppdelningen. "Unika" är besökare per sida och dag, så samma person kan räknas på flera sidor.
         </p>
       </div>
 
@@ -85,8 +88,8 @@ function Stats() {
       {stats && (
         <>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Tile label="Sidvisningar" value={views} />
-            <Tile label="Unika besök" value={unique} />
+            <Tile label="Sidvisningar" value={views} note={share(memberViews, views)} />
+            <Tile label="Unika besök" value={unique} note={share(memberUnique, unique)} />
             <Tile label="Nedladdningar" value={downloads} />
           </div>
 
@@ -116,11 +119,12 @@ function Stats() {
   );
 }
 
-function Tile({ label, value }: { label: string; value: number }) {
+function Tile({ label, value, note }: { label: string; value: number; note?: string }) {
   return (
     <div className="rounded-2xl bg-period px-5 py-4">
       <div className="font-display text-[32px] leading-none font-bold">{value.toLocaleString('sv-SE')}</div>
       <div className="mt-1 text-sm text-muted">{label}</div>
+      {note && <div className="text-[13px] font-semibold text-accent">{note}</div>}
     </div>
   );
 }

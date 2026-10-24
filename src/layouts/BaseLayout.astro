@@ -47,13 +47,16 @@ const canonical = new URL(canonicalPath, Astro.site).href;
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={shareImage.url} />
     <meta name="twitter:image:alt" content={shareImage.alt} />
-    {/* Besöksräknare (beslut 0014): inga kakor, ingen IP sparas. Inte på admin-/inloggningssidor och inte för inloggade
-        (kontoknappens cache finns i localStorage). Dev-servern räknar inte. */}
+    {/* Besöksräknare (beslut 0014): inga kakor, ingen IP sparas. Inte på admin-/inloggningssidor. Inloggade räknas med en
+        ja/nej-flagga (kontoknappens cache finns i localStorage) så att vi kan se andelen. Dev-servern räknar inte. */}
     {!noindex && import.meta.env.PROD && (
       <script is:inline>{`
 (function () {
-  try { if (localStorage.getItem('okeken:avatar')) return; } catch (e) {}
+  // Inloggad medlem? (kontoknappens cache). Bara ja/nej skickas, aldrig vem det är.
+  var member = 0;
+  try { if (localStorage.getItem('okeken:avatar')) member = 1; } catch (e) {}
   function send(d) {
+    d.m = member;
     try { navigator.sendBeacon('/api/hit', new Blob([JSON.stringify(d)], { type: 'text/plain' })); } catch (e) {}
   }
   var path = location.pathname;

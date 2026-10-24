@@ -1,8 +1,8 @@
 // Ren logik för besöksräknaren (ingen Firebase), så att den kan testas direkt. Se beslut 0014.
 
 export type Hit =
-  | { kind: 'pageview'; path: string; referrer: string }
-  | { kind: 'download'; path: string; file: string };
+  | { kind: 'pageview'; path: string; referrer: string; member: boolean }
+  | { kind: 'download'; path: string; file: string; member: boolean };
 
 const BOT = /bot|crawl|spider|slurp|preview|headless|lighthouse|facebookexternalhit|whatsapp|curl|wget|python|go-http|node-fetch/i;
 
@@ -45,10 +45,12 @@ export function parseHit(body: unknown): Hit | null {
   const b = body as Record<string, unknown>;
   const path = normalizePath(b.p);
   if (!path) return null;
-  if (b.t === 'pv') return { kind: 'pageview', path, referrer: typeof b.r === 'string' ? b.r : '' };
+  // Klienten anger bara om besökaren är inloggad (ja/nej), aldrig vem
+  const member = b.m === 1;
+  if (b.t === 'pv') return { kind: 'pageview', path, referrer: typeof b.r === 'string' ? b.r : '', member };
   if (b.t === 'dl') {
     const file = normalizeFile(b.f);
-    return file ? { kind: 'download', path, file } : null;
+    return file ? { kind: 'download', path, file, member } : null;
   }
   return null;
 }

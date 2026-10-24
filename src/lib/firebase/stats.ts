@@ -7,6 +7,9 @@ export interface PageStats {
   path: string;
   views: number;
   unique: number;
+  /** Av visningarna/unika: inloggade medlemmar (äldre dagar saknar fältet) */
+  memberViews: number;
+  memberUnique: number;
   sources: Record<string, number>;
   countries: Record<string, number>;
 }
@@ -15,6 +18,7 @@ export interface DownloadStats {
   path: string;
   file: string;
   count: number;
+  memberCount: number;
 }
 
 export interface Stats {
@@ -37,9 +41,11 @@ export async function loadStats(fromDay: string): Promise<Stats> {
   const pages = new Map<string, PageStats>();
   for (const d of pageSnap.docs) {
     const x = d.data();
-    const p = pages.get(x.path) ?? { path: x.path, views: 0, unique: 0, sources: {}, countries: {} };
+    const p = pages.get(x.path) ?? { path: x.path, views: 0, unique: 0, memberViews: 0, memberUnique: 0, sources: {}, countries: {} };
     p.views += x.views ?? 0;
     p.unique += x.unique ?? 0;
+    p.memberViews += x.memberViews ?? 0;
+    p.memberUnique += x.memberUnique ?? 0;
     sum(p.sources, x.sources);
     sum(p.countries, x.countries);
     pages.set(x.path, p);
@@ -49,8 +55,9 @@ export async function loadStats(fromDay: string): Promise<Stats> {
   for (const d of dlSnap.docs) {
     const x = d.data();
     const key = `${x.path}|${x.file}`;
-    const e = downloads.get(key) ?? { path: x.path, file: x.file, count: 0 };
+    const e = downloads.get(key) ?? { path: x.path, file: x.file, count: 0, memberCount: 0 };
     e.count += x.count ?? 0;
+    e.memberCount += x.memberCount ?? 0;
     downloads.set(key, e);
   }
   return { pages: [...pages.values()].sort((a, b) => b.views - a.views), downloads: [...downloads.values()].sort((a, b) => b.count - a.count) };

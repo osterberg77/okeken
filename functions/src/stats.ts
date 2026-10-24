@@ -87,6 +87,9 @@ export const hit = onRequest({ region: 'europe-north1', cors: false, maxInstance
           path: parsed.path,
           views: FieldValue.increment(1),
           unique: FieldValue.increment(unique ? 1 : 0),
+          // Av dem som var inloggade (andelen medlemmar bland besökarna)
+          memberViews: FieldValue.increment(parsed.member ? 1 : 0),
+          memberUnique: FieldValue.increment(parsed.member && unique ? 1 : 0),
           sources: { [source]: FieldValue.increment(1) },
           countries: { [country(req.headers)]: FieldValue.increment(1) },
         },
@@ -94,7 +97,7 @@ export const hit = onRequest({ region: 'europe-north1', cors: false, maxInstance
       );
     } else {
       await db.doc(`statsDownloads/${statsDocId(day, `${parsed.path}|${parsed.file}`)}`).set(
-        { date: day, path: parsed.path, file: parsed.file, count: FieldValue.increment(1) },
+        { date: day, path: parsed.path, file: parsed.file, count: FieldValue.increment(1), memberCount: FieldValue.increment(parsed.member ? 1 : 0) },
         { merge: true },
       );
     }

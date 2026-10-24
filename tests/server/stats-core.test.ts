@@ -32,8 +32,10 @@ describe('stats-core', () => {
     expect(normalizeFile('skript.js')).toBeNull();
   });
   it('tolkar anrop', () => {
-    expect(parseHit({ t: 'pv', p: '/', r: 'https://google.com/' })).toEqual({ kind: 'pageview', path: '/', referrer: 'https://google.com/' });
-    expect(parseHit({ t: 'dl', p: '/event/a', f: 'bana.pdf' })).toEqual({ kind: 'download', path: '/event/a', file: 'bana.pdf' });
+    expect(parseHit({ t: 'pv', p: '/', r: 'https://google.com/' })).toEqual({ kind: 'pageview', path: '/', referrer: 'https://google.com/', member: false });
+    expect(parseHit({ t: 'pv', p: '/', r: '', m: 1 })).toMatchObject({ member: true });
+    expect(parseHit({ t: 'pv', p: '/', r: '', m: 'ja' })).toMatchObject({ member: false });
+    expect(parseHit({ t: 'dl', p: '/event/a', f: 'bana.pdf' })).toEqual({ kind: 'download', path: '/event/a', file: 'bana.pdf', member: false });
     expect(parseHit({ t: 'dl', p: '/event/a', f: 'x.exe' })).toBeNull();
     expect(parseHit({ t: 'x', p: '/' })).toBeNull();
     expect(parseHit(null)).toBeNull();
