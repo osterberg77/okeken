@@ -1,10 +1,14 @@
 ---
 import MembershipForm from '../components/MembershipForm';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getFixedPage } from '../lib/pages';
+
+// Titel och ingress är en vanlig infosida med adressen medlemsavgift (beslut 0023); formuläret är en inbyggd widget.
+const page = await getFixedPage('medlemsavgift');
 ---
 
 <BaseLayout title="Medlemsavgift – OK Eken" noindex>
   <main class="mx-auto max-w-[860px] px-4 pt-6 pb-16 sm:px-8">
-    <MembershipForm client:only="react" />
+    <MembershipForm client:only="react" title={page?.title} introHtml={page?.bodyHtml} />
   </main>
 </BaseLayout>

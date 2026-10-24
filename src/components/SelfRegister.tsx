@@ -41,7 +41,8 @@ const dayLabel = (iso: string) =>
  * Sidan som QR-koden vid starten pekar på (beslut 0022): registrera att man sprungit, med valfri tid, val om vad som
  * visas, betyg på banan och en Swish-länk för frivilligt kartbidrag. Fungerar utan inloggning.
  */
-export default function SelfRegister({ events: all }: { events: Training[] }) {
+// title och introHtml kommer från den fasta infosidan /ute (beslut 0023); utan dem används standardtexten.
+export default function SelfRegister({ events: all, title, introHtml }: { events: Training[]; title?: string; introHtml?: string }) {
   const [now] = useState(() => Date.now());
   const events = useMemo(() => all.filter((e) => isOpen(e, now)), [all, now]);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -93,7 +94,7 @@ export default function SelfRegister({ events: all }: { events: Training[] }) {
     const next = [...all].filter((e) => Date.parse(e.startsAt) > now).sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
     return (
       <div className={card}>
-        <h1 className="m-0 font-display text-[28px] font-bold">Jag har sprungit</h1>
+        <h1 className="m-0 font-display text-[28px] font-bold">{title || 'Jag har sprungit'}</h1>
         <p className="m-0">Ingen träning är öppen för registrering just nu.</p>
         {next && <p className="m-0 text-muted">Nästa är {next.title} ({dayLabel(next.startsAt)}). Registreringen är öppen från startdagen till och med slutdagen.</p>}
       </div>
@@ -126,8 +127,12 @@ export default function SelfRegister({ events: all }: { events: Training[] }) {
 
   return (
     <form onSubmit={submit} className={card}>
-      <h1 className="m-0 font-display text-[28px] font-bold">Jag har sprungit</h1>
-      <p className="m-0 text-muted">Registrera gärna att du varit ute, så vet vi att våra banor uppskattas. Tid och namn är valfria att visa.</p>
+      <h1 className="m-0 font-display text-[28px] font-bold">{title || 'Jag har sprungit'}</h1>
+      {introHtml ? (
+        <div className="prose-eken" dangerouslySetInnerHTML={{ __html: introHtml }} />
+      ) : (
+        <p className="m-0 text-muted">Registrera gärna att du varit ute, så vet vi att våra banor uppskattas. Tid och namn är valfria att visa.</p>
+      )}
 
       {events.length > 1 && (
         <Field label="Träning" htmlFor="ev">

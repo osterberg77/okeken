@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { watchMenu } from '../../lib/firebase/menu';
 import { pageState, watchPages } from '../../lib/firebase/pages';
+import { isFixedPageSlug } from '../../lib/slug';
 import { menuPageIds } from '../../lib/menu-edit';
 import type { MenuRecord } from '../../types/menu';
 import type { PageRecord } from '../../types/page';
@@ -62,6 +63,9 @@ function Pages() {
               <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex flex-wrap items-center gap-2">
                   <StatusLabel state={pageState(p)} />
+                  {p.slug && isFixedPageSlug(p.slug) && (
+                    <span className="inline-flex items-center rounded-full border border-ink/15 bg-white px-2.5 py-[3px] text-xs font-semibold text-muted">Fast sida</span>
+                  )}
                   {inMenu && !inMenu.has(p.id) && (
                     <span className="inline-flex items-center rounded-full border border-ink/15 bg-white px-2.5 py-[3px] text-xs font-semibold text-muted">Ej i menyn</span>
                   )}

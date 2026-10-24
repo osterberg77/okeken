@@ -33,6 +33,16 @@ export const RESERVED_PAGE_SLUGS: readonly string[] = [
   'kalender',
   'traningskalender',
   'medlemsavgift',
+  'ute',
 ];
+
+/**
+ * Fasta sidor (beslut 0023): adresser som har en egen route med en inbyggd widget. Texten (titel och ingress) är en vanlig
+ * infosida med den här adressen, skapad av scripts/seed-fixed-pages.mjs. Adresserna är reserverade så att ingen skapar dem
+ * för hand, och bygget hoppar över dem i [slug].astro.
+ */
+export const FIXED_PAGE_SLUGS: readonly string[] = ['ute', 'medlemsavgift'];
+
+export const isFixedPageSlug = (slug: string) => FIXED_PAGE_SLUGS.includes(slug);
 
 export const isReservedPageSlug = (slug: string) => RESERVED_PAGE_SLUGS.includes(slug);

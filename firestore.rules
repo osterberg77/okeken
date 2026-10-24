@@ -369,7 +369,7 @@ service cloud.firestore {
     // Håll listan synkad med RESERVED_PAGE_SLUGS i src/lib/slug.ts.
     function reservedPageSlugs() {
       return ['event', 'admin', 'sok', 'logga-in', 'pagefind', 'api', 'assets', '404', 'index', 'kalender',
-        'traningskalender', 'medlemsavgift'];
+        'traningskalender', 'medlemsavgift', 'ute'];
     }
 
     match /pages/{pageId} {

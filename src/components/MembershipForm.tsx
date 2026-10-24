@@ -11,7 +11,8 @@ import MembershipPeople, { type PersonRow } from './MembershipPeople';
 const card = 'flex flex-col gap-5 rounded-[28px] bg-white px-6 py-8 shadow-card sm:px-[38px] sm:py-[38px]';
 
 /** Räknar ut medlemsavgiften, sparar betalningen och skickar vidare till Swish (länk på mobil, QR-kod för dator). */
-export default function MembershipForm() {
+// title och introHtml kommer från den fasta infosidan /medlemsavgift (beslut 0023); utan dem används standardtexten.
+export default function MembershipForm({ title, introHtml }: { title?: string; introHtml?: string }) {
   const year = currentYear();
   const [fees, setFees] = useState<MembershipFees | null | undefined>(undefined);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -82,10 +83,14 @@ export default function MembershipForm() {
   return (
     <form onSubmit={submit} className={card}>
       <div>
-        <h1 className="m-0 font-display text-[28px] leading-[1.1] font-bold tracking-[-.02em] sm:text-[36px]">Medlemsavgift {year}</h1>
-        <p className="mt-2 mb-0 max-w-[60ch] text-muted">
-          Lägg till alla som ska vara medlemmar, så räknar vi ut avgiften. Sedan betalar du med Swish.
-        </p>
+        <h1 className="m-0 font-display text-[28px] leading-[1.1] font-bold tracking-[-.02em] sm:text-[36px]">{title || `Medlemsavgift ${year}`}</h1>
+        {introHtml ? (
+          <div className="prose-eken mt-2 max-w-[60ch]" dangerouslySetInnerHTML={{ __html: introHtml }} />
+        ) : (
+          <p className="mt-2 mb-0 max-w-[60ch] text-muted">
+            Lägg till alla som ska vara medlemmar, så räknar vi ut avgiften. Sedan betalar du med Swish.
+          </p>
+        )}
       </div>
 
       <section className="flex flex-col gap-3">

@@ -2,15 +2,17 @@
 import SelfRegister from '../components/SelfRegister';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPublicEvents } from '../lib/events';
+import { getFixedPage } from '../lib/pages';
 
 // Sidan som QR-koden vid starten pekar på. Eventlistan kommer från bygget, så sidan kostar inga läsningar.
 const events = (await getPublicEvents())
   .filter((e) => e.type === 'training')
   .map((e) => ({ slug: e.slug, title: e.title, startsAt: e.startsAt, endsAt: e.endsAt, courses: (e.courseFiles ?? []).map((f) => f.label).filter(Boolean) }));
+const page = await getFixedPage('ute');
 ---
 
 <BaseLayout title="Jag har sprungit – OK Eken" noindex>
   <main class="mx-auto max-w-[640px] px-4 pt-6 pb-16 sm:px-8">
-    <SelfRegister client:only="react" events={events} />
+    <SelfRegister client:only="react" events={events} title={page?.title} introHtml={page?.bodyHtml} />
   </main>
 </BaseLayout>

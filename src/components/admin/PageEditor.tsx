@@ -16,7 +16,7 @@ import {
 import { loadLinkTargets, type LinkTarget } from '../../lib/firebase/link-targets';
 import { menuPageIds } from '../../lib/menu-edit';
 import { toPagePreview } from '../../lib/preview';
-import { slugify } from '../../lib/slug';
+import { isFixedPageSlug, slugify } from '../../lib/slug';
 import { formatTime } from '../../lib/time';
 import { MAX_PAGE_BODY, type PageContent, type PageRecord } from '../../types/page';
 import { canPublish, type Session } from '../../types/user';
@@ -245,7 +245,9 @@ function Editor({ session }: { session: Session }) {
             label="Titel"
             htmlFor="title"
             hint={
-              record?.slug
+              record?.slug && isFixedPageSlug(record.slug)
+                ? `Fast sida på /${record.slug}: titeln och texten visas ovanför formuläret. Formuläret är inbyggt och kan inte ändras här.`
+                : record?.slug
                 ? `Adress: /${record.slug} (kan inte ändras efter publicering).`
                 : proposedSlug
                   ? `Sidan får adressen /${proposedSlug} när den publiceras, och den kan sedan inte ändras.`

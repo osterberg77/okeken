@@ -2,12 +2,14 @@
 import PageDetail from '../components/PageDetail';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPublicPages } from '../lib/pages';
+import { isFixedPageSlug } from '../lib/slug';
 import type { PublicPage } from '../types/page';
 
 // Infosidor på /<slug>. Reserverade adresser (event, admin, sok …) kan inte bli sidor, se src/lib/slug.ts.
 export async function getStaticPaths() {
   const pages = await getPublicPages();
-  return pages.map((page) => ({ params: { slug: page.slug }, props: { page } }));
+  // Fasta sidor har egna routes (beslut 0023)
+  return pages.filter((p) => !isFixedPageSlug(p.slug)).map((page) => ({ params: { slug: page.slug }, props: { page } }));
 }
 
 const { page } = Astro.props as { page: PublicPage };
