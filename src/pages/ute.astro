@@ -6,7 +6,7 @@ import { getPublicEvents } from '../lib/events';
 // Sidan som QR-koden vid starten pekar på. Eventlistan kommer från bygget, så sidan kostar inga läsningar.
 const events = (await getPublicEvents())
   .filter((e) => e.type === 'training')
-  .map((e) => ({ slug: e.slug, title: e.title, startsAt: e.startsAt, endsAt: e.endsAt }));
+  .map((e) => ({ slug: e.slug, title: e.title, startsAt: e.startsAt, endsAt: e.endsAt, courses: (e.courseFiles ?? []).map((f) => f.label).filter(Boolean) }));
 ---
 
 <BaseLayout title="Jag har sprungit – OK Eken" noindex>

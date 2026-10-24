@@ -13,16 +13,23 @@ interface Training {
   title: string;
   startsAt: string;
   endsAt: string;
+  /** Banor på eventet (PDF-banornas namn), som förslag */
+  courses: string[];
 }
+
+/** Hur långt före start och efter slut en träning går att registrera sig på. Spegel av functions/src/self-result.ts. */
+const BEFORE_MS = 24 * 3600_000;
+const AFTER_MS = 3 * 24 * 3600_000;
+const isOpen = (e: Training, now: number) => Date.parse(e.startsAt) - BEFORE_MS <= now && now <= Date.parse(e.endsAt) + AFTER_MS;
 
 const card = 'flex flex-col gap-5 rounded-[28px] bg-white px-6 py-8 shadow-card sm:px-[38px] sm:py-[38px]';
 const SWISH_MESSAGE = 'OK Eken kartbidrag';
 
-/** Förvalt event: pågående träning (den senast startade), annars den senast startade, annars den som startar närmast. */
-export function defaultTraining(list: Training[], now: number): Training | undefined {
-  const started = list.filter((e) => Date.parse(e.startsAt) <= now).sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+/** Förvalt event bland de öppna: pågående träning (den senast startade), annars den senast startade, annars den som startar närmast. */
+export function defaultTraining(open: Training[], now: number): Training | undefined {
+  const started = open.filter((e) => Date.parse(e.startsAt) <= now).sort((a, b) => b.startsAt.localeCompare(a.startsAt));
   const running = started.find((e) => Date.parse(e.endsAt) >= now);
-  return running ?? started[0] ?? [...list].sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  return running ?? started[0] ?? [...open].sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
 }
 
 const dayLabel = (iso: string) =>
@@ -32,13 +39,16 @@ const dayLabel = (iso: string) =>
  * Sidan som QR-koden vid starten pekar på (beslut 0022): registrera att man sprungit, med valfri tid, val om vad som
  * visas, betyg på banan och en Swish-länk för frivilligt kartbidrag. Fungerar utan inloggning.
  */
-export default function SelfRegister({ events }: { events: Training[] }) {
+export default function SelfRegister({ events: all }: { events: Training[] }) {
+  const [now] = useState(() => Date.now());
+  const events = useMemo(() => all.filter((e) => isOpen(e, now)), [all, now]);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
-  const [slug, setSlug] = useState(() => defaultTraining(events, Date.now())?.slug ?? '');
+  const [slug, setSlug] = useState(() => defaultTraining(events, now)?.slug ?? '');
   const [name, setName] = useState('');
   const [course, setCourse] = useState('');
   const [time, setTime] = useState('');
   const [show, setShow] = useState<ShowMode>('participated');
+  const [showTouched, setShowTouched] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [trap, setTrap] = useState('');
   const [busy, setBusy] = useState(false);
@@ -50,6 +60,13 @@ export default function SelfRegister({ events }: { events: Training[] }) {
 
   const seconds = useMemo(() => (time.trim() ? parseDuration(time) : null), [time]);
   const timeBad = time.trim() !== '' && seconds === null;
+  // Har man skrivit en tid är "Visa tid" det rimliga förvalet, tills man själv väljer något annat
+  useEffect(() => {
+    if (seconds === null && show === 'time') setShow('participated');
+    if (showTouched) return;
+    setShow(seconds !== null ? 'time' : 'participated');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seconds, showTouched]);
   const event = events.find((e) => e.slug === slug);
   const member = !!session && session.permissions.length > 0;
 
@@ -70,7 +87,16 @@ export default function SelfRegister({ events }: { events: Training[] }) {
     }
   }
 
-  if (events.length === 0) return <div className={card}><p className="m-0">Det finns ingen träning att registrera sig på just nu.</p></div>;
+  if (events.length === 0) {
+    const next = [...all].filter((e) => Date.parse(e.startsAt) > now).sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+    return (
+      <div className={card}>
+        <h1 className="m-0 font-display text-[28px] font-bold">Jag har sprungit</h1>
+        <p className="m-0">Ingen träning är öppen för registrering just nu.</p>
+        {next && <p className="m-0 text-muted">Nästa är {next.title} ({dayLabel(next.startsAt)}). Registreringen öppnar dygnet före start.</p>}
+      </div>
+    );
+  }
 
   if (done) {
     return (
@@ -118,7 +144,22 @@ export default function SelfRegister({ events }: { events: Training[] }) {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Bana (valfritt)" htmlFor="co" hint="T.ex. Röd, Blå eller Lätt.">
+        <Field label="Bana (valfritt)" htmlFor="co" hint={event?.courses.length ? 'Välj en bana ovan eller skriv själv.' : 'T.ex. Röd, Blå eller Lätt.'}>
+          {!!event?.courses.length && (
+            <div className="flex flex-wrap gap-2">
+              {event.courses.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={course === c}
+                  onClick={() => setCourse(course === c ? '' : c)}
+                  className={`cursor-pointer rounded-full border-[1.5px] px-4 py-2 text-sm font-semibold ${course === c ? 'border-accent bg-accent text-white' : 'border-ink/18 bg-white text-ink hover:border-accent'}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
           <input id="co" value={course} onChange={(e) => setCourse(e.target.value)} maxLength={100} className={INPUT} />
         </Field>
         <Field label="Din tid (valfritt)" htmlFor="tm" hint={timeBad ? 'Skriv t.ex. 42:30 (minuter:sekunder).' : seconds !== null ? `Tolkas som ${formatDuration(seconds)}` : 'T.ex. 42:30'}>
@@ -127,7 +168,7 @@ export default function SelfRegister({ events }: { events: Training[] }) {
       </div>
 
       <Field label="Vad får visas i resultatlistan?" htmlFor="sh" hint="Du räknas med i statistiken oavsett. Väljer du Dölj publiceras inget om dig.">
-        <select id="sh" value={show} onChange={(e) => setShow(e.target.value as ShowMode)} className={INPUT}>
+        <select id="sh" value={show} onChange={(e) => { setShow(e.target.value as ShowMode); setShowTouched(true); }} className={INPUT}>
           {SHOW_MODES.filter((m) => m !== 'time' || seconds !== null).map((m) => <option key={m} value={m}>{SHOW_LABELS[m]}</option>)}
         </select>
       </Field>
