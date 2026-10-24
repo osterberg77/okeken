@@ -31,6 +31,7 @@ import { ActionButton, Field, INPUT, QuickButton } from './AdminUi';
 import BuildStatus from './BuildStatus';
 import ImagePicker from './ImagePicker';
 import LocationPicker from './LocationPicker';
+import PlacesEditor, { IconSelect } from './PlacesEditor';
 import MarkdownField from './MarkdownField';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 import NotifyToggle from '../NotifyToggle';
@@ -58,7 +59,7 @@ function newEventContent(uid: string): EventContent {
     title: '',
     startsAt: fromStockholmInput(`${tuesday}T17:00`),
     endsAt: fromStockholmInput(`${addDays(tuesday, 5)}T12:00`),
-    location: { name: '', mapUrl: '', coords: '' },
+    location: { name: '', mapUrl: '', coords: '', icon: 'start', places: [] },
     body: '',
     courseSetter: '',
     livelox: '',
@@ -630,7 +631,13 @@ function Editor({ session }: { session: Session }) {
             </Field>
           </div>
 
+          <Field label="Ikon för huvudplatsen" htmlFor="place-icon" hint="Kartan visar vägen hit. Start är triangeln från orienteringskartan; välj Parkering om vägen ska leda till parkeringen.">
+            <IconSelect id="place-icon" value={draft.location.icon} onChange={(icon) => update({ location: { ...draft.location, icon } })} />
+          </Field>
+
           <LocationPicker value={draft.location.coords} onChange={(coords) => update({ location: { ...draft.location, coords } })} />
+
+          <PlacesEditor places={draft.location.places} onChange={(places) => update({ location: { ...draft.location, places } })} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Ansvarig" htmlFor="setter" hint="Banläggare, mötesansvarig eller liknande.">

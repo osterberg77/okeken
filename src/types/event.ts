@@ -1,4 +1,5 @@
 import type { EventRoute } from '../lib/geo';
+import type { ExtraPlace, PlaceIcon } from '../lib/place-icons';
 import type { PublicResultEntry } from './result';
 
 export const EVENT_TYPES = ['training', 'competition', 'meeting', 'info', 'happening'] as const;
@@ -39,8 +40,11 @@ export interface EventContent {
   title: string;
   startsAt: Date;
   endsAt: Date;
-  /** `coords`: koordinater som text ("58.2, 16.0" eller en kartlänk); sparas som lat/lng i Firestore */
-  location: { name: string; mapUrl: string; coords: string };
+  /**
+   * `coords`: koordinater som text ("58.2, 16.0" eller en kartlänk); sparas som lat/lng i Firestore.
+   * `icon`: huvudplatsens ikon (den platsen får vägvisning). `places`: extra markörer på kartan, utan vägvisning.
+   */
+  location: { name: string; mapUrl: string; coords: string; icon: PlaceIcon; places: EditablePlace[] };
   body: string;
   courseSetter: string;
   livelox: string;
@@ -71,12 +75,23 @@ export interface EventRecord extends EventContent {
   updatedAt: Date | null;
 }
 
+/** Extra plats i editorn; koordinaterna som text, samma format som huvudplatsens */
+export interface EditablePlace {
+  icon: PlaceIcon;
+  label: string;
+  coords: string;
+}
+
 export interface EventLocation {
   /** Kan vara tom när bara koordinater finns */
   name: string;
   mapUrl?: string;
   lat?: number;
   lng?: number;
+  /** Huvudplatsens ikon; saknas på äldre events (då start) */
+  icon?: PlaceIcon;
+  /** Extra markörer på kartan */
+  places?: ExtraPlace[];
 }
 
 /** Den som står som publicerare på ett event, i publik form */

@@ -1,4 +1,5 @@
 import { parseCoords } from '../geo';
+import { DEFAULT_PLACE_ICON, isPlaceIcon, toExtraPlaces } from '../place-icons';
 import {
   addDoc,
   collection,
@@ -24,7 +25,11 @@ const events = collection(db, 'events');
 /** lat/lng skrivs bara när koordinaterna går att läsa (reglerna tillåter dem som valfria nycklar) */
 function locationToFirestore(l: EventContent['location']) {
   const at = parseCoords(l.coords);
-  return { name: l.name.trim(), mapUrl: l.mapUrl.trim(), ...(at ? { lat: at.lat, lng: at.lng } : {}) };
+  const places = l.places.flatMap((p) => {
+    const pt = parseCoords(p.coords);
+    return pt ? [{ icon: p.icon, label: p.label.trim(), lat: pt.lat, lng: pt.lng }] : [];
+  });
+  return { name: l.name.trim(), mapUrl: l.mapUrl.trim(), icon: l.icon, places, ...(at ? { lat: at.lat, lng: at.lng } : {}) };
 }
 
 function contentToFirestore(c: EventContent) {
@@ -57,6 +62,8 @@ function contentFromFirestore(d: DocumentData): EventContent {
       name: d.location?.name ?? '',
       mapUrl: d.location?.mapUrl ?? '',
       coords: typeof d.location?.lat === 'number' && typeof d.location?.lng === 'number' ? `${d.location.lat}, ${d.location.lng}` : '',
+      icon: isPlaceIcon(d.location?.icon) ? d.location.icon : DEFAULT_PLACE_ICON,
+      places: toExtraPlaces(d.location?.places).map((p) => ({ icon: p.icon, label: p.label, coords: `${p.lat}, ${p.lng}` })),
     },
     body: d.body ?? '',
     courseSetter: d.courseSetter ?? '',

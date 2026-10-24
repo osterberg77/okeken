@@ -189,6 +189,14 @@ describe('events: create', () => {
     ['lat utan lng', { location: { name: 'a', mapUrl: '', lat: 58.2 } }],
     ['lat utanför intervallet', { location: { name: 'a', mapUrl: '', lat: 91, lng: 16 } }],
     ['lng som sträng', { location: { name: 'a', mapUrl: '', lat: 58.2, lng: '16' } }],
+    ['location.icon okänd', { location: { name: 'a', mapUrl: '', icon: 'ufo' } }],
+    ['location.places inte lista', { location: { name: 'a', mapUrl: '', places: 'x' } }],
+    ['plats med okänd ikon', { location: { name: 'a', mapUrl: '', places: [{ icon: 'ufo', label: '', lat: 58.2, lng: 16 }] } }],
+    ['plats utan koordinater', { location: { name: 'a', mapUrl: '', places: [{ icon: 'toilet', label: '' }] } }],
+    ['plats med lat utanför intervallet', { location: { name: 'a', mapUrl: '', places: [{ icon: 'toilet', label: '', lat: 91, lng: 16 }] } }],
+    ['plats med extra nyckel', { location: { name: 'a', mapUrl: '', places: [{ icon: 'toilet', label: '', lat: 58, lng: 16, x: 1 }] } }],
+    ['platsetikett över 100 tecken', { location: { name: 'a', mapUrl: '', places: [{ icon: 'toilet', label: 'x'.repeat(101), lat: 58, lng: 16 }] } }],
+    ['fler än 3 platser', { location: { name: 'a', mapUrl: '', places: Array.from({ length: 4 }, () => ({ icon: 'toilet', label: '', lat: 58, lng: 16 })) } }],
     ['body över 20000 tecken', { body: 'x'.repeat(20001) }],
     ['courseSetter över 200 tecken', { courseSetter: 'x'.repeat(201) }],
     ['livelox över 500 tecken', { livelox: 'x'.repeat(501) }],
@@ -202,6 +210,18 @@ describe('events: create', () => {
   it('koordinater (lat/lng som par) accepteras', async () => {
     await assertSucceeds(
       setDoc(ev(as('publisher'), 'coords'), newEvent('publisher', { location: { name: 'a', mapUrl: '', lat: 58.2025, lng: 16.0015 } })),
+    );
+  });
+
+  it('huvudplatsens ikon och extra platser accepteras', async () => {
+    const place = (icon: string) => ({ icon, label: 'Parkering 2', lat: 58.2, lng: 16.0 });
+    await assertSucceeds(
+      setDoc(
+        ev(as('publisher'), 'places'),
+        newEvent('publisher', {
+          location: { name: 'a', mapUrl: '', lat: 58.2025, lng: 16.0015, icon: 'parking', places: ['toilet', 'parking', 'water'].map(place) },
+        }),
+      ),
     );
   });
 
@@ -300,6 +320,13 @@ describe('events: update - publicering', () => {
     await assertSucceeds(
       publish({ title: 'Ny', published: { ...content(), title: 'Ny' } }),
     );
+  });
+  it('publicera tillåts med huvudplatsens ikon och tre extra platser (både utkast och ögonblicksbild)', async () => {
+    const location = {
+      name: 'a', mapUrl: '', lat: 58.2, lng: 16.0, icon: 'parking',
+      places: ['toilet', 'parking', 'water'].map((icon) => ({ icon, label: 'x', lat: 58.2, lng: 16.0 })),
+    };
+    await assertSucceeds(publish({ location, published: { ...content(), location } }));
   });
   it('board kan publicera', async () => {
     await assertSucceeds(

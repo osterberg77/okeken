@@ -93,7 +93,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         {event.bodyHtml && <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />}
 
         {event.location?.lat !== undefined && event.location.lng !== undefined && (
-          <RouteMap to={{ lat: event.location.lat, lng: event.location.lng }} label={event.location.name || undefined} route={event.route} />
+          <RouteMap to={{ lat: event.location.lat, lng: event.location.lng }} label={event.location.name || undefined} route={event.route} icon={event.location.icon} places={event.location.places} />
         )}
 
         {rsvp && !event.externalUrl && !isPast && <RsvpBox key={event.slug} slug={event.slug} />}

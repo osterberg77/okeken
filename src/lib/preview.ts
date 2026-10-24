@@ -8,7 +8,11 @@ import { renderMarkdown, toExcerpt } from './markdown';
 function previewLocation(l: EventContent['location']): PublicEvent['location'] {
   const at = parseCoords(l.coords);
   if (!l.name.trim() && !at) return undefined;
-  return { name: l.name.trim(), mapUrl: l.mapUrl.trim() || undefined, ...at };
+  const places = l.places.flatMap((p) => {
+    const pt = parseCoords(p.coords);
+    return pt ? [{ icon: p.icon, label: p.label.trim(), ...pt }] : [];
+  });
+  return { name: l.name.trim(), mapUrl: l.mapUrl.trim() || undefined, ...at, icon: l.icon, places: places.length ? places : undefined };
 }
 
 /** Utkast/innehåll i publik form, för adminpreview och för utkast i kalendern. */

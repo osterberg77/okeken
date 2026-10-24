@@ -3,12 +3,14 @@
 // I CI: tjänstekontot via google-github-actions/auth.
 import { toPublicCourseFiles } from '../courses';
 import { toPublicImage } from '../event-image';
+import { isPlaceIcon, toExtraPlaces } from '../place-icons';
 import { normalizeName, omitHidden, type HiddenPeople } from '../hidden';
 import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore, type Timestamp } from 'firebase-admin/firestore';
 
-function toLocation(l: { name?: string; mapUrl?: string; lat?: number; lng?: number } | undefined) {
+function toLocation(l: { name?: string; mapUrl?: string; lat?: number; lng?: number; icon?: unknown; places?: unknown } | undefined) {
   if (!l) return undefined;
+  const places = toExtraPlaces(l.places);
   const hasCoords = typeof l.lat === 'number' && typeof l.lng === 'number';
   if (!l.name && !hasCoords) return undefined;
   return {
@@ -16,6 +18,8 @@ function toLocation(l: { name?: string; mapUrl?: string; lat?: number; lng?: num
     mapUrl: l.mapUrl || undefined,
     lat: hasCoords ? l.lat : undefined,
     lng: hasCoords ? l.lng : undefined,
+    icon: isPlaceIcon(l.icon) ? l.icon : undefined,
+    places: places.length ? places : undefined,
   };
 }
 

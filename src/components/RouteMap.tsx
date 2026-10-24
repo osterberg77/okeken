@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PLACE_ICON_GLYPHS, PLACE_ICON_LABELS, type ExtraPlace, type PlaceIcon } from '../lib/place-icons';
 import { HOME, googleMapsUrl, haversineKm, type EventRoute, type LatLng } from '../lib/geo';
 
 const W = 600;
@@ -11,12 +12,16 @@ interface Props {
   /** Namn vid målet (platsen); utelämnas om det saknas */
   label?: string;
   route?: EventRoute;
+  /** Huvudplatsens ikon (start som standard) */
+  icon?: PlaceIcon;
+  /** Extra markörer utan vägvisning */
+  places?: ExtraPlace[];
 }
 
 // Ritad SVG-karta (docs/skisser) som syns i den förbyggda HTML:en och utan JS. När sidan hydreras byts den mot
 // en riktig OpenStreetMap-karta (Leaflet, src/lib/leaflet-map.ts). Rutten kommer färdigräknad från bygget
 // (src/lib/server/route.ts). Utan rutt ritas fågelvägen streckad.
-export default function RouteMap({ to, label, route }: Props) {
+export default function RouteMap({ to, label, route, icon = 'start', places = [] }: Props) {
   const mapEl = useRef<HTMLDivElement>(null);
   const [live, setLive] = useState(false);
   useEffect(() => {
@@ -25,7 +30,7 @@ export default function RouteMap({ to, label, route }: Props) {
     import('../lib/leaflet-map')
       .then((m) => {
         if (cancelled || !mapEl.current) return;
-        off = m.mountViewMap(mapEl.current, to, route?.points, label);
+        off = m.mountViewMap(mapEl.current, to, route?.points, label, icon, places);
         setLive(true);
       })
       .catch(() => {}); // Misslyckas inläsningen finns den ritade kartan kvar
@@ -34,9 +39,10 @@ export default function RouteMap({ to, label, route }: Props) {
       off?.();
       setLive(false);
     };
-  }, [to.lat, to.lng, route, label]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [to.lat, to.lng, route, label, icon, JSON.stringify(places)]);
   const line: [number, number][] = route ? route.points : [[HOME.lng, HOME.lat], [to.lng, to.lat]];
-  const all: [number, number][] = [[HOME.lng, HOME.lat], [to.lng, to.lat], ...line];
+  const all: [number, number][] = [[HOME.lng, HOME.lat], [to.lng, to.lat], ...line, ...places.map((p): [number, number] => [p.lng, p.lat])];
   const lngs = all.map((p) => p[0]);
   const lats = all.map((p) => p[1]);
   const [lng0, lng1] = [Math.min(...lngs), Math.max(...lngs)];
@@ -95,9 +101,11 @@ export default function RouteMap({ to, label, route }: Props) {
         />
         {/* Start: triangel, som på orienteringskartan */}
         <polygon points="0,-11 9.5,5.5 -9.5,5.5" transform={`translate(${sx.toFixed(1)} ${sy.toFixed(1)}) rotate(-30)`} fill="none" stroke={ACCENT} strokeWidth="3" strokeLinejoin="round" />
-        {/* Mål: dubbelring */}
-        <circle cx={ex} cy={ey} r="6" fill="none" stroke={ACCENT} strokeWidth="3" />
-        <circle cx={ex} cy={ey} r="11" fill="none" stroke={ACCENT} strokeWidth="2.5" />
+        {places.map((p) => {
+          const [px, py] = pt([p.lng, p.lat]);
+          return <Badge key={`${p.lat},${p.lng},${p.icon}`} x={px} y={py} icon={p.icon} r={11} label={p.label || PLACE_ICON_LABELS[p.icon]} />;
+        })}
+        <Badge x={ex} y={ey} icon={icon} r={15} />
         <Label {...startLabel} text={HOME.name} />
         {label && <Label {...endLabel} text={label} />}
       </svg>
@@ -117,6 +125,23 @@ export default function RouteMap({ to, label, route }: Props) {
         </a>
       </figcaption>
     </figure>
+  );
+}
+
+/** Rund markör med ikonens tecken; start är triangeln från orienteringskartan */
+function Badge({ x, y, icon, r, label }: { x: number; y: number; icon: PlaceIcon; r: number; label?: string }) {
+  return (
+    <g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}>
+      {label && <title>{label}</title>}
+      <circle r={r} fill="#FFFEF8" stroke={ACCENT} strokeWidth="3" />
+      {icon === 'start' ? (
+        <polygon points="0,-8 7,5 -7,5" fill="none" stroke={ACCENT} strokeWidth="2.5" strokeLinejoin="round" />
+      ) : (
+        <text textAnchor="middle" dominantBaseline="central" fontSize={icon === 'toilet' ? 9 : 12} fontWeight="700" fill={ACCENT}>
+          {PLACE_ICON_GLYPHS[icon]}
+        </text>
+      )}
+    </g>
   );
 }
 

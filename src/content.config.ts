@@ -1,5 +1,6 @@
 import { defineCollection } from 'astro:content';
 import { z } from 'astro/zod';
+import { PLACE_ICONS } from './lib/place-icons';
 import { loadSelectedEventorEvents } from './lib/server/eventor-events';
 import { loadPublishedEvents } from './lib/server/published-events';
 import { loadPublishedPages } from './lib/server/published-pages';
@@ -19,6 +20,8 @@ const events = defineCollection({
         mapUrl: z.url().optional(),
         lat: z.number().optional(),
         lng: z.number().optional(),
+        icon: z.enum(PLACE_ICONS).optional(),
+        places: z.array(z.object({ icon: z.enum(PLACE_ICONS), label: z.string(), lat: z.number(), lng: z.number() })).optional(),
       })
       .optional(),
     courseSetter: z.string().optional(),
