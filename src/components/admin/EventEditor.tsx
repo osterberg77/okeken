@@ -32,6 +32,7 @@ import BuildStatus from './BuildStatus';
 import ImagePicker from './ImagePicker';
 import LocationPicker from './LocationPicker';
 import PlacesEditor, { IconSelect } from './PlacesEditor';
+import { PLACE_ICON_LABELS } from '../../lib/place-icons';
 import MarkdownField from './MarkdownField';
 import StatusBadge, { StatusLabel } from './StatusBadge';
 import NotifyToggle from '../NotifyToggle';
@@ -105,6 +106,8 @@ function Editor({ session }: { session: Session }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<Message>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // Platsen som klick på kartan flyttar: 'main' eller 'p0', 'p1'… för extra platser
+  const [activePlace, setActivePlace] = useState('main');
   const [tab, setTab] = useState<'edit' | 'preview'>('edit');
   const [imagePicker, setImagePicker] = useState(false);
   const loaded = useRef(false);
@@ -635,9 +638,29 @@ function Editor({ session }: { session: Session }) {
             <IconSelect id="place-icon" value={draft.location.icon} onChange={(icon) => update({ location: { ...draft.location, icon } })} />
           </Field>
 
-          <LocationPicker value={draft.location.coords} onChange={(coords) => update({ location: { ...draft.location, coords } })} />
+          <LocationPicker
+            places={[
+              { id: 'main', icon: draft.location.icon, label: draft.location.name.trim() || 'Huvudplats', coords: draft.location.coords },
+              ...draft.location.places.map((p, i) => ({ id: `p${i}`, icon: p.icon, label: p.label.trim() || PLACE_ICON_LABELS[p.icon], coords: p.coords })),
+            ]}
+            activeId={activePlace}
+            onActivate={setActivePlace}
+            onChange={(id, coords) =>
+              update({
+                location:
+                  id === 'main'
+                    ? { ...draft.location, coords }
+                    : { ...draft.location, places: draft.location.places.map((p, i) => (`p${i}` === id ? { ...p, coords } : p)) },
+              })
+            }
+          />
 
-          <PlacesEditor places={draft.location.places} onChange={(places) => update({ location: { ...draft.location, places } })} />
+          <PlacesEditor
+            places={draft.location.places}
+            onChange={(places) => update({ location: { ...draft.location, places } })}
+            activeId={activePlace}
+            onActivate={setActivePlace}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Ansvarig" htmlFor="setter" hint="Banläggare, mötesansvarig eller liknande.">

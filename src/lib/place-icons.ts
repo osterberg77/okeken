@@ -1,5 +1,5 @@
 /** Ikoner för platser på eventkartan (huvudplatsen och extra platser). Delas av bygget, förhandsvisningen och admin. */
-export const PLACE_ICONS = ['start', 'parking', 'toilet', 'finish', 'gathering', 'water', 'firstaid', 'other'] as const;
+export const PLACE_ICONS = ['start', 'parking', 'toilet', 'finish', 'gathering', 'water', 'firstaid', 'mailbox', 'other'] as const;
 export type PlaceIcon = (typeof PLACE_ICONS)[number];
 
 export const DEFAULT_PLACE_ICON: PlaceIcon = 'start';
@@ -14,6 +14,7 @@ export const PLACE_ICON_LABELS: Record<PlaceIcon, string> = {
   gathering: 'Samling',
   water: 'Vatten',
   firstaid: 'Första hjälpen',
+  mailbox: 'Brevlåda',
   other: 'Övrigt',
 };
 
@@ -26,6 +27,7 @@ export const PLACE_ICON_GLYPHS: Record<PlaceIcon, string> = {
   gathering: '⚑',
   water: '💧',
   firstaid: '✚',
+  mailbox: '✉',
   other: '•',
 };
 

@@ -9,11 +9,15 @@ const ACCENT = '#8A4B9E';
 const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 
-function baseMap(el: HTMLElement): L.Map {
+/**
+ * `interactive`: adminkartan, där hela kartan ska gå att dra, nypa och scrolla-zooma direkt. På sajten ska en finger
+ * i stället kunna skrolla sidan förbi kartan på mobil (nyp för att zooma).
+ */
+function baseMap(el: HTMLElement, interactive = false): L.Map {
   const map = L.map(el, {
-    scrollWheelZoom: false,
-    // En finger ska kunna skrolla sidan förbi kartan på mobil; nyp för att zooma
-    dragging: !L.Browser.mobile,
+    scrollWheelZoom: interactive,
+    dragging: interactive || !L.Browser.mobile,
+    touchZoom: true,
     attributionControl: true,
   });
   L.tileLayer(TILES, { maxZoom: 18, attribution: ATTRIBUTION }).addTo(map);
@@ -64,48 +68,75 @@ export function mountViewMap(el: HTMLElement, to: LatLng, route?: [number, numbe
   return () => map.remove();
 }
 
-/** Platsväljare för admin: klicka eller dra markören. `onPick` får nya koordinater. */
-export function mountPickerMap(el: HTMLElement, start: LatLng | null, onPick: (at: LatLng) => void) {
-  const map = baseMap(el);
-  map.options.dragging = true;
-  map.dragging.enable();
-  map.setView(start ? [start.lat, start.lng] : [HOME.lat, HOME.lng], start ? 13 : 9);
-  let marker: L.Marker | null = null;
-  const place = (at: LatLng, pan: boolean) => {
-    if (marker) marker.setLatLng([at.lat, at.lng]);
-    else {
-      marker = L.marker([at.lat, at.lng], { draggable: true, icon: pinIcon() }).addTo(map);
-      marker.on('dragend', () => {
-        const p = marker!.getLatLng();
-        onPick({ lat: p.lat, lng: p.lng });
-      });
-    }
-    if (pan) map.setView([at.lat, at.lng], Math.max(map.getZoom(), 13));
-  };
-  if (start) place(start, false);
-  map.on('click', (e: L.LeafletMouseEvent) => {
-    place({ lat: e.latlng.lat, lng: e.latlng.lng }, false);
-    onPick({ lat: e.latlng.lat, lng: e.latlng.lng });
-  });
-  return {
-    /** Flytta markören utifrån (sökträff eller inskrivna koordinater) */
-    setPosition: (at: LatLng | null) => {
-      if (at) place(at, true);
-      else if (marker) {
-        marker.remove();
-        marker = null;
-      }
-    },
-    destroy: () => map.remove(),
-  };
+export interface PickerItem {
+  id: string;
+  icon: PlaceIcon;
+  at: LatLng | null;
+  /** Platsen som nästa klick på kartan flyttar */
+  active: boolean;
 }
 
-// Egen ikon: Leaflets standardbilder hittas inte efter bundling
-function pinIcon() {
-  return L.divIcon({
-    className: '',
-    html: `<span style="display:block;width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${ACCENT};border:3px solid #FFFEF8;box-shadow:0 2px 6px rgba(0,0,0,.4)"></span>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 22],
+/**
+ * Platsväljare för admin med alla platser på samma karta. Klick på kartan flyttar den aktiva platsen, markörerna går
+ * att dra, och ett klick på en markör gör den aktiv.
+ */
+export function mountPickerMap(
+  el: HTMLElement,
+  items: PickerItem[],
+  handlers: { onPlace: (id: string, at: LatLng) => void; onSelect: (id: string) => void },
+) {
+  const map = baseMap(el, true);
+  const markers = new Map<string, L.Marker>();
+  let activeId: string | null = null;
+  const firstFit = (list: PickerItem[]) => {
+    const pts = list.flatMap((i) => (i.at ? [[i.at.lat, i.at.lng] as [number, number]] : []));
+    if (pts.length > 1) map.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 15 });
+    else if (pts.length === 1) map.setView(pts[0], 13);
+    else map.setView([HOME.lat, HOME.lng], 9);
+  };
+  firstFit(items);
+
+  const setItems = (list: PickerItem[]) => {
+    const seen = new Set<string>();
+    for (const item of list) {
+      if (!item.at) continue;
+      seen.add(item.id);
+      const latlng: L.LatLngExpression = [item.at.lat, item.at.lng];
+      const icon = placeIcon(item.icon, item.active);
+      let m = markers.get(item.id);
+      if (!m) {
+        m = L.marker(latlng, { draggable: true, icon, keyboard: false }).addTo(map);
+        const id = item.id;
+        m.on('dragend', () => {
+          const p = markers.get(id)!.getLatLng();
+          handlers.onPlace(id, { lat: p.lat, lng: p.lng });
+        });
+        m.on('click', () => handlers.onSelect(id));
+        markers.set(item.id, m);
+      } else {
+        m.setLatLng(latlng);
+        m.setIcon(icon);
+      }
+      m.setZIndexOffset(item.active ? 1000 : 0);
+      if (item.active) activeId = item.id;
+    }
+    for (const [id, m] of markers) {
+      if (!seen.has(id)) {
+        m.remove();
+        markers.delete(id);
+      }
+    }
+    activeId = list.find((i) => i.active)?.id ?? null;
+  };
+  setItems(items);
+
+  map.on('click', (e: L.LeafletMouseEvent) => {
+    if (activeId) handlers.onPlace(activeId, { lat: e.latlng.lat, lng: e.latlng.lng });
   });
+  return {
+    setItems,
+    /** Flytta kartan till en plats utifrån (sökträff eller inskrivna koordinater) */
+    panTo: (at: LatLng) => map.setView([at.lat, at.lng], Math.max(map.getZoom(), 13)),
+    destroy: () => map.remove(),
+  };
 }

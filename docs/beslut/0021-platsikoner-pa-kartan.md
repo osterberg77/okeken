@@ -8,3 +8,8 @@
 - **Högst 3 extra platser.** Reglerna kan inte loopa utan listas upp, och 4 platser går över taket på 1000 uttryck när ett event publiceras (utkast och ögonblicksbild valideras båda). Behövs fler får taket höjas när reglerna förenklas.
 - Båda fälten är valfria i reglerna, så äldre event utan dem fortsätter fungera. Ögonblicksbilden kopierar `location` som den är.
 - Editorn: ikonväljare för huvudplatsen och `PlacesEditor` för extra platser (varje plats har egen kartväljare). Platser utan giltiga koordinater sparas inte.
+
+**Tillägg 2026-10-24:**
+- Ikonen `mailbox` (brevlåda) finns också.
+- Admin har **en karta** för alla platser (`LocationPicker`): knapparna "Flytta:" ovanför kartan väljer vilken plats ett klick eller en dragning flyttar, och ett klick på en markör väljer den. Platslistan under kartan har bara fält, inga egna kartor.
+- Adminkartan öppnas med dra, nyp och scrollhjul-zoom på från start (`baseMap(el, true)`); sajtens karta låter en finger skrolla förbi på mobil.

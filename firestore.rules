@@ -136,7 +136,7 @@ service cloud.firestore {
 
     // Ikon för huvudplatsen och extra platser på kartan (valfria, äldre events saknar dem)
     function validPlaceIcon(i) {
-      return i in ['start', 'parking', 'toilet', 'finish', 'gathering', 'water', 'firstaid', 'other'];
+      return i in ['start', 'parking', 'toilet', 'finish', 'gathering', 'water', 'firstaid', 'mailbox', 'other'];
     }
 
     function validPlace(p) {

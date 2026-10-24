@@ -219,7 +219,7 @@ describe('events: create', () => {
       setDoc(
         ev(as('publisher'), 'places'),
         newEvent('publisher', {
-          location: { name: 'a', mapUrl: '', lat: 58.2025, lng: 16.0015, icon: 'parking', places: ['toilet', 'parking', 'water'].map(place) },
+          location: { name: 'a', mapUrl: '', lat: 58.2025, lng: 16.0015, icon: 'parking', places: ['toilet', 'mailbox', 'water'].map(place) },
         }),
       ),
     );
@@ -324,7 +324,7 @@ describe('events: update - publicering', () => {
   it('publicera tillåts med huvudplatsens ikon och tre extra platser (både utkast och ögonblicksbild)', async () => {
     const location = {
       name: 'a', mapUrl: '', lat: 58.2, lng: 16.0, icon: 'parking',
-      places: ['toilet', 'parking', 'water'].map((icon) => ({ icon, label: 'x', lat: 58.2, lng: 16.0 })),
+      places: ['toilet', 'mailbox', 'water'].map((icon) => ({ icon, label: 'x', lat: 58.2, lng: 16.0 })),
     };
     await assertSucceeds(publish({ location, published: { ...content(), location } }));
   });

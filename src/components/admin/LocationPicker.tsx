@@ -1,11 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatCoords, parseCoords, type LatLng } from '../../lib/geo';
+import { PLACE_ICON_GLYPHS, type PlaceIcon } from '../../lib/place-icons';
+import type { PickerItem } from '../../lib/leaflet-map';
 import { INPUT } from './AdminUi';
 
-interface Props {
+export interface PickerPlace {
+  /** 'main' för huvudplatsen, 'p0', 'p1'… för extra platser */
+  id: string;
+  icon: PlaceIcon;
+  /** Chip-text */
+  label: string;
   /** Koordinater som text, samma fält som i eventet */
-  value: string;
-  onChange: (coords: string) => void;
+  coords: string;
+}
+
+interface Props {
+  places: PickerPlace[];
+  /** Platsen som klick på kartan flyttar */
+  activeId: string;
+  onActivate: (id: string) => void;
+  onChange: (id: string, coords: string) => void;
 }
 
 interface Hit {
@@ -14,36 +28,47 @@ interface Hit {
 }
 
 type Picker = Awaited<ReturnType<typeof mountPicker>>;
-const mountPicker = async (el: HTMLElement, start: LatLng | null, onPick: (at: LatLng) => void) =>
-  (await import('../../lib/leaflet-map')).mountPickerMap(el, start, onPick);
+const mountPicker = async (el: HTMLElement, items: PickerItem[], handlers: Parameters<typeof import('../../lib/leaflet-map').mountPickerMap>[2]) =>
+  (await import('../../lib/leaflet-map')).mountPickerMap(el, items, handlers);
 
-/** Karta där man klickar (eller drar markören) för att välja plats, plus ortssökning via OpenStreetMaps Nominatim. */
-export default function LocationPicker({ value, onChange }: Props) {
+/**
+ * En karta med alla platser (huvudplats och extra). Välj vilken plats som ska flyttas med knapparna ovanför kartan
+ * (eller genom att trycka på dess markör), klicka sedan på kartan eller dra markören. Ortssökning via OpenStreetMaps Nominatim.
+ */
+export default function LocationPicker({ places, activeId, onActivate, onChange }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const picker = useRef<Picker | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
-  const valueRef = useRef(value);
-  valueRef.current = value;
-  const lastEmitted = useRef<string | null>(null);
+  const onActivateRef = useRef(onActivate);
+  onActivateRef.current = onActivate;
+  const placesRef = useRef(places);
+  placesRef.current = places;
+  const activeRef = useRef(activeId);
+  activeRef.current = activeId;
+  // Senaste koordinaterna som kartan själv skickade, så att de inte flyttar kartan igen
+  const lastEmitted = useRef<Record<string, string>>({});
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
 
-  const emit = (at: LatLng) => {
+  const items = (): PickerItem[] =>
+    placesRef.current.map((p) => ({ id: p.id, icon: p.icon, at: parseCoords(p.coords), active: p.id === activeRef.current }));
+
+  const emit = (id: string, at: LatLng) => {
     const text = formatCoords(at);
-    lastEmitted.current = text;
-    onChangeRef.current(text);
+    lastEmitted.current[id] = text;
+    onChangeRef.current(id, text);
   };
 
   useEffect(() => {
     let cancelled = false;
-    mountPicker(el.current!, parseCoords(value), emit).then((p) => {
+    mountPicker(el.current!, items(), { onPlace: emit, onSelect: (id) => onActivateRef.current(id) }).then((p) => {
       if (cancelled) p.destroy();
       else {
         picker.current = p;
-        if (valueRef.current !== lastEmitted.current) p.setPosition(parseCoords(valueRef.current));
+        p.setItems(items());
       }
     });
     return () => {
@@ -54,11 +79,17 @@ export default function LocationPicker({ value, onChange }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Skrivs koordinater in för hand flyttas markören dit (men inte när ändringen kom från kartan själv)
+  // Ritar om markörerna när platserna eller den aktiva ändras; skrivs koordinater in för hand flyttas kartan dit
   useEffect(() => {
-    if (value === lastEmitted.current) return;
-    picker.current?.setPosition(parseCoords(value));
-  }, [value]);
+    picker.current?.setItems(items());
+    const active = places.find((p) => p.id === activeId);
+    const at = active ? parseCoords(active.coords) : null;
+    if (active && at && lastEmitted.current[active.id] !== active.coords) {
+      picker.current?.panTo(at);
+      lastEmitted.current[active.id] = active.coords;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places, activeId]);
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
@@ -80,8 +111,8 @@ export default function LocationPicker({ value, onChange }: Props) {
   }
 
   function choose(hit: Hit) {
-    picker.current?.setPosition(hit.at);
-    emit(hit.at);
+    picker.current?.panTo(hit.at);
+    emit(activeId, hit.at);
     setHits(null);
   }
 
@@ -112,8 +143,25 @@ export default function LocationPicker({ value, onChange }: Props) {
           ))}
         </ul>
       )}
+      {places.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Plats att flytta">
+          <span className="text-[13px] font-semibold text-muted">Flytta:</span>
+          {places.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="radio"
+              aria-checked={p.id === activeId}
+              onClick={() => onActivate(p.id)}
+              className={`cursor-pointer rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-semibold ${p.id === activeId ? 'border-accent bg-accent text-white' : 'border-ink/18 bg-white text-ink hover:border-accent'}`}
+            >
+              {PLACE_ICON_GLYPHS[p.icon]} {p.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div ref={el} className="z-0 aspect-[3/2] w-full overflow-hidden rounded-[14px] sm:aspect-[2/1]" />
-      <p className="m-0 text-xs text-muted">Klicka på kartan eller dra markören för att sätta platsen.</p>
+      <p className="m-0 text-xs text-muted">Klicka på kartan eller dra en markör för att sätta den valda platsen. Nyp eller scrolla för att zooma.</p>
     </div>
   );
 }
