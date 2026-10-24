@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { LinkTarget } from '../../lib/firebase/link-targets';
+import { describeLink, type LinkTarget } from '../../lib/firebase/link-targets';
 import { INPUT } from './AdminUi';
 
 const CUSTOM_LINK = /^(https:\/\/|http:\/\/|mailto:|tel:)\S+$/i;
 
 export default function LinkPicker({
-  targets, selected, onPick, onClose, onRemove,
-}: { targets: LinkTarget[] | null; selected: () => string; onPick: (title: string, href: string) => void; onClose: () => void; onRemove?: () => void }) {
+  targets, selected, currentHref, onPick, onClose, onRemove,
+}: { targets: LinkTarget[] | null; selected: () => string; currentHref?: string; onPick: (title: string, href: string) => void; onClose: () => void; onRemove?: () => void }) {
   const [filter, setFilter] = useState('');
   const [custom, setCustom] = useState('');
   const [customError, setCustomError] = useState('');
@@ -33,6 +33,8 @@ export default function LinkPicker({
           <button type="button" onClick={onClose} className="cursor-pointer text-sm font-semibold text-muted hover:text-accent">Stäng</button>
         </span>
       </div>
+
+      {currentHref && <CurrentLink href={currentHref} targets={targets} />}
 
       <input
         type="search"
@@ -77,6 +79,27 @@ export default function LinkPicker({
         </div>
         {customError && <span role="alert" className="text-[13px] text-[#8A2B2B]">{customError}</span>}
       </div>
+    </div>
+  );
+}
+
+/** Visar vart länken under markören går nu: intern (publicerad eller inte) eller extern */
+function CurrentLink({ href, targets }: { href: string; targets: LinkTarget[] | null }) {
+  const info = targets ? describeLink(href, targets) : null;
+  const badge =
+    !info ? null
+    : info.kind === 'external' ? { text: 'Extern adress', warn: false }
+    : info.published ? { text: 'Intern, publicerad', warn: false }
+    : { text: 'Intern, ej publicerad', warn: true };
+  return (
+    <div className="flex flex-col gap-1 rounded-xl bg-period px-3 py-2 text-sm">
+      <span className="font-semibold">Länken går nu till</span>
+      <span className="flex flex-wrap items-center gap-2">
+        {badge && <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.warn ? 'bg-[#F6DADA] text-[#8A2B2B]' : 'bg-white text-accent'}`}>{badge.text}</span>}
+        {info?.title && <span className="font-medium">{info.title}</span>}
+        <span className="break-all text-xs text-muted">{href}</span>
+      </span>
+      <span className="text-xs text-muted">Välj en annan sida nedan, eller skriv en egen adress, för att byta mål.</span>
     </div>
   );
 }

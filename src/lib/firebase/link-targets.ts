@@ -45,3 +45,19 @@ export function unpublishedLinks(markdown: string, targets: LinkTarget[]): strin
   }
   return [...found];
 }
+
+export interface LinkInfo {
+  kind: 'internal' | 'external';
+  /** Mål-sidans eller eventets titel när den är publicerad */
+  title?: string;
+  /** Bara för interna länkar: pekar på en publicerad sida eller ett publicerat event */
+  published?: boolean;
+}
+
+/** Vad en länk pekar på, för att visa i länkväljaren: intern (sida/event, publicerad eller inte) eller extern adress */
+export function describeLink(href: string, targets: LinkTarget[]): LinkInfo {
+  if (!href.startsWith('/') || href.startsWith('//')) return { kind: 'external' };
+  const path = href.length > 1 ? href.replace(/[#?].*$/, '').replace(/\/+$/, '') : href;
+  const hit = targets.find((t) => t.href === path);
+  return { kind: 'internal', title: hit?.title, published: !!hit || STATIC_TARGETS.includes(path) };
+}

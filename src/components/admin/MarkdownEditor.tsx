@@ -222,6 +222,7 @@ export default function MarkdownEditor({ id, value, onChange, targets, rows, all
   const lastEmitted = useRef(value);
   const [picker, setPicker] = useState(false);
   const [linkText, setLinkText] = useState('');
+  const [linkHref, setLinkHref] = useState('');
   const [imagePicker, setImagePicker] = useState(false);
 
   const editor = useEditor({
@@ -263,6 +264,9 @@ export default function MarkdownEditor({ id, value, onChange, targets, rows, all
 
   function openLinkPicker() {
     if (picker) return setPicker(false);
+    // Står markören i en befintlig länk markeras hela länken, så att väljaren byter dess mål i stället för att infoga en ny
+    if (editor!.isActive('link')) editor!.chain().focus().extendMarkRange('link').run();
+    setLinkHref((editor!.getAttributes('link').href as string | undefined) ?? '');
     const { from, to } = editor!.state.selection;
     setLinkText(editor!.state.doc.textBetween(from, to, ' '));
     setImagePicker(false);
@@ -322,6 +326,7 @@ export default function MarkdownEditor({ id, value, onChange, targets, rows, all
         <LinkPicker
           targets={targets}
           selected={() => linkText}
+          currentHref={linkHref}
           onPick={insertLink}
           onClose={() => setPicker(false)}
           onRemove={state.link ? removeLink : undefined}
