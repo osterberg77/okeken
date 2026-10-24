@@ -35,11 +35,11 @@ describe('calculate (klubbens regler: vuxen 200, ungdom 100, familj 450)', () =>
 });
 
 describe('Swish', () => {
-  it('QR-strängen följer specen', () => expect(swishQrValue('123 785 69 01', 450, 'OK Eken OKE-A7K2')).toBe('C1237856901;450;OK Eken OKE-A7K2;0'));
+  it('QR-strängen följer specen', () => expect(swishQrValue('123 785 69 01', 450, 'OK Eken OKE-A7K2')).toBe('C1237856901;450;OK Eken OKE-A7K2;2'));
   it('länken bär belopp, mottagare och meddelande', () => {
     const link = swishDeepLink('1237856901', 450, 'hej');
     const data = JSON.parse(decodeURIComponent(link.replace('swish://payment?data=', '')));
-    expect(data).toEqual({ version: 1, payee: { value: '1237856901' }, amount: { value: 450 }, message: { value: 'hej' } });
+    expect(data).toEqual({ version: 1, payee: { value: '1237856901' }, amount: { value: 450, editable: true }, message: { value: 'hej' } });
   });
   it('meddelandet ryms i Swishs 50 tecken och innehåller referensen', () => {
     const m = swishMessage(2026, 'OKE-A7K2');

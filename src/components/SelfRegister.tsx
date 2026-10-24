@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { swishOpenLink } from '../lib/membership';
+import { swishDeepLink, swishOpenLink } from '../lib/membership';
 import { currentYear, getFees } from '../lib/firebase/membership';
 import { registerSelfResult } from '../lib/firebase/results';
 import { watchSession } from '../lib/firebase/session';
 import { formatDuration, parseDuration } from '../lib/results';
+import { dayKey } from '../lib/time';
 import { SHOW_LABELS, SHOW_MODES, type ShowMode } from '../types/result';
 import type { Session } from '../types/user';
 import { Field, INPUT } from './admin/AdminUi';
@@ -17,13 +18,14 @@ interface Training {
   courses: string[];
 }
 
-/** Hur långt före start och efter slut en träning går att registrera sig på. Spegel av functions/src/self-result.ts. */
-const BEFORE_MS = 24 * 3600_000;
-const AFTER_MS = 3 * 24 * 3600_000;
-const isOpen = (e: Training, now: number) => Date.parse(e.startsAt) - BEFORE_MS <= now && now <= Date.parse(e.endsAt) + AFTER_MS;
+/** Öppen hela startdagen till och med hela slutdagen (svensk tid), klockslagen räknas inte. Spegel av functions/src/self-result.ts. */
+const isOpen = (e: Training, now: number) => {
+  const today = dayKey(new Date(now));
+  return dayKey(new Date(e.startsAt)) <= today && today <= dayKey(new Date(e.endsAt));
+};
 
 const card = 'flex flex-col gap-5 rounded-[28px] bg-white px-6 py-8 shadow-card sm:px-[38px] sm:py-[38px]';
-const SWISH_MESSAGE = 'OK Eken kartbidrag';
+const SWISH_MESSAGE = 'OK Eken startavgift';
 
 /** Förvalt event bland de öppna: pågående träning (den senast startade), annars den senast startade, annars den som startar närmast. */
 export function defaultTraining(open: Training[], now: number): Training | undefined {
@@ -54,7 +56,7 @@ export default function SelfRegister({ events: all }: { events: Training[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState<{ updated: boolean } | null>(null);
-  const [swish, setSwish] = useState('');
+  const [swish, setSwish] = useState<{ number: string; startFee: number } | null>(null);
 
   useEffect(() => watchSession(setSession), []);
 
@@ -79,7 +81,7 @@ export default function SelfRegister({ events: all }: { events: Training[] }) {
     try {
       setDone(await registerSelfResult({ slug, name: name.trim(), course, totalSeconds: seconds, show, rating, trap }));
       // Swish-numret hämtas först nu (en läsning), inte för alla som bara öppnar sidan
-      getFees(currentYear()).then((f) => setSwish(f?.swishNumber ?? ''), () => {});
+      getFees(currentYear()).then((f) => setSwish(f?.swishNumber ? { number: f.swishNumber, startFee: f.startFee } : null), () => {});
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : 'Kunde inte spara. Försök igen.');
     } finally {
@@ -93,7 +95,7 @@ export default function SelfRegister({ events: all }: { events: Training[] }) {
       <div className={card}>
         <h1 className="m-0 font-display text-[28px] font-bold">Jag har sprungit</h1>
         <p className="m-0">Ingen träning är öppen för registrering just nu.</p>
-        {next && <p className="m-0 text-muted">Nästa är {next.title} ({dayLabel(next.startsAt)}). Registreringen öppnar dygnet före start.</p>}
+        {next && <p className="m-0 text-muted">Nästa är {next.title} ({dayLabel(next.startsAt)}). Registreringen är öppen från startdagen till och med slutdagen.</p>}
       </div>
     );
   }
@@ -105,11 +107,14 @@ export default function SelfRegister({ events: all }: { events: Training[] }) {
         <p className="m-0">{done.updated ? 'Din registrering är uppdaterad.' : 'Du är registrerad.'} Roligt att du var ute i skogen.</p>
         {swish && (
           <div className="flex flex-col gap-2 rounded-2xl bg-period p-4">
-            <p className="m-0 text-[15px]">Vill du stötta klubben med en liten slant till kartorna? Helt frivilligt.</p>
-            <a href={swishOpenLink(swish, SWISH_MESSAGE)} className="self-start rounded-full bg-accent px-6 py-3 text-base font-semibold text-white no-underline hover:brightness-110">
-              Swisha valfritt belopp
+            <p className="m-0 text-[15px]">{swish.startFee > 0 ? 'Startavgiften går till kartor och underhåll av banorna.' : 'Vill du stötta klubben med en liten slant till kartorna? Helt frivilligt.'}</p>
+            <a
+              href={swish.startFee > 0 ? swishDeepLink(swish.number, swish.startFee, SWISH_MESSAGE) : swishOpenLink(swish.number, SWISH_MESSAGE)}
+              className="self-start rounded-full bg-accent px-6 py-3 text-base font-semibold text-white no-underline hover:brightness-110"
+            >
+              {swish.startFee > 0 ? `Swisha startavgift ${swish.startFee} kr` : 'Swisha valfritt belopp'}
             </a>
-            <span className="text-[13px] text-muted">Öppnar Swish-appen på mobilen. Du väljer summan själv.</span>
+            <span className="text-[13px] text-muted">Öppnar Swish-appen på mobilen. Du kan ändra summan i Swish.</span>
           </div>
         )}
         <button type="button" onClick={() => setDone(null)} className="cursor-pointer self-start border-0 bg-transparent p-0 text-sm font-semibold text-accent hover:underline">

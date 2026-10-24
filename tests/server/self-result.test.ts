@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveShow, InvalidSelfResult, parseSelfResult } from '../../functions/src/self-result';
+import { effectiveShow, InvalidSelfResult, isRegistrationOpen, parseSelfResult } from '../../functions/src/self-result';
 
 const ok = { slug: 'tisdagstraning-2026-10-27', name: ' Anna ', course: 'Röd', totalSeconds: 2550, show: 'time', rating: 4, trap: '' };
 
@@ -28,4 +28,13 @@ describe('effectiveShow', () => {
     expect(effectiveShow({ show: 'time', totalSeconds: 100 })).toBe('time');
     expect(effectiveShow({ show: 'hidden', totalSeconds: null })).toBe('hidden');
   });
+});
+
+describe('isRegistrationOpen', () => {
+  const start = new Date('2026-10-27T16:00:00Z'); // tisdag 17:00 svensk tid
+  const end = new Date('2026-11-01T11:00:00Z'); // söndag 12:00 svensk tid
+  it('öppen hela startdagen, även före klockslaget', () => expect(isRegistrationOpen(start, end, new Date('2026-10-26T23:30:00Z'))).toBe(true)); // tisdag 00:30 svensk tid (CET)
+  it('stängd dagen före startdagen', () => expect(isRegistrationOpen(start, end, new Date('2026-10-26T22:30:00Z'))).toBe(false)); // måndag 23:30 svensk tid
+  it('öppen hela slutdagen, även efter klockslaget', () => expect(isRegistrationOpen(start, end, new Date('2026-11-01T22:30:00Z'))).toBe(true)); // söndag 23:30 svensk tid
+  it('stängd dagen efter slutdagen', () => expect(isRegistrationOpen(start, end, new Date('2026-11-01T23:30:00Z'))).toBe(false)); // måndag 00:30 svensk tid
 });

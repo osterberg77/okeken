@@ -738,9 +738,10 @@ service cloud.firestore {
     }
 
     function validFees(d) {
-      return d.keys().hasOnly(['year', 'swishNumber', 'categories', 'family', 'updatedBy', 'updatedAt'])
+      return d.keys().hasOnly(['year', 'swishNumber', 'startFee', 'categories', 'family', 'updatedBy', 'updatedAt'])
         && d.year is int && d.year == int(yearOf(d))
         && d.swishNumber is string && d.swishNumber.matches('^[0-9]{0,15}$')
+        && d.get('startFee', 0) is int && d.get('startFee', 0) >= 0 && d.get('startFee', 0) <= 10000
         && d.categories is list && d.categories.size() <= 8
         && (d.family == null || (d.family is map && d.family.amount is int && d.family.amount >= 0
           && d.family.amount <= 100000 && d.family.minPeople is int && d.family.minPeople >= 2

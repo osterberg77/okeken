@@ -18,9 +18,14 @@ export interface SelfResultRequest {
   trap: string;
 }
 
-/** Hur långt före start och efter slut en träning går att registrera sig på */
-const BEFORE_MS = 24 * 3600_000;
-const AFTER_MS = 3 * 24 * 3600_000;
+const stockholmDay = (d: Date) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Stockholm' }).format(d);
+
+/** Öppen hela startdagen till och med hela slutdagen (svensk tid); klockslagen räknas inte. Spegel i src/components/SelfRegister.tsx. */
+export function isRegistrationOpen(startsAt: Date, endsAt: Date, now: Date): boolean {
+  const today = stockholmDay(now);
+  return stockholmDay(startsAt) <= today && today <= stockholmDay(endsAt);
+}
+
 /** Tak för gästregistreringar per träning (skydd mot skräp; publiceringen är ändå manuell) */
 export const MAX_GUEST_ROWS = 150;
 
@@ -61,9 +66,7 @@ export async function registerParticipation(db: Firestore, req: SelfResultReques
   const event = events.docs[0];
   const p = event?.data().published;
   if (!event || !p || p.type !== 'training' || event.data().resultsEnabled === false) throw new EventNotOpen('event');
-  const startsAt = (p.startsAt as Timestamp).toMillis();
-  const endsAt = (p.endsAt as Timestamp).toMillis();
-  if (now.getTime() < startsAt - BEFORE_MS || now.getTime() > endsAt + AFTER_MS) throw new EventNotOpen('window');
+  if (!isRegistrationOpen((p.startsAt as Timestamp).toDate(), (p.endsAt as Timestamp).toDate(), now)) throw new EventNotOpen('window');
 
   const results = db.collection(`events/${event.id}/results`);
   const member = uid ? (await db.doc(`users/${uid}`).get()).data() : undefined;

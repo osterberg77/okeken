@@ -81,6 +81,10 @@ describe('membershipFees', () => {
     await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ swishNumber: '123 456' })));
     await assertFails(setDoc(doc(as('board'), 'membershipFees', 'abc'), fees()));
   });
+  it('startavgiften är valfri men måste vara ett rimligt heltal', async () => {
+    await assertSucceeds(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ startFee: 50 })));
+    for (const startFee of [-1, 10001, 12.5, '50']) await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ startFee })));
+  });
   it('familjetaket måste vara rimligt', async () => {
     await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: -1, minPeople: 3, maxAdults: 2 } })));
     await assertFails(setDoc(doc(as('board'), 'membershipFees', '2026'), fees({ family: { amount: 450, minPeople: 1, maxAdults: 2 } })));

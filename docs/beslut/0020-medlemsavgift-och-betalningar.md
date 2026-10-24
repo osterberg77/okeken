@@ -12,3 +12,8 @@
 - **GDPR:** betalningar innehåller namn och valfri e-post. De behålls som bokföringsunderlag; vid kontoradering tas bara `uid` bort (`deleteAccountData`). Betalda betalningar kan inte raderas av klienten.
 
 **Kvar:** koppla personer i betalningar till `members` (uid) och visa "Medlemsavgift betald" på medlemmens profil; påminnelser; export till CSV; en betalning kan ännu inte ändras (belopp/personer) efter skapandet – radera och skapa ny.
+
+**Tillägg 2026-10-24 – Inställningar och startavgift:**
+- Admin-sidan heter nu **Inställningar** (`/admin/installningar`, SettingsAdmin; `/admin/medlemsavgift` omdirigeras). Den innehåller Swish-nummer, **startavgift** och medlemsavgiftens klasser/familjetak, per år i `membershipFees/{år}`.
+- `startFee` (hela kronor, 0–10000, valfritt fält, 0 = ingen) är förvalt Swish-belopp efter registrering på `/ute` (beslut 0022). Är den 0 visas en helt valfri Swish-länk.
+- **Belopp är förifyllda men ändringsbara**: Swish-länken har `amount.editable: true` och QR-strängen mask `2`. Betalningen avprickas mot referenskoden i meddelandet, inte mot beloppet. Masken `2` (belopp ändringsbart) är antagen utifrån Swish QR-specen och ej provad på en riktig telefon.

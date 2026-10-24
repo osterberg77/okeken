@@ -6,7 +6,7 @@ import { canManageMembership, type Session } from '../../types/user';
 import AdminGate, { AdminPanel, AdminTitle } from './AdminGate';
 import { ActionButton, Field, INPUT } from './AdminUi';
 
-export default function FeesAdmin() {
+export default function SettingsAdmin() {
   return (
     <AdminGate allowed={canManageMembership} requirement="styrelse eller superadmin">
       {(session) => <Fees session={session} />}
@@ -48,6 +48,7 @@ function Fees({ session }: { session: Session }) {
   const valid =
     /^\d{6,15}$/.test(fees.swishNumber.replace(/\D/g, '')) &&
     fees.categories.length > 0 &&
+    Number.isInteger(fees.startFee) && fees.startFee >= 0 && fees.startFee <= FEE_LIMITS.maxAmount &&
     (fees.family === null || (fees.family.maxAdults >= 1 && fees.family.minPeople >= 2)) &&
     fees.categories.every((c) => c.label.trim() && Number.isInteger(c.amount) && c.amount >= 0 && c.amount <= FEE_LIMITS.maxAmount);
 
@@ -59,7 +60,7 @@ function Fees({ session }: { session: Session }) {
     try {
       await saveFees(fees, session.uid);
       setExists(true);
-      setMessage('Sparat. Avgifterna gäller direkt på /medlemsavgift.');
+      setMessage('Sparat. Avgifterna gäller direkt på /medlemsavgift och efter registrering på /ute.');
     } catch {
       setError('Kunde inte spara.');
     } finally {
@@ -71,9 +72,9 @@ function Fees({ session }: { session: Session }) {
     <AdminPanel>
       <div>
         <a href="/admin" className="text-sm font-semibold text-muted no-underline hover:text-accent">← Admin</a>
-        <AdminTitle>Medlemsavgifter</AdminTitle>
+        <AdminTitle>Inställningar</AdminTitle>
         <p className="mt-2 mb-0 max-w-[60ch] text-muted">
-          Avgifterna per år. Besökare väljer sina klasser på /medlemsavgift och beloppet räknas ut av den här tabellen.
+          Klubbens Swish-nummer, startavgift och medlemsavgifter, per år. Belopp fylls i automatiskt i Swish men kan ändras av den som betalar.
         </p>
       </div>
 
@@ -84,12 +85,20 @@ function Fees({ session }: { session: Session }) {
         {!exists && <span className="rounded-full bg-[#FFF3C4] px-3 py-1 text-sm font-semibold text-[#7A5A00]">Inte sparad än</span>}
       </div>
 
-      <Field label="Klubbens Swish-nummer" htmlFor="swish" hint="Bara siffror, t.ex. 1231234567.">
-        <input id="swish" inputMode="numeric" className={INPUT} value={fees.swishNumber} onChange={(e) => setFees({ ...fees, swishNumber: e.target.value })} />
-      </Field>
+      <section className="flex flex-col gap-3">
+        <h2 className="m-0 font-display text-xl font-bold">Swish och startavgift</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Klubbens Swish-nummer" htmlFor="swish" hint="Bara siffror, t.ex. 1231234567.">
+            <input id="swish" inputMode="numeric" className={INPUT} value={fees.swishNumber} onChange={(e) => setFees({ ...fees, swishNumber: e.target.value })} />
+          </Field>
+          <Field label="Startavgift (kr)" htmlFor="start-fee" hint="Fylls i som belopp i Swish när någon registrerat sitt resultat på /ute. Löparen kan ändra summan. Lämna tomt för en helt valfri summa.">
+            <input id="start-fee" inputMode="numeric" className={INPUT} value={fees.startFee || ''} onChange={(e) => setFees({ ...fees, startFee: Number(e.target.value.replace(/\D/g, '')) })} />
+          </Field>
+        </div>
+      </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="m-0 font-display text-xl font-bold">Avgiftsklasser</h2>
+        <h2 className="m-0 font-display text-xl font-bold">Medlemsavgift: klasser</h2>
         {fees.categories.map((c, i) => (
           <div key={c.id} className="grid gap-2 rounded-2xl bg-period p-3 sm:grid-cols-[1fr_120px_1fr_auto_auto] sm:items-center">
             <input className={INPUT} aria-label="Namn" placeholder="Namn, t.ex. Vuxen" value={c.label} maxLength={60} onChange={(e) => setCategory(i, { label: e.target.value })} />
@@ -142,7 +151,7 @@ function Fees({ session }: { session: Session }) {
       {error && <p role="alert" className="m-0 rounded-2xl bg-[#FBEAEA] px-4 py-3 text-sm text-[#8A2B2B]">{error}</p>}
       {message && <p role="status" className="m-0 rounded-2xl bg-[#E3F0DC] px-4 py-3 text-sm text-[#2F5A2B]">{message}</p>}
       <div>
-        <ActionButton primary onClick={save} disabled={!valid || busy} busy={busy}>Spara avgifter</ActionButton>
+        <ActionButton primary onClick={save} disabled={!valid || busy} busy={busy}>Spara inställningar</ActionButton>
       </div>
     </AdminPanel>
   );

@@ -23,6 +23,8 @@ export interface MembershipFees {
   year: number;
   /** Klubbens Swish-nummer, bara siffror */
   swishNumber: string;
+  /** Startavgift i hela kronor som förvalt Swish-belopp efter registrering på /ute; 0 = ingen (valfri summa) */
+  startFee: number;
   categories: FeeCategory[];
   family: FamilyFee | null;
 }

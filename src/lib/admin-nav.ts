@@ -43,7 +43,7 @@ const GROUPS: GroupDef[] = [
     links: [
       { href: '/admin/protokoll', label: 'Protokoll', description: 'Styrelsens protokoll, skrivna och godkända här', allowed: canViewProtocols },
       { href: '/admin/medlemsbetalningar', label: 'Medlemsbetalningar', description: 'Vem som betalat medlemsavgiften, pricka av och registrera i efterhand', allowed: canManageMembership },
-      { href: '/admin/medlemsavgift', label: 'Medlemsavgifter', description: 'Årets avgifter, familjetak och klubbens Swish-nummer', allowed: canManageMembership },
+      { href: '/admin/installningar', label: 'Inställningar', description: 'Klubbens Swish-nummer, startavgift och årets medlemsavgifter', allowed: canManageMembership },
       { href: '/admin/anvandare', label: 'Användare och behörigheter', description: 'Vem som är medlem, banläggare, publicerare och styrelse', allowed: canManageUsers },
     ],
   },
