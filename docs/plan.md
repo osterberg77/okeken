@@ -160,6 +160,10 @@ Justeringar efter första användartestet (2026-10-21): listans ordning när man
 - Admin: `/admin/statistik` (klart). *Kvar:* en rad per event i editorn ("142 visningar, 31 nedladdningar").
 - Integritetstexten är uppdaterad och ADR 0014 skriven.
 
+## Lagar och tillgänglighet (2026-10-25)
+
+Genomgången gav: inga tvingande lagkrav för en idrottsförening (DOS-lagen och tillgänglighetslagen gäller inte oss), men WCAG 2.1 AA är målbilden. Gjort: "Hoppa till innehåll" (`.skip-link`, `id="innehall"` på alla `<main>`), `prefers-reduced-motion`, integritetspolicyn kompletterad (registrering på `/ute`, medlemsavgift/betalning och bokföringstid, OpenStreetMap-kartan, barn), `CONSENT_VERSION` höjd till 2026-10-25. *Kvar, lägre prioritet:* automatisk tillgänglighetskontroll (axe/Lighthouse) av publika sidor och formulär, kort tillgänglighetssida, biträdesavtal med Google/GitHub och rutin för personuppgiftsincident (72 h till IMY), fotograf/licens i bildbanken, organisationsnummer i sidfoten, gallringsregler för gamla resultat.
+
 ## Startinnehåll
 
 Rådata från gamla sajten (sidtexter, JSON-data, 107 nedladdade PDF:er, privata kontakter) ligger **utanför repot** i `Projects/okeken/gamla-sajten/` (arkiv, se dess `content/README.md`). Det som bedöms ha framtida värde väljs ut och läggs i `seed/` i repot (Markdown/JSON) respektive Storage vid migrering. Logotyper i `assets/logo/`. Äldre underlag i `docs/underlag/`.

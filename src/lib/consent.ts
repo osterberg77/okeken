@@ -2,7 +2,7 @@
  * Version av integritetspolicyn som användaren godkänner. Höjs den (t.ex. när policyn ändras i sak)
  * får alla frågan igen vid nästa inloggning. Datumet ska följa texten på /integritet.
  */
-export const CONSENT_VERSION = '2026-10-23';
+export const CONSENT_VERSION = '2026-10-25';
 
 export interface Consent {
   version: string;

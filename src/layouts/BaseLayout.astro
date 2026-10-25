@@ -73,6 +73,7 @@ const canonical = new URL(canonicalPath, Astro.site).href;
     )}
   </head>
   <body class="bg-canvas font-sans text-[15px] leading-normal text-ink antialiased">
+    <a href="#innehall" class="skip-link">Hoppa till innehåll</a>
     {/* overflow-x-clip (inte overflow-hidden): klipper de dekorativa cirklarna i sidled men inte menyernas rullgardiner */}
     <div class="relative flex min-h-screen flex-col overflow-x-clip">
       <div aria-hidden="true" class="pointer-events-none absolute -top-[180px] -right-[120px] h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle,rgba(164,112,190,.22),rgba(164,112,190,0)_70%)]"></div>

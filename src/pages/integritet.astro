@@ -44,6 +44,7 @@ const bodyHtml = `
 <p>Efter inloggning lagrar sidan en liten markering i din webbläsare (lokal lagring) så att den kommer ihåg att du varit inloggad, och, om du loggar in med länk i mejlet, tillfälligt din e-postadress. Frågan om att godkänna policyn kan skjutas upp till nästa inloggning med hjälp av webbläsarens sessionslagring. Inget av detta skickas till någon annan.</p>
 
 <h2>Hur länge sparar vi dem?</h2>
+<p>Resultat och självregistreringar på träningar sparas så länge träningen finns kvar på sidan och gallras när klubben rensar gamla träningar.</p>
 <p>Så länge du har ett konto. Under <a href="/profil">Profil och inställningar</a> kan du själv ändra dina uppgifter, byta e-postadress och lösenord, ta tillbaka ditt godkännande och <strong>ta bort kontot permanent</strong>. Då raderas ditt konto, namn, e-postadress, behörigheter, profilbild, inställningar och dina svar på events direkt. Innehåll du skapat (events, sidor, bilder) finns kvar men utan koppling till dig. Styrelsens protokoll är föreningens handlingar och behåller de namn som stod där när de skrevs.</p>
 
 <h2>Dina rättigheter</h2>
@@ -71,13 +72,25 @@ const bodyHtml = `
 <h2>Meddelanden</h2>
 <p>Inloggade medlemmar kan skicka korta textmeddelanden till varandra under Meddelanden i profilmenyn, och klubben kan skicka automatiska meddelanden, till exempel när din behörighet ändras. Vi sparar texten, vem som skrev, när och om den lästs, och bara de två som skriver med varandra kan läsa konversationen (styrelsen kan inte det). Skriver du till någon eller svarar på ett meddelande ser personen ditt namn, även om du valt "Dölj mig". Raderar du ditt konto raderas alla dina konversationer, även motpartens del av dem.</p>
 
+<h2>Registrera dig på en träning (utan konto)</h2>
+<p>Via QR-koden vid start (sidan <a href="/ute">/ute</a>) kan vem som helst skriva upp att hen sprungit en bana. Då sparar vi det namn du skriver, bana, eventuell tid, om du vill visa tid eller bara att du deltagit, och ett eventuellt betyg på banan. Du behöver inte ange ditt riktiga namn. Betyget visas aldrig publikt. Namn och tid visas bara på hemsidan om banläggaren publicerar ett resultat, och då enligt det val du gjort. Vill du bli borttagen, mejla <a href="mailto:${CLUB.email}">${CLUB.email}</a>.</p>
+
+<h2>Medlemsavgift och betalning</h2>
+<p>När du fyller i medlemsavgiften sparar vi namn och e-postadress på den som betalar, namn och avgiftsklass för dem som avgiften gäller (till exempel familjemedlemmar), beloppet och en referenskod. Uppgifterna ser bara styrelsen och du själv. Vi använder dem för att pricka av betalningen mot kontoutdraget och veta vem som är medlem. Betalningen sker i Swish, som är en egen tjänst som vi inte får några kortuppgifter från. Betalningsunderlag är bokföringsmaterial och sparas så länge bokföringslagen kräver, normalt sju år. Om du raderar ditt konto kopplas betalningen loss från dig men finns kvar som underlag.</p>
+
+<h2>Kartor</h2>
+<p>Kartor på hemsidan visas med kartrutor från OpenStreetMap. När en karta visas hämtar din webbläsare bilder från OpenStreetMaps servrar, och de får då din IP-adress, precis som när du besöker vilken annan webbplats som helst. Vi skickar inga andra uppgifter om dig dit.</p>
+
+<h2>Barn och ungdomar</h2>
+<p>Är du under 18 år bör en vårdnadshavare hjälpa dig att skapa konto och betala medlemsavgiften.</p>
+
 <h2>Bilder</h2>
 <p>När hemsidan får funktioner som visar bilder på personer frågar vi om ditt val separat. För bilder på barn krävs vårdnadshavarens medgivande. Vi uppdaterar den här sidan innan sådana funktioner tas i bruk.</p>
 `;
 ---
 
 <BaseLayout title="Integritetspolicy – OK Eken" description="Så hanterar OK Eken personuppgifter på hemsidan.">
-  <main class="mx-auto max-w-[860px] px-4 pt-6 pb-16 sm:px-8">
+  <main id="innehall" class="mx-auto max-w-[860px] px-4 pt-6 pb-16 sm:px-8">
     <PageDetail page={{ title: 'Integritetspolicy', bodyHtml }} />
   </main>
 </BaseLayout>

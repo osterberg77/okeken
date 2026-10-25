@@ -12,7 +12,7 @@ const page = await getFixedPage('ute');
 ---
 
 <BaseLayout title="Jag har sprungit – OK Eken" noindex>
-  <main class="mx-auto max-w-[640px] px-4 pt-6 pb-16 sm:px-8">
+  <main id="innehall" class="mx-auto max-w-[640px] px-4 pt-6 pb-16 sm:px-8">
     <SelfRegister client:only="react" events={events} title={page?.title} introHtml={page?.bodyHtml} />
   </main>
 </BaseLayout>

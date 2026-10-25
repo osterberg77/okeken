@@ -136,3 +136,32 @@
     break-inside: avoid;
   }
 }
+
+/* Hoppa till innehåll: syns bara när länken får tangentbordsfokus */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -64px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 9999px;
+  background: #fff;
+  color: inherit;
+  font-weight: 600;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+.skip-link:focus {
+  top: 8px;
+}
+
+/* Respektera användarens val att slippa rörelse */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -16,7 +16,7 @@ const { page } = Astro.props as { page: PublicPage };
 ---
 
 <BaseLayout title={`${page.title} – OK Eken`} ogTitle={page.title} description={page.excerpt || undefined} ogType="article">
-  <main data-pagefind-body class="mx-auto max-w-[900px] px-4 pt-2 pb-12 sm:px-8">
+  <main id="innehall" data-pagefind-body class="mx-auto max-w-[900px] px-4 pt-2 pb-12 sm:px-8">
     <PageDetail page={page} />
   </main>
 </BaseLayout>
