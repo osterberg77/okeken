@@ -4,7 +4,7 @@ import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestE
 import { collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 
 let env: RulesTestEnvironment;
-const USERS: Record<string, string[]> = { member: ['member'], setter: ['course_setter'], publisher: ['publisher'], board: ['board'], superadmin: ['superadmin'], plain: [] };
+const USERS: Record<string, string[]> = { member: ['member'], setter: ['publisher'], publisher: ['publisher'], board: ['board'], superadmin: ['superadmin'], plain: [] };
 
 beforeAll(async () => {
   env = await initializeTestEnvironment({ projectId: 'demo-okeken', firestore: { rules: readFileSync('firestore.rules', 'utf8') } });
@@ -45,7 +45,7 @@ const res = (uid: string, id = 'r1') => doc(env.authenticatedContext(uid).firest
 const ROLES = ['setter', 'publisher', 'board', 'superadmin'];
 
 describe('resultatrader', () => {
-  it('banläggare, publicerare, styrelse och superadmin läser, skapar, ändrar och raderar', async () => {
+  it('publicerare, styrelse och superadmin läser, skapar, ändrar och raderar', async () => {
     for (const uid of ROLES) {
       await assertSucceeds(getDoc(res(uid)));
       await assertSucceeds(getDocs(collection(env.authenticatedContext(uid).firestore(), 'events', 'ev1', 'results')));

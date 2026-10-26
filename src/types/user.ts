@@ -1,9 +1,8 @@
-export const PERMISSIONS = ['member', 'course_setter', 'publisher', 'board', 'superadmin'] as const;
+export const PERMISSIONS = ['member', 'publisher', 'board', 'superadmin'] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   member: 'Medlem',
-  course_setter: 'Banläggare',
   publisher: 'Publicerare',
   board: 'Styrelse',
   superadmin: 'Superadmin',
@@ -12,13 +11,12 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
 // Taggfärger enligt designspec (lila/grön/gul)
 export const PERMISSION_COLORS: Record<Permission, { fg: string; bg: string }> = {
   member: { fg: '#6E3A82', bg: '#EFE3F5' },
-  course_setter: { fg: '#3F6B3A', bg: '#E3F0DC' },
   publisher: { fg: '#3F6B3A', bg: '#E3F0DC' },
   board: { fg: '#6E3A82', bg: '#EFE3F5' },
   superadmin: { fg: '#6A5A12', bg: '#F6F0D2' },
 };
 
-const BOARD_ASSIGNABLE: Permission[] = ['member', 'course_setter', 'publisher', 'board'];
+const BOARD_ASSIGNABLE: Permission[] = ['member', 'publisher', 'board'];
 
 /** Vilka behörigheter en användare får ge/ta bort. Måste spegla firestore.rules. */
 export function assignableBy(own: readonly Permission[]): Permission[] {
@@ -37,9 +35,9 @@ export function canPublish(own: readonly Permission[]): boolean {
   return own.includes('publisher') || own.includes('board') || own.includes('superadmin');
 }
 
-/** Får öppna events (lista och editor). Banläggare får bara ändra banor; reglerna avgör (beslut 0006). */
+/** Får öppna events (lista och editor). Banläggare finns inte längre som roll; de som lägger in banor är publicerare (beslut 0024). */
 export function canViewEvents(own: readonly Permission[]): boolean {
-  return canPublish(own) || own.includes('course_setter');
+  return canPublish(own);
 }
 
 /** Får läsa och skriva styrelsens protokoll (beslut 0009). Måste spegla canViewProtocols i firestore.rules. */

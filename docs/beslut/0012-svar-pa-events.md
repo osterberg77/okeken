@@ -13,3 +13,5 @@
 - Reglerna kontrollerar inte att eventet finns eller är publicerat (det kostar en läsning per svar); sluggen måste bara vara en giltig adress. Svar på borttagna events blir kvar. Rensning av gamla svar är ej byggd och bör ingå i GDPR-genomgången.
 - Policyn på `/integritet` beskriver svaren; texten ska läsas igenom av styrelsen.
 - Resultatlistan (visa/dölja namn och tid, räkna deltagare) är fortfarande ej byggd. Samma princip (tomt namn men räknas) kan återanvändas där, se `framtida-funktioner.md` punkt 12.
+
+**Ändring 2026-10-26:** svarsrutan är ett val per event (`rsvpEnabled`, bockruta under Inställningar i editorn, förvalt av). Äldre events saknar fältet och har därmed ingen svarsruta tills en publicerare slår på den.

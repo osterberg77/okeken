@@ -1,5 +1,5 @@
 import { parseCoords } from '../../lib/geo';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   createEvent,
   deleteDraft,
@@ -39,7 +39,7 @@ import NotifyToggle from '../NotifyToggle';
 
 export default function EventEditor() {
   return (
-    <AdminGate allowed={canViewEvents} requirement="publicerare, banläggare, styrelse eller superadmin">
+    <AdminGate allowed={canViewEvents} requirement="publicerare, styrelse eller superadmin">
       {(session) => <Editor session={session} />}
     </AdminGate>
   );
@@ -68,6 +68,7 @@ function newEventContent(uid: string): EventContent {
     image: null,
     // Förvalt är den som skapar eventet; kan bytas eller tas bort i editorn
     publisher: uid,
+    rsvpEnabled: false,
   };
 }
 
@@ -83,6 +84,7 @@ const contentOf = (r: EventRecord): EventContent => ({
   courseFiles: r.courseFiles,
   image: r.image,
   publisher: r.publisher,
+  rsvpEnabled: r.rsvpEnabled,
 });
 
 /** Huvudbild från en bildbankspost; alt-texten förifylls med beskrivningen (annars namnet) */
@@ -92,6 +94,25 @@ const eventImageFrom = (img: ImageBankItem): EventImage => ({
   thumbnailUrl: img.thumbnailUrl,
   alt: (img.description.trim() || img.name.trim()).slice(0, MAX_IMAGE_ALT),
 });
+
+/** Hopfällbar del av formuläret. Innehållet monteras först när delen är öppen (kartan behöver synlig yta). */
+function Section({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <section className="flex flex-col gap-5 border-t border-line pt-4 first:border-t-0 first:pt-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+        className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent p-0 text-left font-display text-lg font-bold text-ink"
+      >
+        {title}
+        <span aria-hidden="true" className="text-muted">{open ? '−' : '+'}</span>
+      </button>
+      {open && children}
+    </section>
+  );
+}
 
 type Message = { kind: 'ok' | 'error'; text: string } | null;
 
@@ -557,7 +578,7 @@ function Editor({ session }: { session: Session }) {
               Som banläggare kan du bara ändra banorna. Övrigt är skrivskyddat.
             </p>
           )}
-          <fieldset disabled={courseOnly} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
+          <Section title="Rubrik och text" defaultOpen>
           <Field label="Typ">
             <div className="flex flex-wrap gap-2">
               {EVENT_TYPES.map((t) => {
@@ -583,6 +604,24 @@ function Editor({ session }: { session: Session }) {
             <input id="title" value={draft.title} onChange={(e) => update({ title: e.target.value })} placeholder="T.ex. Tisdagsträning vecka 17" className={INPUT} />
           </Field>
 
+          <Field
+            label="Text"
+            htmlFor="body"
+            hint="Tom rad ger nytt stycke. Knapparna ovan formaterar, länkar och infogar bilder från bildbanken."
+          >
+            <MarkdownField id="body" rows={12} value={draft.body} onChange={(body) => update({ body })} targets={targets} allowImages={!courseOnly} />
+          </Field>
+
+          <MainImageField
+            image={draft.image}
+            readOnly={courseOnly}
+            onPick={() => setImagePicker(true)}
+            onChange={(image) => update({ image })}
+          />
+
+          </Section>
+
+          <Section title="Tid och plats" defaultOpen>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Start" htmlFor="start">
               <input
@@ -638,6 +677,9 @@ function Editor({ session }: { session: Session }) {
             <IconSelect id="place-icon" value={draft.location.icon} onChange={(icon) => update({ location: { ...draft.location, icon } })} />
           </Field>
 
+          </Section>
+
+          <Section title="Karta">
           <LocationPicker
             places={[
               { id: 'main', icon: draft.location.icon, label: draft.location.name.trim() || 'Huvudplats', coords: draft.location.coords },
@@ -662,56 +704,12 @@ function Editor({ session }: { session: Session }) {
             onActivate={setActivePlace}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Ansvarig" htmlFor="setter" hint="Banläggare, mötesansvarig eller liknande.">
-              <input id="setter" value={draft.courseSetter} onChange={(e) => update({ courseSetter: e.target.value })} className={INPUT} />
-            </Field>
+          </Section>
+
+          <Section title="Banor och resultat" defaultOpen={draft.courseFiles.length > 0}>
             <Field label="Livelox-länk" htmlFor="livelox">
               <input id="livelox" type="url" value={draft.livelox} onChange={(e) => update({ livelox: e.target.value })} placeholder="https://www.livelox.com/…" className={INPUT} />
             </Field>
-          </div>
-
-          <Field
-            label="Publicerat av"
-            htmlFor="publisher"
-            hint="Visas som liten profilbild och namn på eventet. Bara medlemmar som godkänt policyn och inte dolt sitt namn visas för besökare."
-          >
-            <div className="flex items-center gap-2">
-            <select
-              id="publisher"
-              value={draft.publisher ?? ''}
-              disabled={courseOnly}
-              onChange={(e) => update({ publisher: e.target.value || null })}
-              className={INPUT}
-            >
-              <option value="">Ingen</option>
-              {/* Valet finns kvar även om personen inte längre är medlem, så att det inte tappas vid sparning */}
-              {draft.publisher && !members?.some((m) => m.uid === draft.publisher) && <option value={draft.publisher}>(okänd medlem)</option>}
-              {(members ?? []).map((m) => (
-                <option key={m.uid} value={m.uid}>
-                  {m.displayName}
-                  {m.publicName ? '' : ' (visas inte publikt)'}
-                </option>
-              ))}
-            </select>
-            {!courseOnly && draft.publisher && draft.publisher !== session.uid && (
-              <NotifyToggle
-                enabled={notifyPublisher}
-                onChange={setNotifyPublisher}
-                summary={`${members?.find((m) => m.uid === draft.publisher)?.displayName ?? 'Personen'} får ett meddelande när du sparar.`}
-              />
-            )}
-            </div>
-          </Field>
-
-          <MainImageField
-            image={draft.image}
-            readOnly={courseOnly}
-            onPick={() => setImagePicker(true)}
-            onChange={(image) => update({ image })}
-          />
-
-          </fieldset>
 
           <Field label="Banor (PDF)" htmlFor="courses" hint={`Högst ${MAX_COURSE_FILES} filer, 10 MB var. Ta bort en bana med knappen; filen raderas från servern när du sparat (en publicerad bana behålls tills ändringen publicerats).`}>
             {draft.courseFiles.length > 0 && (
@@ -776,16 +774,58 @@ function Editor({ session }: { session: Session }) {
             </div>
           </Field>
 
-          <fieldset disabled={courseOnly} className="m-0 flex min-w-0 flex-col gap-5 border-0 p-0">
+          </Section>
+
+          <Section title="Inställningar">
+            <Field label="Ansvarig" htmlFor="setter" hint="Banläggare, mötesansvarig eller liknande.">
+              <input id="setter" value={draft.courseSetter} onChange={(e) => update({ courseSetter: e.target.value })} className={INPUT} />
+            </Field>
           <Field
-            label="Text"
-            htmlFor="body"
-            hint="Tom rad ger nytt stycke. Knapparna ovan formaterar, länkar och infogar bilder från bildbanken."
+            label="Publicerat av"
+            htmlFor="publisher"
+            hint="Visas som liten profilbild och namn på eventet. Bara medlemmar som godkänt policyn och inte dolt sitt namn visas för besökare."
           >
-            <MarkdownField id="body" rows={12} value={draft.body} onChange={(body) => update({ body })} targets={targets} allowImages={!courseOnly} />
+            <div className="flex items-center gap-2">
+            <select
+              id="publisher"
+              value={draft.publisher ?? ''}
+              disabled={courseOnly}
+              onChange={(e) => update({ publisher: e.target.value || null })}
+              className={INPUT}
+            >
+              <option value="">Ingen</option>
+              {/* Valet finns kvar även om personen inte längre är medlem, så att det inte tappas vid sparning */}
+              {draft.publisher && !members?.some((m) => m.uid === draft.publisher) && <option value={draft.publisher}>(okänd medlem)</option>}
+              {(members ?? []).map((m) => (
+                <option key={m.uid} value={m.uid}>
+                  {m.displayName}
+                  {m.publicName ? '' : ' (visas inte publikt)'}
+                </option>
+              ))}
+            </select>
+            {!courseOnly && draft.publisher && draft.publisher !== session.uid && (
+              <NotifyToggle
+                enabled={notifyPublisher}
+                onChange={setNotifyPublisher}
+                summary={`${members?.find((m) => m.uid === draft.publisher)?.displayName ?? 'Personen'} får ett meddelande när du sparar.`}
+              />
+            )}
+            </div>
           </Field>
 
-          </fieldset>
+          <label className="flex items-start gap-3 text-[15px] font-semibold">
+            <input
+              type="checkbox"
+              checked={draft.rsvpEnabled}
+              onChange={(e) => update({ rsvpEnabled: e.target.checked })}
+              className="mt-0.5 h-5 w-5 accent-[#8A4B9E]"
+            />
+            <span>
+              Låt inloggade medlemmar svara kommer / kommer kanske / kommer inte
+              <span className="block text-[13px] font-normal text-muted">Visas på eventsidan efter att du publicerat.</span>
+            </span>
+          </label>
+          </Section>
 
           {id && neverPublished && !courseOnly && (
             <div className="border-t border-line pt-4">

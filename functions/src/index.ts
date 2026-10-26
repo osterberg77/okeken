@@ -208,10 +208,10 @@ export const publishScheduled = onSchedule({ schedule: 'every 15 minutes', timeZ
   if (ids.length > 0) logger.info('Schemalagda events publicerade', { ids });
 });
 
-const RESULT_ROLES = ['course_setter', 'publisher', 'board', 'superadmin'];
+const RESULT_ROLES = ['publisher', 'board', 'superadmin'];
 
 /**
- * Publicerar eller drar tillbaka resultatlistan för ett event (beslut 0017). Bara banläggare, publicerare, styrelse och
+ * Publicerar eller drar tillbaka resultatlistan för ett event (beslut 0017). Bara publicerare, styrelse och
  * superadmin. Listan byggs här av de interna raderna så att ungdomsmarkering och medlemslänk aldrig blir publika.
  */
 export const setResultsPublished = onCall(async (request) => {

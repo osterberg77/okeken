@@ -49,6 +49,8 @@ function contentToFirestore(c: EventContent) {
       : null,
     // Alltid med (null = ingen), av samma skäl som image
     publisher: c.publisher,
+    // Alltid med (false = av), så att published.rsvpEnabled är exakt utkastets
+    rsvpEnabled: c.rsvpEnabled,
   };
 }
 
@@ -71,6 +73,7 @@ function contentFromFirestore(d: DocumentData): EventContent {
     courseFiles: Array.isArray(d.courseFiles) ? d.courseFiles : [],
     image: d.image ?? null,
     publisher: typeof d.publisher === 'string' ? d.publisher : null,
+    rsvpEnabled: d.rsvpEnabled === true,
   };
 }
 

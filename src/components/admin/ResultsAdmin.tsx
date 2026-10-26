@@ -25,7 +25,7 @@ import { ActionButton, Field, INPUT } from './AdminUi';
 
 export default function ResultsAdmin() {
   return (
-    <AdminGate allowed={canViewEvents} requirement="banläggare, publicerare, styrelse eller superadmin">
+    <AdminGate allowed={canViewEvents} requirement="publicerare, styrelse eller superadmin">
       {(session) => <Results session={session} />}
     </AdminGate>
   );

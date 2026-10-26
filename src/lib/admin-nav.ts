@@ -1,4 +1,4 @@
-import { canManageMembership, canManageUsers, canPublish, canViewEvents, canViewProtocols, type Permission } from '../types/user';
+import { canManageMembership, canManageUsers, canPublish, canViewProtocols, type Permission } from '../types/user';
 
 // En enda lista som styr både adminöversikten (/admin) och profilmenyn. Reglerna är det verkliga skyddet;
 // den här listan döljer bara det man ändå inte får använda.
@@ -33,18 +33,13 @@ const GROUPS: GroupDef[] = [
     ],
   },
   {
-    title: 'Banläggning',
-    allowed: (own) => canViewEvents(own) && !canPublish(own),
-    links: [{ href: '/admin/events', label: 'Banor och resultat', description: 'Ladda upp PDF-banor och för in startlista och resultat på träningar' }],
-  },
-  {
     title: 'Styrelsen',
     allowed: (own) => canViewProtocols(own) || canManageUsers(own) || canManageMembership(own),
     links: [
       { href: '/admin/protokoll', label: 'Protokoll', description: 'Styrelsens protokoll, skrivna och godkända här', allowed: canViewProtocols },
       { href: '/admin/medlemsbetalningar', label: 'Medlemsbetalningar', description: 'Vem som betalat medlemsavgiften, pricka av och registrera i efterhand', allowed: canManageMembership },
       { href: '/admin/installningar', label: 'Inställningar', description: 'Klubbens Swish-nummer, startavgift och årets medlemsavgifter', allowed: canManageMembership },
-      { href: '/admin/anvandare', label: 'Användare och behörigheter', description: 'Vem som är medlem, banläggare, publicerare och styrelse', allowed: canManageUsers },
+      { href: '/admin/anvandare', label: 'Användare och behörigheter', description: 'Vem som är medlem, publicerare och styrelse', allowed: canManageUsers },
     ],
   },
 ];

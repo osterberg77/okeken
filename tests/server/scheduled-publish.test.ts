@@ -53,7 +53,7 @@ describe('publishDueEvents', () => {
     expect(d.published).toMatchObject({ title: 'Tisdagsträning vecka 44', body: 'Hej', publisher: 'uid1', image: null, courseFiles: [] });
     // Ögonblicksbilden innehåller bara innehållsfälten
     expect(Object.keys(d.published).sort()).toEqual(
-      ['body', 'courseFiles', 'courseSetter', 'endsAt', 'image', 'livelox', 'location', 'publisher', 'startsAt', 'title', 'type'],
+      ['body', 'courseFiles', 'courseSetter', 'endsAt', 'image', 'livelox', 'location', 'publisher', 'rsvpEnabled', 'startsAt', 'title', 'type'],
     );
   });
 

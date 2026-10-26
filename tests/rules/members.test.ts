@@ -4,7 +4,7 @@ import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestE
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 
 let env: RulesTestEnvironment;
-const USERS: Record<string, string[]> = { member: ['member'], setter: ['course_setter'], publisher: ['publisher'], board: ['board'], superadmin: ['superadmin'], plain: [] };
+const USERS: Record<string, string[]> = { member: ['member'], setter: ['member'], publisher: ['publisher'], board: ['board'], superadmin: ['superadmin'], plain: [] };
 
 beforeAll(async () => {
   env = await initializeTestEnvironment({ projectId: 'demo-okeken', firestore: { rules: readFileSync('firestore.rules', 'utf8') } });
@@ -20,8 +20,8 @@ beforeEach(async () => {
 });
 
 describe('medlemslistan', () => {
-  it('banläggare, publicerare, styrelse och superadmin läser', async () => {
-    for (const uid of ['setter', 'publisher', 'board', 'superadmin']) {
+  it('publicerare, styrelse och superadmin läser', async () => {
+    for (const uid of ['publisher', 'board', 'superadmin']) {
       const db = env.authenticatedContext(uid).firestore();
       await assertSucceeds(getDocs(collection(db, 'members')));
       await assertSucceeds(getDoc(doc(db, 'members', 'member')));
@@ -32,7 +32,7 @@ describe('medlemslistan', () => {
     await assertFails(getDocs(collection(env.unauthenticatedContext().firestore(), 'members')));
   });
   it('ingen skriver från klienten, inte ens superadmin', async () => {
-    for (const uid of ['member', 'setter', 'publisher', 'board', 'superadmin']) {
+    for (const uid of ['member', 'publisher', 'board', 'superadmin']) {
       const db = env.authenticatedContext(uid).firestore();
       await assertFails(setDoc(doc(db, 'members', uid), { displayName: 'x', publicName: true }));
       await assertFails(setDoc(doc(db, 'members', 'member'), { displayName: 'x', publicName: true }));

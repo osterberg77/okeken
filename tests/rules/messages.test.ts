@@ -9,7 +9,7 @@ const USERS: Record<string, { permissions: string[]; hidden?: boolean }> = {
   bo: { permissions: ['member'] },
   secret: { permissions: ['member'], hidden: true },
   board: { permissions: ['board'] },
-  setter: { permissions: ['course_setter'] },
+  publisher: { permissions: ['publisher'] },
   plain: { permissions: [] },
 };
 const pair = (a: string, b: string) => (a < b ? `${a}_${b}` : `${b}_${a}`);
@@ -61,10 +61,10 @@ describe('starta konversation', () => {
   it('den som saknar behörighet kan inte starta en konversation', async () => {
     await assertFails(send('plain', 'bo'));
   });
-  it('vanliga medlemmar når inte en dold person, men banläggare och styrelse gör det', async () => {
+  it('vanliga medlemmar når inte en dold person, men publicerare och styrelse gör det', async () => {
     await assertFails(send('anna', 'secret'));
     await assertSucceeds(send('board', 'secret'));
-    await assertSucceeds(send('setter', 'secret'));
+    await assertSucceeds(send('publisher', 'secret'));
   });
   it('en dold person kan själv skriva till andra', async () => {
     await assertSucceeds(send('secret', 'anna'));
@@ -96,7 +96,7 @@ describe('starta konversation', () => {
     await assertFails(setDoc(doc(db, 'conversations', pair('anna', 'bo'), 'messages', 'x'), { senderUid: 'anna', text: 'Hej', kind: 'text', createdAt: serverTimestamp() }));
     await assertFails(send('anna', 'bo', { createdAt: new Date() }, true));
   });
-  it('automatiska meddelanden: bara från banläggare och uppåt, med säker länk', async () => {
+  it('automatiska meddelanden: bara från publicerare och uppåt, med säker länk', async () => {
     await assertFails(send('anna', 'bo', { kind: 'notice' }));
     await assertSucceeds(send('board', 'anna', { kind: 'notice', link: '/profil' }));
     await assertFails(send('board', 'bo', { kind: 'notice', link: 'https://evil.example.com' }));
@@ -173,8 +173,8 @@ describe('medlemskatalogen och dolda', () => {
     await assertSucceeds(getDoc(doc(as('plain'), 'members', 'board')));
     await assertFails(getDoc(doc(as('plain'), 'members', 'anna')));
   });
-  it('banläggare och styrelse läser alla, den utan behörighet ingen', async () => {
-    for (const uid of ['setter', 'board']) await assertSucceeds(getDocs(collection(as(uid), 'members')));
+  it('publicerare och styrelse läser alla, den utan behörighet ingen', async () => {
+    for (const uid of ['publisher', 'board']) await assertSucceeds(getDocs(collection(as(uid), 'members')));
     await assertFails(getDocs(query(collection(as('plain'), 'members'), where('hidden', '==', false))));
   });
 });

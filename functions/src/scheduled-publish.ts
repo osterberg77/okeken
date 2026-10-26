@@ -21,6 +21,7 @@ function snapshotOf(d: FirebaseFirestore.DocumentData) {
     courseFiles: d.courseFiles ?? [],
     image: d.image ?? null,
     publisher: d.publisher ?? null,
+    rsvpEnabled: d.rsvpEnabled === true,
   };
 }
 

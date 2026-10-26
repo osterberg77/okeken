@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useState } from 'react';
 import {
   addDays,
   dayKey,
@@ -12,6 +12,7 @@ import { bankImageSrc } from '../lib/markdown';
 import type { PublicEvent } from '../types/event';
 import Avatar from './Avatar';
 import CategoryChip from './CategoryChip';
+import { PeriodSymbol } from './DaySymbol';
 import ResultsList from './ResultsList';
 import RouteMap from './RouteMap';
 import RsvpBox from './RsvpBox';
@@ -87,7 +88,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         </div>
 
         {startDay !== endDay && (
-          <PeriodChain startDay={startDay} endDay={endDay} label={event.type === 'training' ? 'BANAN ÄR UTE' : 'PÅGÅR'} />
+          <PeriodChain startDay={startDay} endDay={endDay} />
         )}
 
         {event.bodyHtml && <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />}
@@ -96,7 +97,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
           <RouteMap to={{ lat: event.location.lat, lng: event.location.lng }} label={event.location.name || undefined} route={event.route} icon={event.location.icon} places={event.location.places} />
         )}
 
-        {rsvp && !event.externalUrl && !isPast && <RsvpBox key={event.slug} slug={event.slug} />}
+        {rsvp && event.rsvpEnabled && !event.externalUrl && !isPast && <RsvpBox key={event.slug} slug={event.slug} />}
 
         {event.results && event.results.length > 0 && <ResultsList entries={event.results} />}
 
@@ -169,50 +170,22 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
   );
 }
 
-// Symbolkedja för aktiv period: start (triangel), dagar emellan (liten ring), mål (dubbelring).
-const MARK_START: CSSProperties = {
-  width: 0,
-  height: 0,
-  borderLeft: '11px solid transparent',
-  borderRight: '11px solid transparent',
-  borderBottom: '19px solid #8A4B9E',
-  margin: '6px 0 4px',
-};
-const MARK_BETWEEN: CSSProperties = {
-  width: 20,
-  height: 20,
-  borderRadius: '50%',
-  boxSizing: 'border-box',
-  border: '2.5px solid rgba(138,75,158,.5)',
-  margin: '8px 0 6px',
-};
-const MARK_FINISH: CSSProperties = {
-  width: 26,
-  height: 26,
-  borderRadius: '50%',
-  boxSizing: 'border-box',
-  border: '3px solid #8A4B9E',
-  boxShadow: '0 0 0 5px #F7F3FA, 0 0 0 8px #8A4B9E',
-  margin: '4px 0',
-};
-
-function PeriodChain({ startDay, endDay, label }: { startDay: string; endDay: string; label: string }) {
+function PeriodChain({ startDay, endDay }: { startDay: string; endDay: string }) {
   const n = daysBetween(startDay, endDay);
   const days = Array.from({ length: n + 1 }, (_, i) => addDays(startDay, i));
   return (
     <div className="flex flex-col gap-2 rounded-[20px] bg-period px-[18px] py-4">
-      <span className="text-xs font-semibold tracking-[.12em] text-subtle">{label}</span>
-      <div className="no-scrollbar -mx-2 -my-1 flex items-end overflow-x-auto px-2 py-1" aria-hidden="true">
+      <span className="text-xs font-semibold tracking-[.12em] text-subtle uppercase">
+        Event är aktivt under perioden {formatKeyMedium(startDay)} till {formatKeyMedium(endDay)}
+      </span>
+      <div className="no-scrollbar -mx-2 -my-1 flex items-start overflow-x-auto px-2 py-1" aria-hidden="true">
         {days.map((key, i) => (
-          <span key={key} className="flex w-11 flex-none flex-col items-center gap-1 sm:w-14">
-            <span style={i === 0 ? MARK_START : i === n ? MARK_FINISH : MARK_BETWEEN} />
+          <span key={key} className="flex w-11 flex-none flex-col items-center sm:w-14">
+            <PeriodSymbol kind={i === 0 ? 'start' : i === n ? 'finish' : 'control'} />
             <span className="text-[11px] font-semibold tracking-[.06em] text-subtle uppercase">{keyWeekdayShort(key)}</span>
           </span>
         ))}
       </div>
-      <span className="text-[13px] text-muted">
-        Ute {formatKeyMedium(startDay)} till {formatKeyMedium(endDay)}.
-      </span>
     </div>
   );
 }

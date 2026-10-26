@@ -67,7 +67,7 @@ export default function MessagesPage() {
   }
 
   if (!session || !api) return <p className="text-muted">Laddar…</p>;
-  const canSeeHidden = session.permissions.some((p) => ['course_setter', 'publisher', 'board', 'superadmin'].includes(p));
+  const canSeeHidden = session.permissions.some((p) => ['publisher', 'board', 'superadmin'].includes(p));
 
   return (
     <div className="mx-auto flex max-w-[720px] flex-col gap-4">

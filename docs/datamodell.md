@@ -21,6 +21,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `eventorId` | string? | Vid speglad tävling |
 | `slug` | string \| null | Stabil adress, t.ex. `2026-10-21-tisdagstraning`. Sätts vid första publiceringen (`<startdatum>-<titel>`, `-2` vid krock) och låses därefter |
 | `status` | `draft \| scheduled \| published \| unpublished` | Styr synlighet |
+| `rsvpEnabled` | bool? | Visar "Kommer du?" (kommer / kommer kanske / kommer inte) för inloggade medlemmar på eventsidan (beslut 0012). Saknas = av. Ingår i `published` |
 | `resultsEnabled` | bool? | Bockruta "Resultat på träningen" (beslut 0017): visar startlista/resultat i admin. Förvalt sant för träningar. Ingår inte i `published` |
 | `publishAt` | timestamp? | Schemalagd publicering (status `scheduled`) |
 | `publisher` | `string \| null` | "Publicerat av": uid för en medlem i `members` (beslut 0015), eller `null`. Valfritt fält (äldre events saknar det; klienten skriver alltid `null` eller ett uid, 1–128 tecken A–Z/a–z/0–9). Förvalt är den som skapar eventet. Namn och bild slås upp vid bygget och visas bara om `members/{uid}.publicName` är sant. Ingår i `published`. Får inte ändras av banläggare |
@@ -29,7 +30,7 @@ Alla fält finns alltid (reglerna kräver det). Innehållsfälten (`type` … `l
 | `publishedAt` | timestamp? | Sätts vid Publicera. Delningsknappen jämför `meta/build.lastBuildAt` mot detta (inte `updatedAt`, som ändras vid varje sparat utkast) |
 | `createdBy`, `createdAt`, `updatedAt` | | |
 
-**Banläggare (`course_setter`, beslut 0006)** får läsa alla events och uppdatera ett event *bara* så att `courseFiles` ändras (plus `updatedBy`/`updatedAt`). Är eventet publicerat (`status == 'published'`) får samma skrivning sätta `published.courseFiles` till exakt utkastets `courseFiles`; resten av `published`, `publishedAt`, `status` och `slug` är orörda. Banorna går då live vid nästa bygge utan att andra utkastsändringar publiceras. På utkast och avpublicerade events ändras bara utkastets `courseFiles`. Banläggare kan inte skapa, radera, publicera eller avpublicera.
+*Banläggare finns inte längre som roll (beslut 0024); publicerare lägger in banor.*
 
 ### `events/{eventId}/results/{entryId}` (beslut 0017)
 Intern startlista/resultatrad. Alla fält finns alltid. Banläggare, publicerare, styrelse och superadmin läser och skriver. Fält: `name` (1–100), `course` (fritext, högst 100), `memberUid` (uid eller `null`), `startAt`, `finishAt` (måltid) och `totalSeconds` (egen sluttid, 0–86400), alla `null` tills de är satta, `youth` (bool, LOK-stöd, aldrig publik), `show` (`time` | `participated` | `hidden`), `createdBy`/`createdAt`/`updatedBy`/`updatedAt`. Regler och tester: `tests/rules/results.test.ts`.
@@ -111,7 +112,7 @@ Internt: bara styrelse och superadmin får läsa och skriva. **Bygget läser ald
 Ogiltiga eller dubblerade id på att göra-punkter (t.ex. `nybörjare-träff` med å/ä/ö) rättas av klienten när protokollet läses (`uniqueTodoIds` i `src/lib/protocol.ts`) och sparas rätt nästa gång. uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utsedda personen, bara det egna fältet, värdet `request.time`; tillbakadragande av eget godkännande (`null`) går på olåst protokoll. Varje innehållsändring nollställer båda godkännandena i samma skrivning. Låst protokoll kan inte ändras eller raderas; radering bara av utkast utan godkännanden. Reglerna kontrollerar inte att uid:n finns eller är unika i listorna (klienten gör det, `validateProtocol`).
 
 ### `users/{uid}`
-`displayName`, `email`, `permissions[]` (`member`, `course_setter`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
+`displayName`, `email`, `permissions[]` (`member`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 
 `avatarColor` (id ur paletten i `src/lib/avatar.ts`), `photoUrl` (token-URL till `avatars/<uid>.jpg`, tom sträng = ingen bild) och `hidden` (bool, "Dölj mig", beslut 0018; ersatte `hideNameInRsvp`) är valfria och skrivs bara av användaren själv (beslut 0013). Raderas hela dokumentet av `deleteMyAccount`.
 

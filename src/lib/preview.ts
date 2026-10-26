@@ -29,6 +29,7 @@ export function toPreview(c: EventContent, slug: string | null, publisher?: Publ
     courseFiles: c.courseFiles.length ? toPublicCourseFiles(c.courseFiles) : undefined,
     image: toPublicImage(c.image),
     publisher,
+    rsvpEnabled: c.rsvpEnabled,
     bodyHtml: renderMarkdown(c.body),
     excerpt: toExcerpt(c.body),
   };

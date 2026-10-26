@@ -53,6 +53,8 @@ export interface EventContent {
   image: EventImage | null;
   /** "Publicerat av": uid för en medlem (members/{uid}), eller null = ingen. Namn och bild slås upp vid bygget. */
   publisher: string | null;
+  /** Inloggade medlemmar kan svara kommer / kommer kanske / kommer inte (beslut 0012). Äldre events saknar fältet = av. */
+  rsvpEnabled: boolean;
 }
 
 /**
@@ -119,6 +121,8 @@ export interface PublicEvent {
   image?: { url: string; alt: string };
   /** "Publicerat av", bara när personen godkänt policyn och inte dolt sitt namn (members.publicName) */
   publisher?: PublicPublisher;
+  /** Visa svarsrutan (kommer / kommer inte) för inloggade medlemmar */
+  rsvpEnabled?: boolean;
   /** Publicerad resultatlista (sorterad på bana och tid), bara när resultat publicerats */
   results?: PublicResultEntry[];
   bodyHtml: string;

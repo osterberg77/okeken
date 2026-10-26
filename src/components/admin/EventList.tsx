@@ -10,7 +10,7 @@ import { StatusLabel } from './StatusBadge';
 
 export default function EventList() {
   return (
-    <AdminGate allowed={canViewEvents} requirement="publicerare, banläggare, styrelse eller superadmin">
+    <AdminGate allowed={canViewEvents} requirement="publicerare, styrelse eller superadmin">
       {(session) => <Events publisher={canPublish(session.permissions)} />}
     </AdminGate>
   );

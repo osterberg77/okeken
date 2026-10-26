@@ -27,7 +27,7 @@ const USERS: Record<string, string[]> = {
   super: ['superadmin'],
   publisher: ['publisher'],
   member: ['member'],
-  setter: ['course_setter'],
+  setter: ['member'],
   nobody: [],
 };
 

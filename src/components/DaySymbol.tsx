@@ -61,6 +61,33 @@ export default function DaySymbol({ kind }: { kind: DayKind }) {
   );
 }
 
+/** Symbol i kedjan för ett event som pågår flera dagar: start, kontroll, mål. Samma figurer och streck som kalendern. */
+export function PeriodSymbol({ kind }: { kind: 'start' | 'control' | 'finish' }) {
+  return (
+    <svg viewBox="0 0 72 64" aria-hidden="true" className="block h-auto w-full overflow-visible">
+      {kind === 'start' && (
+        <>
+          <Leg x1={65.65} x2={72} />
+          <Triangle points="36,2.35 61.68,46.83 10.32,46.83" />
+        </>
+      )}
+      {kind === 'control' && (
+        <>
+          <Leg x1={0} x2={12.9} />
+          <Leg x1={59.1} x2={72} />
+          <circle cx="36" cy="32" r="23.1" fill="none" stroke={ACCENT} strokeWidth="2.6" />
+        </>
+      )}
+      {kind === 'finish' && (
+        <>
+          <Leg x1={0} x2={12.9} />
+          <DoubleRing />
+        </>
+      )}
+    </svg>
+  );
+}
+
 /** Liten starttriangel för "idag"-knappen */
 export function StartIcon() {
   return (

@@ -1,4 +1,4 @@
-# 0006 – Banläggare redigerar `courseFiles` själva
+# 0006 – (Ersatt av 0024) Banläggare redigerar `courseFiles` själva
 
 **Kontext:** PDF-banor (`courseFiles` på events) kunde bara kopplas till ett event av publicerare, trots att banläggaren redan fick ladda upp filerna till Storage. Banor laddas ofta upp sent (kvällen före eller samma dag), och banläggaren ska inte behöva vänta på en publicerare. Samtidigt får banläggaren inte kunna ändra eller publicera något annat i eventet.
 

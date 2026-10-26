@@ -88,6 +88,7 @@ export async function loadPublishedEvents() {
         courseFiles: Array.isArray(p.courseFiles) && p.courseFiles.length ? toPublicCourseFiles(p.courseFiles) : undefined,
         image: toPublicImage(p.image),
         publisher: publisherOf(p.publisher),
+        rsvpEnabled: p.rsvpEnabled === true,
         results: resultsOf(d.id),
         body: p.body ?? '',
       },

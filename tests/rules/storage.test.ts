@@ -10,7 +10,7 @@ const USERS: Record<string, string[]> = {
   publisher: ['publisher'],
   board: ['board'],
   super: ['superadmin'],
-  setter: ['course_setter'],
+  setter: ['member'],
   member: ['member'],
   nobody: [],
 };
@@ -57,7 +57,7 @@ const put = (s: ReturnType<typeof as>, path: string, data: Uint8Array = pdf(), c
   uploadBytes(ref(s, path), data, { contentType });
 
 describe('storage: courses – uppladdning', () => {
-  for (const uid of ['publisher', 'board', 'super', 'setter']) {
+  for (const uid of ['publisher', 'board', 'super']) {
     it(`${uid} kan ladda upp en PDF`, async () => {
       await assertSucceeds(put(as(uid), fresh()));
     });
@@ -90,7 +90,7 @@ describe('storage: courses – uppladdning', () => {
   // Emulatorn räknar en överskrivning som create (produktion som update, som nekas), så skyddet går inte att testa här.
   // Reglerna får inte referera till `resource`: det gav "Null value error" i Rules-tjänsten och nekade nya filer.
   it.skip('skriver inte över befintliga filer (kan inte testas i emulatorn)', async () => {
-    for (const uid of ['publisher', 'board', 'super', 'setter']) {
+    for (const uid of ['publisher', 'board', 'super']) {
       await assertFails(put(as(uid), 'courses/ev1/existing-Bana.pdf'));
     }
   });

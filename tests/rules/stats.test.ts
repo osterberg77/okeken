@@ -4,7 +4,7 @@ import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestE
 import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 
 let env: RulesTestEnvironment;
-const USERS: Record<string, string[]> = { member: ['member'], setter: ['course_setter'], publisher: ['publisher'], board: ['board'], superadmin: ['superadmin'] };
+const USERS: Record<string, string[]> = { member: ['member'], setter: ['member'], publisher: ['publisher'], board: ['board'], superadmin: ['superadmin'] };
 
 beforeAll(async () => {
   env = await initializeTestEnvironment({ projectId: 'demo-okeken', firestore: { rules: readFileSync('firestore.rules', 'utf8') } });

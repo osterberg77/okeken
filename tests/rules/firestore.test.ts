@@ -272,7 +272,7 @@ describe('users: privacy consent', () => {
 
 describe('users: superadmin', () => {
   it('can add and remove any permission on others', async () => {
-    for (const p of ['member', 'course_setter', 'publisher', 'board', 'superadmin']) {
+    for (const p of ['member', 'publisher', 'board', 'superadmin']) {
       await assertSucceeds(updatePerms('super', 'target', ['member', p].filter((v, i, a) => a.indexOf(v) === i)));
     }
     await assertSucceeds(updatePerms('super', 'target', []));
@@ -316,7 +316,7 @@ describe('users: superadmin', () => {
 });
 
 describe('users: board', () => {
-  it.each(['member', 'course_setter', 'publisher', 'board'])('can add and remove %s on others', async (p) => {
+  it.each(['member', 'publisher', 'board'])('can add and remove %s on others', async (p) => {
     await setPerms('target', []);
     await assertSucceeds(updatePerms('board', 'target', [p]));
     await assertSucceeds(updatePerms('board', 'target', []));

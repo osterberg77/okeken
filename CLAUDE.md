@@ -15,7 +15,7 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 ## Konventioner
 
 - Kod, identifierare, filnamn och commits på **engelska**. UI-text och dokumentation på **svenska**.
-- Rolldata använder engelska nycklar: `member`, `course_setter`, `publisher`, `board`, `superadmin`.
+- Rolldata använder engelska nycklar: `member`, `publisher`, `board`, `superadmin`.
 - Datum/tider: lagra som Firestore-timestamp (UTC), visa alltid i `Europe/Stockholm`. Bygget körs i UTC på GitHub Actions, så ange tidszon explicit vid formatering.
 - Markdown renderas med `src/lib/markdown.ts` både i bygget och i preview; rå HTML escapas och bara säkra länkar släpps igenom.
 - TypeScript strict. Delade typer för Firestore-dokument på ett ställe (`src/types/`), används av både Astro-bygget och admin.

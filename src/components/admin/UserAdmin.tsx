@@ -187,8 +187,7 @@ function UserList({ session }: { session: Session }) {
 
 const PERMISSION_DETAILS: Record<Permission, string> = {
   member: 'Är inloggad medlem. Ger ingen åtkomst till adminsidorna än, men markerar att personen hör till klubben.',
-  course_setter: 'Kan se alla events (även utkast) och ladda upp banor som PDF till ett event. Kan inte ändra något annat på eventet.',
-  publisher: 'Kan skapa, redigera och publicera events och infosidor, ändra huvudmenyn och använda bildbanken.',
+  publisher: 'Kan skapa, redigera och publicera events och infosidor, lägga in banor och resultat, ändra huvudmenyn och använda bildbanken.',
   board: 'Allt en publicerare kan, plus läsa och skriva styrelsens protokoll. Kan ge och ta bort alla behörigheter utom superadmin, även styrelse (också sin egen).',
   superadmin: 'Allt, och är den enda som kan ge och ta bort superadmin. Du kan inte ta bort din egen superadmin.',
 };

@@ -10,7 +10,7 @@ import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
-const PERMISSIONS = ['member', 'course_setter', 'publisher', 'board', 'superadmin'];
+const PERMISSIONS = ['member', 'publisher', 'board', 'superadmin'];
 const [email, ...permissions] = process.argv.slice(2);
 
 if (!email || permissions.length === 0 || permissions.some((p) => !PERMISSIONS.includes(p))) {
