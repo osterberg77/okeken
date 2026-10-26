@@ -41,8 +41,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     return pagefind;
   }
 
+  // Löpnummer: flera körningar med samma sökord kan vara igång samtidigt (input + submit, eller ?q= + input);
+  // bara den senaste får skriva träffar, annars läggs de till flera gånger.
+  let runId = 0;
+
   async function run() {
     const term = input.value.trim();
+    const id = ++runId;
     list.replaceChildren();
     if (!term) {
       status.textContent = '';
@@ -52,8 +57,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     if (!pf) return;
     const search = await pf.search(term);
     const results = await Promise.all(search.results.slice(0, 20).map((r: any) => r.data()));
-    if (input.value.trim() !== term) return;
+    if (id !== runId) return;
     status.textContent = results.length ? `${results.length} träffar` : 'Inga träffar.';
+    const items: HTMLElement[] = [];
     for (const r of results) {
       const li = document.createElement('li');
       li.className = 'rounded-[20px] bg-white p-4 shadow-card';
@@ -66,8 +72,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       // Pagefind returnerar utdraget som HTML med <mark>; övrig text är escapad av Pagefind.
       p.innerHTML = r.excerpt;
       li.append(a, p);
-      list.append(li);
+      items.push(li);
     }
+    list.replaceChildren(...items);
   }
 
   input.addEventListener('input', () => {
