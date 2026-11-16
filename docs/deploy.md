@@ -26,3 +26,7 @@ gcloud projects add-iam-policy-binding okeken \
 ```
 
 Projektnumret (1034481154088) byts om projektet sätts upp på nytt.
+
+## API-nyckelns adressbegränsning
+
+Webbappens nyckel (*Browser key (auto created by Firebase)*) är sedan 2026-10-22 begränsad till vissa webbadresser. Google godtar **inte** jokertecken för porten (`http://localhost:*/*` matchar ingenting), så varje port för lokal utveckling måste stå uttryckligen, t.ex. `http://localhost:4321/*` och `http://localhost:4322/*`. Saknas porten nekas all inloggning från dev med 403 (`Requests from referer … are blocked`). Ändras i Google Cloud Console → APIs & Services → Credentials.

@@ -1,0 +1,22 @@
+diff --git a/src/formats/omap/reader/decode.ts b/src/formats/omap/reader/decode.ts
+index 195a9d2..08ada78 100644
+--- a/src/formats/omap/reader/decode.ts
++++ b/src/formats/omap/reader/decode.ts
+@@ -21,7 +21,7 @@ function parseOmapXml(xml: string): OmapFile {
+     attributeNamePrefix: '',
+     removeNSPrefix: true,
+     allowBooleanAttributes: true,
+-    processEntities: true,
++    processEntities: { enabled: true, maxTotalExpansions: 50_000_000, maxExpandedLength: 50_000_000 },
+     // fast-xml-parser trims attribute whitespace by default, which
+     // silently stripped Mapper's leading spaces from `name=" Small
+     // crossable watercourse"` etc — that shift broke every
+@@ -460,7 +460,7 @@ function collectExtras(xml: string): OmapExtras {
+     parseAttributeValue: false,
+     parseTagValue: false,
+     trimValues: false,
+-    processEntities: true,
++    processEntities: { enabled: true, maxTotalExpansions: 50_000_000, maxExpandedLength: 50_000_000 },
+   })
+   const mapNode = requireMapElement(stripWhitespaceTextNodes(parser.parse(xml)))
+   const barriers = ensureArray(mapNode?.barrier)

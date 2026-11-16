@@ -954,6 +954,35 @@ service cloud.firestore {
       allow delete: if isMember() && request.auth.uid == uid;
     }
 
+    // ---- Orienteringskartor (beslut 0025) ------------------------------------------------
+    // maps/{mapId}: namn från klienten; `current` (tile-adressen) och `job` skrivs bara av konverteringsjobbet och
+    // Function (Admin SDK). Tile-adressen är svårgissad och står bara här, därför får bara medlemmar läsa.
+    function validMapName(name) {
+      return name is string && name.size() >= 1 && name.size() <= 80;
+    }
+
+    match /maps/{mapId} {
+      allow read: if isMember();
+
+      allow create: if canPublish()
+        && mapId.matches('^[a-z0-9][a-z0-9-]{0,39}$')
+        && request.resource.data.keys().hasOnly(['name', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['name', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt'])
+        && validMapName(request.resource.data.name)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if canPublish()
+        && onlyChanges(['name', 'updatedBy', 'updatedAt'])
+        && validMapName(request.resource.data.name)
+        && request.resource.data.updatedBy == request.auth.uid
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+    }
+
     // ---- Användare ---------------------------------------------------------------
 
     // Profilfärg (väljs ur en fast palett, se src/lib/avatar.ts) och profilbild (egen Storage-fil avatars/<uid>.jpg)

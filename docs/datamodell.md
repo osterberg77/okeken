@@ -111,6 +111,9 @@ Internt: bara styrelse och superadmin får läsa och skriva. **Bygget läser ald
 
 Ogiltiga eller dubblerade id på att göra-punkter (t.ex. `nybörjare-träff` med å/ä/ö) rättas av klienten när protokollet läses (`uniqueTodoIds` i `src/lib/protocol.ts`) och sparas rätt nästa gång. uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utsedda personen, bara det egna fältet, värdet `request.time`; tillbakadragande av eget godkännande (`null`) går på olåst protokoll. Varje innehållsändring nollställer båda godkännandena i samma skrivning. Låst protokoll kan inte ändras eller raderas; radering bara av utkast utan godkännanden. Reglerna kontrollerar inte att uid:n finns eller är unika i listorna (klienten gör det, `validateProtocol`).
 
+### `maps/{mapId}` (orienteringskartor, beslut 0025)
+`mapId` är en kort slug (`botorp`, `atvid`). Fält som klienten skriver: `name`, `createdBy`, `createdAt`, `updatedBy`, `updatedAt`. Fält som bara konverteringen skriver (Admin SDK): `current` (`version`, `bounds` `[s, w, n, e]`, `minZoom`, `maxZoom`, `scale`, `sourceName`, `builtAt`) och `job` (`status` `queued`/`running`/`done`/`failed`, `sourcePath`, `sourceName`, `queuedAt`, `startedAt`, `finishedAt`, `error`). Läsbar för inloggade med någon behörighet; publicerare och uppåt skapar och byter namn. Tiles hämtas från `map_tiles/<mapId>/<current.version>/`.
+
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
 
@@ -132,11 +135,17 @@ Regler och tester: `storage.rules`, `tests/rules/storage.test.ts`.
 courses/{eventId}/{filename}.pdf
 image_bank/{imageId}-{original|web|thumbnail}.{jpg|png|webp}   # bildbanken, beslut 0007
 templates/{templateId}.svg   # skrivs endast av Cloud Function
+map_sources/{mapId}/{tid}-{namn}.{omap|ocd}   # originalkartor, beslut 0025
+map_tiles/{mapId}/{version}/{z}/{x}/{y}.png   # skrivs endast av konverteringsjobbet
+map_rasters/{mapId}/{version}.tif             # GeoTIFF, ingen klientåtkomst
 ```
 
 - `courses/`: alla får hämta, ingen får lista. Banläggare, publicerare, styrelse och superadmin laddar upp nya PDF:er (max 10 MB). Ingen överskrivning eller radering.
 - `avatars/<uid>.jpg`: profilbild (beslut 0013). Bara ägaren skriver och raderar, JPEG högst 500 kB, inloggade får hämta, ingen listning. Raderas av `deleteMyAccount`.
 - `image_bank/`: platt mapp. Alla får hämta (bilderna visas för besökare via token-URL), ingen får lista. Publicerare, styrelse och superadmin laddar upp nya filer (JPEG/PNG/WebP, ändelsen ska stämma med typen, max 10 MB) och bara så länge posten `imageBank/<imageId>` inte finns. Radering är tillåten bara när posten är borta. Ingen överskrivning och ingen ändring av metadata.
+
+- `map_sources/`: publicerare, styrelse och superadmin laddar upp nya kartfiler (högst 100 MB, bara om `maps/<mapId>` finns) och får hämta dem. Ingen listning, överskrivning eller radering.
+- `map_tiles/`: alla med adressen får hämta, ingen får lista eller skriva. Adressen innehåller en slumpad version och står bara i `maps/{mapId}`.
 
 ## Senare
 `attendance/{eventId}/entries/{id}` för närvaroregistrering (namn utan konto ska gå att registrera).

@@ -1,8 +1,9 @@
-import { initializeApp } from 'firebase-admin/app';
+import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { onDocumentUpdated, onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onObjectFinalized } from 'firebase-functions/v2/storage';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import { logger } from 'firebase-functions';
@@ -17,6 +18,7 @@ import { createPayment, InvalidMembershipRequest, parseRequest } from './members
 import { publishResults, unpublishResults } from './results.js';
 import { EventNotOpen, GuestLimitReached, InvalidSelfResult, parseSelfResult, registerParticipation } from './self-result.js';
 import { publishDueEvents } from './scheduled-publish.js';
+import { markMapJobFailed, parseMapSource, queueMapJob, runMapJob } from './maps.js';
 
 export { hit } from './stats.js';
 
@@ -284,5 +286,27 @@ export const createMembershipPayment = onCall(async (request) => {
     }
     logger.error('Medlemsbetalning kunde inte skapas', err);
     throw new HttpsError('internal', 'Kunde inte skapa betalningen. Försök igen.');
+  }
+});
+
+/**
+ * En ny originalkarta i map_sources/ (beslut 0025): markera jobbet som väntande i maps/{mapId} och starta
+ * Cloud Run-jobbet map-converter, som bygger tiles och byter kartversion. Tjänstekontot behöver run.jobs.runWithOverrides.
+ */
+export const onMapSourceUploaded = onObjectFinalized({ timeoutSeconds: 60 }, async (event) => {
+  const source = parseMapSource(event.data.name);
+  if (!source) return;
+  const db = getFirestore();
+  if (!(await queueMapJob(db, source))) {
+    logger.warn('Kartfil utan karta i Firestore', { path: source.sourcePath });
+    return;
+  }
+  try {
+    const { access_token } = await applicationDefault().getAccessToken();
+    await runMapJob(process.env.GCLOUD_PROJECT ?? 'okeken', access_token, source);
+    logger.info('Kartkonvertering startad', source);
+  } catch (err) {
+    logger.error('Kunde inte starta kartkonverteringen', err);
+    await markMapJobFailed(db, source, 'Konverteringen kunde inte startas.');
   }
 });

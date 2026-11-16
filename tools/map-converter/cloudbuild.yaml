@@ -1,0 +1,8 @@
+# gcloud builds submit --config tools/map-converter/cloudbuild.yaml .   (from the repo root)
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'tools/map-converter/Dockerfile', '-t', 'europe-north1-docker.pkg.dev/$PROJECT_ID/map-converter/map-converter:latest', '.']
+images:
+  - europe-north1-docker.pkg.dev/$PROJECT_ID/map-converter/map-converter:latest
+options:
+  machineType: E2_HIGHCPU_8

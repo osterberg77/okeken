@@ -99,6 +99,29 @@ service firebase.storage {
       allow update: if false;
     }
 
+    // ---- Orienteringskartor (beslut 0025) -----------------------------------------------
+    // Originalfiler: map_sources/<mapId>/<tid>-<namn>.<omap|ocd>. Uppladdningen startar konverteringen (Function
+    // onMapSourceUploaded). Bara publicerare och uppåt, bara nya filer och bara till en karta som finns i Firestore.
+    match /map_sources/{mapId}/{fileName} {
+      allow get: if canUploadCourses();
+      allow list: if false;
+      allow create: if canUploadCourses()
+        && mapId.matches('^[a-z0-9][a-z0-9-]{0,39}$')
+        && fileName.matches('^[0-9]{13}-[A-Za-z0-9][A-Za-z0-9._-]{0,99}[.](omap|ocd)$')
+        && firestore.exists(/databases/(default)/documents/maps/$(mapId))
+        && request.resource.size > 0
+        && request.resource.size <= 100 * 1024 * 1024;
+      allow update, delete: if false;
+    }
+
+    // Tiles: map_tiles/<mapId>/<version>/<z>/<x>/<y>.png, skrivs bara av konverteringsjobbet. Alla med adressen får
+    // hämta (versionen är slumpad och står bara i maps/{mapId}, som bara medlemmar läser), ingen får lista.
+    match /map_tiles/{allPaths=**} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if false;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

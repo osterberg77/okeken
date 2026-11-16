@@ -1,0 +1,5 @@
+# Only the map converter image is built from the repo root (tools/map-converter/Dockerfile)
+*
+!tools/map-converter/
+tools/map-converter/node_modules
+!scripts/map-tiles.mjs

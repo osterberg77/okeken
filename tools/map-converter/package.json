@@ -1,0 +1,9 @@
+{
+  "name": "okeken-map-converter",
+  "private": true,
+  "type": "module",
+  "description": "Cloud Run Job that turns OpenOrienteering Mapper maps into XYZ tiles (docs/beslut/0025)",
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}

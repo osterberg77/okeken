@@ -178,6 +178,11 @@ export default function AccountMenu() {
             Meddelanden
             {unread > 0 && <span className="rounded-full bg-[#D6322E] px-2 py-0.5 text-xs font-bold text-white">{unread}</span>}
           </a>
+          {session.permissions.length > 0 && (
+            <a href="/kartor" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+              Kartor
+            </a>
+          )}
           <a href="/profil" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
             Profil och inställningar
           </a>

@@ -25,3 +25,4 @@ En fil per beslut: `NNNN-kort-titel.md` med *Kontext*, *Beslut*, *Konsekvenser*.
 | [0019](0019-meddelanden.md) | Meddelanden: `conversations/{a_b}` med `messages`, personlig avsändare, en läsmarkering per konversation, röd badge, dolda nås inte i sökningen | Beslutat |
 | [0020](0020-medlemsavgift-och-betalningar.md) | Medlemsavgift: avgiftstabell per år, betalning via Swish-länk/QR utan avtal, väntande betalningar som styrelsen prickar av, status per person och år | Beslutat |
 | [0024](0024-banlaggare-tas-bort.md) | Banläggare som roll tas bort; publicerare lägger in banor (ersätter 0006) | Beslutat |
+| [0025](0025-orienteringskartor-som-tiles.md) | Orienteringskartor som tiles: Cloud Run Job konverterar uppladdade .omap/.ocd, tiles i Storage under svårgissad version, `immutable`-cache, `maps` läsbar för medlemmar | Beslutat |
