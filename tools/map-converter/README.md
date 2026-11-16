@@ -35,6 +35,11 @@ gcloud run jobs deploy map-converter --project $P --region=$R \
 # Functions tjänstekonto (compute default) får starta jobbet med parametrar:
 gcloud run jobs add-iam-policy-binding map-converter --project $P --region=$R \
   --member=serviceAccount:1034481154088-compute@developer.gserviceaccount.com --role=roles/run.developer
+# Storage får skicka uppladdningshändelser till Functions (CI-kontot kan inte ge IAM-roller):
+gcloud projects add-iam-policy-binding $P --condition=None \
+  --member=serviceAccount:$(gcloud storage service-agent --project $P) --role=roles/pubsub.publisher
 ```
+
+Allt ovan kördes 2026-11-16.
 
 Jobbet kör som compute-standardkontot, som redan får läsa och skriva Firestore och Storage. Ny image efter ändring: kör `gcloud builds submit` och `gcloud run jobs deploy` igen.
