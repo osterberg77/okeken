@@ -14,7 +14,7 @@ PANMAP=<panmap>/dist/cli/main.js node scripts/map-tiles.mjs "Kartbas Botorp 25.o
 4. `rsvg-convert` ger en PNG. Standard är 600 dpi, där 1 px = 0,635 m vid 1:15 000, vilket ungefär motsvarar zoomnivå 17.
 5. En world file (`.pgw`) med full affin transform (skala, rotation, translation) enligt Mappers `Georeferencing::updateTransformation`:
    `P = ref + R(−grivation) · diag(s, −s) · (m − map_ref)`, där `s = rutnätsfaktor × auxiliary × skala / 10⁶` (meter per µm).
-6. `gdal_translate` ger en GeoTIFF (COG, EPSG:3006), som sparas för senare PDF-utsnitt. `gdal2tiles --xyz` ger tiles i EPSG:3857 under `tiles/{z}/{x}/{y}.png`, plus `map.json` med bounds och zoomnivåer.
+6. `gdal_translate` ger en GeoTIFF (COG, EPSG:3006), som sparas för senare PDF-utsnitt. `gdalwarp -r lanczos` projicerar om till EPSG:3857 i exakt z17-upplösning, linjerat mot tile-rutnätet (`-tap`). `gdal2tiles --xyz` gör sedan tiles under `tiles/{z}/{x}/{y}.png`, plus `map.json` med bounds och zoomnivåer. Utan den uttryckliga warpen vrider gdal2tiles rätt och projicerar om med närmaste-pixel-sampling, och då blir sneda kanter trappstegade, tydligast på roterade kartor (upptäckt 2026-11-16 på Halleholm, grivation 5,3°).
 
 7. `pngquant` med 128 färger: ca en tredjedel av full PNG utan synlig skillnad (64 färger gjorde gröna streck blågröna).
 

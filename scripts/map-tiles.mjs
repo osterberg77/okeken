@@ -143,13 +143,27 @@ console.log(`Pixel size ${Math.hypot(c1E - c0E, c1N - c0N).toFixed(3)} m`)
 // 6. GeoTIFF (keeps the original raster, useful for PDF crops later) + tiles.
 const tif = join(outDir, `${name}.tif`)
 run('gdal_translate', ['-q', '-a_srs', `EPSG:${epsg}`, '-of', 'COG', '-co', 'COMPRESS=DEFLATE', '-co', 'BIGTIFF=IF_SAFER', png, tif])
+// Reproject explicitly with a proper filter. Left to gdal2tiles, the rotation (grivation) and SWEREF -> Web Mercator
+// step goes through a warped VRT with nearest-neighbour sampling, which makes every slanted edge jagged.
+// Target: Web Mercator at exactly the max zoom's resolution, aligned to the tile grid (-tap), so the top level is 1:1.
+const [, zTop] = zoom.split('-').map(Number)
+const res = 156543.03392804097 / 2 ** zTop
+const merc = join(work, `${name}-3857.tif`)
+console.log(`Warping to EPSG:3857 at ${res.toFixed(4)} m/px (z${zTop})`)
+run('gdalwarp', [
+  '-q', '-overwrite', '-t_srs', 'EPSG:3857', '-r', 'lanczos', '-tr', String(res), String(res), '-tap',
+  '-dstalpha', '-multi', '-wo', 'NUM_THREADS=ALL_CPUS', '-wm', '1024',
+  '-co', 'COMPRESS=DEFLATE', '-co', 'TILED=YES', '-co', 'BIGTIFF=IF_SAFER',
+  tif, merc,
+])
+
 const tiles = join(outDir, 'tiles')
 if (existsSync(tiles)) rmSync(tiles, { recursive: true })
 console.log(`Tiling z${zoom}`)
 run('gdal2tiles.py', [
   '--xyz', '-q', '-p', 'mercator', '-z', zoom, '-r', 'lanczos', '-w', 'none',
   `--processes=${workers}`,
-  tif, tiles,
+  merc, tiles,
 ], { stdio: ['ignore', 'pipe', 'inherit'] })
 
 // 6b. 8-bit palette: o-maps have few colours, ~1/3 of the size with no visible difference at 128 colours.
