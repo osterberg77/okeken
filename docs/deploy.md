@@ -30,3 +30,14 @@ Projektnumret (1034481154088) byts om projektet sätts upp på nytt.
 ## API-nyckelns adressbegränsning
 
 Webbappens nyckel (*Browser key (auto created by Firebase)*) är sedan 2026-10-22 begränsad till vissa webbadresser. Google godtar **inte** jokertecken för porten (`http://localhost:*/*` matchar ingenting), så varje port för lokal utveckling måste stå uttryckligen, t.ex. `http://localhost:4321/*` och `http://localhost:4322/*`. Saknas porten nekas all inloggning från dev med 403 (`Requests from referer … are blocked`). Ändras i Google Cloud Console → APIs & Services → Credentials.
+
+## Storage-trigger kräver läsrätt till bucketen (engångssteg)
+
+Function `onMapSourceUploaded` (beslut 0025) triggas av Storage. Vid deploy slår Firebase CLI upp bucketens region, och utan läsrätt till bucketens metadata stoppas hela deployen med `Can't find the storage bucket region`. Gjort 2026-11-16:
+
+```
+gcloud storage buckets add-iam-policy-binding gs://okeken.firebasestorage.app --project okeken \
+  --member=serviceAccount:github-deploy@okeken.iam.gserviceaccount.com --role=roles/storage.legacyBucketReader
+```
+
+Storages tjänsteagent har också fått `roles/pubsub.publisher` (se `tools/map-converter/README.md`).
