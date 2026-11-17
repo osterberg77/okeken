@@ -12,3 +12,5 @@
 - Regler och tester: `tests/rules/courses.test.ts`, ändrat test i `tests/rules/maps.test.ts`.
 - Versioner byggda före ändringen saknar `sourcePath`; klienten använder då `job.sourcePath` om jobbet byggde samma fil.
 - Inga nya beroenden.
+
+**Tillägg 2026-11-17: import från IOF XML.** I banpanelen kan man importera en bana från IOF XML 3.0 (t.ex. Purple Pen, Arkiv > Exportera). Tolken (`src/lib/iof-xml.ts`) läser kontrollernas `Position lat/lng` i banans ordning och kräver alltså koordinater i filen, vilket Purple Pen bara skriver om kartan där har georeferens. Saknas de visas ett förklarande fel; `MapPosition` (mm på papperet) används inte eftersom kartans georeferens inte lagras. Importen fyller bara i editorn (kan ändras och sparas som vanligt), max 50 punkter, varning om banan ligger utanför vald karta. GPS-läget "Visa min position" finns redan för att hitta kontrollerna i skogen.

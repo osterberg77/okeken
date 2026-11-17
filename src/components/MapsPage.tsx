@@ -43,6 +43,7 @@ export default function MapsPage() {
   const [courses, setCourses] = useState<Course[] | null>(null);
   const [courseMsg, setCourseMsg] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [imported, setImported] = useState<{ name: string; points: CoursePoint[] }[] | null>(null);
   const [scale, setScale] = useState<number | null>(null);
   const [orientation, setOrientation] = useState<Orientation>('portrait');
   const [printProgress, setPrintProgress] = useState<number | null>(null);
@@ -192,6 +193,33 @@ export default function MapsPage() {
     setCourseName(c.name);
     setScale(c.scale);
     setCourseMsg('');
+    setTimeout(() => viewer.current?.fitCourse(), 0);
+  }
+
+  async function importFile(file: File | undefined) {
+    if (!file) return;
+    try {
+      const { parseIofCourses, outsideBounds } = await import('../lib/iof-xml');
+      const found = await parseIofCourses(await file.text());
+      setImported(found);
+      if (found.length === 1) applyImported(found[0], outsideBounds);
+      else setCourseMsg('Filen innehåller flera banor, välj en.');
+    } catch (e) {
+      setImported(null);
+      setCourseMsg(e instanceof Error ? e.message : 'Kunde inte läsa filen.');
+    }
+  }
+
+  function applyImported(c: { name: string; points: CoursePoint[] }, outsideBounds?: (p: CoursePoint[], b: [number, number, number, number]) => boolean) {
+    const points = c.points.slice(0, MAX_COURSE_POINTS);
+    setUndoStack((h) => [...h.slice(-49), pointsRef.current]);
+    setPoints(points);
+    setCourseId(null);
+    setCourseName(c.name.slice(0, MAX_COURSE_NAME));
+    setImported(null);
+    const cut = c.points.length > MAX_COURSE_POINTS ? ` Bara de första ${MAX_COURSE_POINTS} punkterna togs med.` : '';
+    const far = map?.current && outsideBounds?.(points, map.current.bounds) ? ' Banan ligger utanför vald karta, kontrollera att du valt rätt karta.' : '';
+    setCourseMsg(`Importerade ${points.length} punkter. Ändra vid behov och spara.${cut}${far}`);
     setTimeout(() => viewer.current?.fitCourse(), 0);
   }
 
@@ -352,6 +380,37 @@ export default function MapsPage() {
                   Ny bana
                 </button>
                 {points.length >= MAX_COURSE_POINTS && <span className="text-sm text-muted">Högst {MAX_COURSE_POINTS} punkter.</span>}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className={pill(false)}>
+                  Importera bana (IOF XML)
+                  <input
+                    type="file"
+                    accept=".xml,text/xml,application/xml"
+                    className="sr-only"
+                    onChange={(e) => {
+                      void importFile(e.target.files?.[0]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                <span className="text-sm text-muted">Från Purple Pen: Arkiv &gt; Exportera &gt; IOF XML 3.0. Kartan i Purple Pen måste ha koordinater.</span>
+                {imported && (
+                  <select
+                    aria-label="Välj bana att importera"
+                    defaultValue=""
+                    onChange={(e) => {
+                      const c = imported[Number(e.target.value)];
+                      if (c) import('../lib/iof-xml').then(({ outsideBounds }) => applyImported(c, outsideBounds));
+                    }}
+                    className="rounded-xl border border-line bg-white px-3 py-2"
+                  >
+                    <option value="" disabled>Välj bana…</option>
+                    {imported.map((c, i) => (
+                      <option key={i} value={i}>{c.name || `Bana ${i + 1}`} ({c.points.length} punkter)</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 text-sm font-semibold">
