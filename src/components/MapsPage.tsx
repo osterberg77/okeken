@@ -3,7 +3,7 @@ import { rememberedSignIn } from '../lib/firebase/flags';
 import { courseLength, formatLength, formatScale } from '../lib/course';
 import type { Orientation } from '../lib/map-print';
 import type { OMapViewer } from '../lib/omap-viewer';
-import { MAX_COURSE_NAME, MAX_COURSE_POINTS, PRINT_SCALES, type Course, type CoursePoint, type OMap } from '../types/map';
+import { DEFAULT_PRINT_SCALE, MAX_COURSE_NAME, MAX_COURSE_POINTS, PRINT_SCALES, type Course, type CoursePoint, type OMap } from '../types/map';
 import type { Session } from '../types/user';
 
 type Api = typeof import('../lib/firebase/maps');
@@ -34,6 +34,10 @@ export default function MapsPage() {
   // Banläggning och utskrift (beslut 0026)
   const [panel, setPanel] = useState<'course' | 'print' | null>(null);
   const [points, setPoints] = useState<CoursePoint[]>([]);
+  // Tidigare versioner av banan, för Ångra (tillägg, flytt och borttagning)
+  const [undoStack, setUndoStack] = useState<CoursePoint[][]>([]);
+  const pointsRef = useRef(points);
+  pointsRef.current = points;
   const [courseId, setCourseId] = useState<string | null>(null);
   const [courseName, setCourseName] = useState('');
   const [courses, setCourses] = useState<Course[] | null>(null);
@@ -108,7 +112,7 @@ export default function MapsPage() {
   useEffect(() => () => viewer.current?.destroy(), []);
 
   const mapScale = map?.current?.scale ?? 10000;
-  const printScale = scale ?? mapScale;
+  const printScale = scale ?? DEFAULT_PRINT_SCALE;
   const scales = [...new Set<number>([...PRINT_SCALES, mapScale])].sort((a, b) => a - b);
 
   useEffect(() => {
@@ -117,6 +121,7 @@ export default function MapsPage() {
 
   useEffect(() => {
     viewer.current?.setEditing(panel === 'course', (next) => {
+      setUndoStack((h) => [...h.slice(-49), pointsRef.current]);
       setPoints(next);
       setCourseMsg('');
     });
@@ -141,6 +146,7 @@ export default function MapsPage() {
     if (!map) return;
     if (courseMapId.current && courseMapId.current !== map.id) {
       setPoints([]);
+      setUndoStack([]);
       setCourseId(null);
       setCourseName('');
       setScale(null);
@@ -163,8 +169,15 @@ export default function MapsPage() {
     }
   }
 
+  function undo() {
+    setPoints(undoStack[undoStack.length - 1] ?? []);
+    setUndoStack((h) => h.slice(0, -1));
+    setCourseMsg('');
+  }
+
   function newCourse() {
     setPoints([]);
+    setUndoStack([]);
     setCourseId(null);
     setCourseName('');
     setCourseMsg('');
@@ -174,6 +187,7 @@ export default function MapsPage() {
     if (c.mapId !== map?.id) choose(c.mapId);
     courseMapId.current = c.mapId;
     setPoints(c.points);
+    setUndoStack([]);
     setCourseId(c.id);
     setCourseName(c.name);
     setScale(c.scale);
@@ -323,7 +337,7 @@ export default function MapsPage() {
           {panel === 'course' && (
             <section aria-label="Banläggning" className="flex flex-col gap-3 rounded-[20px] bg-period p-4">
               <p className="m-0 text-sm">
-                Klicka på kartan för att lägga ut punkter: första punkten är start och sista är mål. Dra en punkt för att flytta den.
+                Klicka på kartan för att lägga ut punkter: första punkten är start och sista är mål. Klicka på ett streck för att lägga in en kontroll där. Dra en punkt för att flytta den, klicka på den för att ta bort den.
                 Symbolerna visas i den storlek de får på utskriften ({formatScale(printScale)}).
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -331,7 +345,7 @@ export default function MapsPage() {
                 <span className="text-sm text-muted">
                   {points.length >= 2 ? `${points.length - 2} kontroller, fågelvägen` : 'Lägg ut start och mål'}
                 </span>
-                <button type="button" onClick={() => setPoints((p) => p.slice(0, -1))} disabled={points.length === 0} className={pill(false)}>
+                <button type="button" onClick={undo} disabled={undoStack.length === 0} className={pill(false)}>
                   Ångra
                 </button>
                 <button type="button" onClick={newCourse} disabled={points.length === 0 && !courseId} className={pill(false)}>

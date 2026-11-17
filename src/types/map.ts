@@ -68,3 +68,5 @@ export interface Course {
 export const MAX_COURSE_POINTS = 50;
 export const MAX_COURSE_NAME = 80;
 export const PRINT_SCALES = [4000, 5000, 7500, 10000, 15000] as const;
+/** Klubben kör nästan alltid 1:7500, så banläggning och utskrift börjar där oavsett kartans egen skala. */
+export const DEFAULT_PRINT_SCALE = 7500;

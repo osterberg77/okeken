@@ -3,7 +3,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { CoursePoint } from '../types/map';
-import { COURSE_COLOR, courseShapes, MAX_POINTS, type XY } from './course';
+import { COURSE_COLOR, courseShapes, MAX_POINTS, MM, type XY } from './course';
 import { printFrame, type Orientation } from './map-print';
 
 const OSM = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -76,25 +76,28 @@ export function mountOMapViewer(el: HTMLElement, opacity: number): OMapViewer {
     const toLL = (p: XY): L.LatLngTuple => [ref.lat + p.y / k, ref.lng + p.x / (k * cos)];
     const unit = courseScale / 1000;
     const shapes = courseShapes(points.map(toXY), unit, 1);
-    const style = { color: COURSE_COLOR, weight: 2.5, fill: false, interactive: false };
+    // Linjebredd och siffror i samma skala som ringarna: mm på papperet → meter i terrängen → pixlar vid aktuell zoom
+    const pxPerMm = unit / ((156543.03392 * Math.cos((map.getCenter().lat * Math.PI) / 180)) / 2 ** map.getZoom());
+    const style = { color: COURSE_COLOR, weight: Math.max(0.5, MM.line * pxPerMm), fill: false, interactive: false };
+    const fontPx = Math.max(7, MM.number * pxPerMm);
     for (const [a, b] of shapes.legs) L.polyline([toLL(a), toLL(b)], style).addTo(course);
     if (shapes.start) L.polygon(shapes.start.map(toLL), style).addTo(course);
     for (const c of shapes.controls) {
-      L.circle(toLL(c.at), { ...style, radius: 2.5 * unit }).addTo(course);
+      L.circle(toLL(c.at), { ...style, radius: MM.control * unit }).addTo(course);
       L.marker(toLL(c.label), {
         interactive: false,
         keyboard: false,
         icon: L.divIcon({
           className: '',
-          iconSize: [28, 20],
-          iconAnchor: [14, 10],
-          html: `<span style="display:block;text-align:center;color:${COURSE_COLOR};font:700 15px/20px Arial,sans-serif;text-shadow:0 0 3px #fff,0 0 3px #fff">${c.n}</span>`,
+          iconSize: [fontPx * 2, fontPx],
+          iconAnchor: [fontPx, fontPx / 2],
+          html: `<span style="display:block;text-align:center;color:${COURSE_COLOR};font:${fontPx}px/${fontPx}px Arial,sans-serif;text-shadow:0 0 2px #fff,0 0 2px #fff">${c.n}</span>`,
         }),
       }).addTo(course);
     }
     if (shapes.finish) {
-      L.circle(toLL(shapes.finish), { ...style, radius: 2.5 * unit }).addTo(course);
-      L.circle(toLL(shapes.finish), { ...style, radius: 3.5 * unit }).addTo(course);
+      L.circle(toLL(shapes.finish), { ...style, radius: MM.finishInner * unit }).addTo(course);
+      L.circle(toLL(shapes.finish), { ...style, radius: MM.finishOuter * unit }).addTo(course);
     }
   }
 
@@ -102,29 +105,57 @@ export function mountOMapViewer(el: HTMLElement, opacity: number): OMapViewer {
     className: '',
     iconSize: [30, 30],
     iconAnchor: [15, 15],
-    html: `<span style="display:block;width:30px;height:30px;border-radius:50%;cursor:move;background:rgba(182,47,181,.12)"></span>`,
+    html: `<span style="display:block;width:30px;height:30px;border-radius:50%;cursor:move"></span>`,
   });
 
   function drawHandles() {
     handles.clearLayers();
     if (!editing) return;
     points.forEach((p, i) => {
-      const m = L.marker([p.lat, p.lng], { draggable: true, icon: handleIcon, title: i === 0 ? 'Start' : `Punkt ${i + 1}`, keyboard: false });
+      const name = i === 0 ? 'Start' : i === points.length - 1 && i > 0 ? 'Mål' : `Kontroll ${i}`;
+      const m = L.marker([p.lat, p.lng], { draggable: true, icon: handleIcon, title: `${name} – klicka för att ta bort`, keyboard: false });
       m.on('drag', () => {
         const ll = m.getLatLng();
         points = points.map((q, j) => (j === i ? { lat: ll.lat, lng: ll.lng } : q));
         drawCourse();
       });
       m.on('dragend', () => onCourseChange(points));
+      // Klick (inte drag) tar bort punkten; Leaflet skickar inget klick efter en dragning
+      m.on('click', () => onCourseChange(points.filter((_, j) => j !== i)));
       m.addTo(handles);
     });
   }
 
   const onMapClick = (e: L.LeafletMouseEvent) => {
     if (!editing || points.length >= MAX_POINTS) return;
-    onCourseChange([...points, { lat: e.latlng.lat, lng: e.latlng.lng }]);
+    const added = { lat: e.latlng.lat, lng: e.latlng.lng };
+    const leg = legAt(e.containerPoint);
+    // Klick på ett streck lägger in en kontroll mellan dess punkter, annars läggs punkten sist
+    onCourseChange(leg === null ? [...points, added] : [...points.slice(0, leg), added, ...points.slice(leg)]);
   };
+
+  /** Index för punkten som avslutar sträckan närmast `p` (inom ca ett fingertopp), eller null. */
+  const LEG_HIT_PX = 12;
+  function legAt(p: L.Point): number | null {
+    let best: number | null = null;
+    let bestDist = LEG_HIT_PX;
+    for (let i = 1; i < points.length; i++) {
+      const a = map.latLngToContainerPoint([points[i - 1].lat, points[i - 1].lng]);
+      const b = map.latLngToContainerPoint([points[i].lat, points[i].lng]);
+      const ab = b.subtract(a);
+      const len2 = ab.x * ab.x + ab.y * ab.y;
+      if (len2 === 0) continue;
+      const t = Math.max(0, Math.min(1, ((p.x - a.x) * ab.x + (p.y - a.y) * ab.y) / len2));
+      const d = p.distanceTo(L.point(a.x + t * ab.x, a.y + t * ab.y));
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    }
+    return best;
+  }
   map.on('click', onMapClick);
+  map.on('zoomend', drawCourse);
 
   return {
     show(next, fit) {

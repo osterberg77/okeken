@@ -1,5 +1,5 @@
 // Utskrift av ett kartutsnitt på A4 i vald skala (beslut 0026). Sidan byggs av kartans egna tiles som <img> placerade
-// i millimeter, med banan som SVG ovanpå, och skrivs ut med webbläsarens utskriftsdialog. Inga extra anrop utöver
+// i millimeter (hela A4-arket, centrerat på sidans utskrivbara yta), med banan som SVG ovanpå, och skrivs ut med webbläsarens utskriftsdialog. Inga extra anrop utöver
 // de rutor som täcker utsnittet, och upplösningen väljs så låg som ger ca 180 dpi.
 import L from 'leaflet';
 import type { CoursePoint } from '../types/map';
@@ -7,9 +7,15 @@ import { COURSE_COLOR, courseShapes, MM, type XY } from './course';
 
 export type Orientation = 'portrait' | 'landscape';
 
-/** Utskriftsytan inom sidmarginalen på 10 mm (med 1 mm marginal mot sidbrytning). */
+/** Utskriftsytan inom sidmarginalen på 5 mm, det som säkert kommer med (ramen på skärmen). */
 export function paperSize(orientation: Orientation): { w: number; h: number } {
-  return orientation === 'portrait' ? { w: 190, h: 276 } : { w: 277, h: 189 };
+  return orientation === 'portrait' ? { w: 200, h: 287 } : { w: 287, h: 200 };
+}
+
+/** Hela A4-arket. Kartan hämtas för hela arket och centreras, så att sidan fylls ut till skrivarens egen marginal
+ * även när webbläsaren inte följer @page-marginalen (t.ex. Safari) – skalan påverkas inte. */
+function sheetSize(orientation: Orientation): { w: number; h: number } {
+  return orientation === 'portrait' ? { w: 210, h: 297 } : { w: 297, h: 210 };
 }
 
 const TILE = 256;
@@ -60,7 +66,7 @@ function svgEl(tag: string, attrs: Record<string, string | number>): SVGElement 
 /** Bygger sidan, väntar in rutorna och öppnar utskriftsdialogen. `onProgress` får andelen hämtade rutor. */
 export async function printMap(job: PrintJob, onProgress: (fraction: number) => void): Promise<void> {
   cleanup();
-  const { w, h } = paperSize(job.orientation);
+  const { w, h } = sheetSize(job.orientation);
   const lat = job.center.lat;
   let z = job.maxZoom;
   for (let candidate = job.minZoom; candidate <= job.maxZoom; candidate++) {
@@ -87,15 +93,17 @@ export async function printMap(job: PrintJob, onProgress: (fraction: number) => 
   const style = document.createElement('style');
   style.id = `${ROOT_ID}-style`;
   style.textContent = `
-    @page { size: A4 ${job.orientation}; margin: 10mm; }
-    #${ROOT_ID} { position: fixed; left: -10000px; top: 0; }
-    #${ROOT_ID} .sheet { position: relative; width: ${w}mm; height: ${h}mm; overflow: hidden; background: #fff;
-      -webkit-print-color-adjust: exact; print-color-adjust: exact; break-inside: avoid; }
+    @page { size: A4 ${job.orientation}; margin: 5mm; }
+    #${ROOT_ID} { position: fixed; left: -10000px; top: 0; width: ${w}mm; height: ${h}mm; overflow: hidden; background: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #${ROOT_ID} .sheet { position: absolute; left: 50%; top: 50%; width: ${w}mm; height: ${h}mm;
+      margin: ${-h / 2}mm 0 0 ${-w / 2}mm; }
     #${ROOT_ID} .tile { position: absolute; display: block; max-width: none; image-rendering: auto; }
     @media print {
       html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; min-height: 0 !important; }
       body > *:not(#${ROOT_ID}) { display: none !important; }
-      #${ROOT_ID} { position: static; }
+      /* Fyller sidans utskrivbara yta, vilken marginal webbläsaren än använder; kartan ligger centrerad i den */
+      #${ROOT_ID} { position: fixed; inset: 0; width: auto; height: auto; }
     }`;
   document.head.append(style);
 
@@ -162,7 +170,7 @@ export async function printMap(job: PrintJob, onProgress: (fraction: number) => 
   logo.alt = '';
   logo.setAttribute('style', 'position:absolute;left:0;bottom:0;width:72mm;height:auto;display:block;background:#fff');
   loads.push(new Promise((resolve) => ((logo.onload = () => resolve()), (logo.onerror = () => resolve()))));
-  sheet.append(logo);
+  root.append(logo);
 
   const caption = document.createElement('div');
   caption.setAttribute(
@@ -174,7 +182,7 @@ export async function printMap(job: PrintJob, onProgress: (fraction: number) => 
     div.textContent = line;
     caption.append(div);
   }
-  sheet.append(caption);
+  root.append(caption);
 
   document.body.append(root);
   if (total === 0) onProgress(1);
