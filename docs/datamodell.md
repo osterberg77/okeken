@@ -112,7 +112,7 @@ Internt: bara styrelse och superadmin får läsa och skriva. **Bygget läser ald
 Ogiltiga eller dubblerade id på att göra-punkter (t.ex. `nybörjare-träff` med å/ä/ö) rättas av klienten när protokollet läses (`uniqueTodoIds` i `src/lib/protocol.ts`) och sparas rätt nästa gång. uid-format: `A–Z a–z 0–9 _ -`, 1–128 tecken. Godkännande: bara den utsedda personen, bara det egna fältet, värdet `request.time`; tillbakadragande av eget godkännande (`null`) går på olåst protokoll. Varje innehållsändring nollställer båda godkännandena i samma skrivning. Låst protokoll kan inte ändras eller raderas; radering bara av utkast utan godkännanden. Reglerna kontrollerar inte att uid:n finns eller är unika i listorna (klienten gör det, `validateProtocol`).
 
 ### `maps/{mapId}` (orienteringskartor, beslut 0025)
-`mapId` är en kort slug (`botorp`, `atvid`). Fält som klienten skriver: `name`, `createdBy`, `createdAt`, `updatedBy`, `updatedAt`. Fält som bara konverteringen skriver (Admin SDK): `current` (`version`, `bounds` `[s, w, n, e]`, `minZoom`, `maxZoom`, `scale`, `sourceName`, `builtAt`) och `job` (`status` `queued`/`running`/`done`/`failed`, `sourcePath`, `sourceName`, `queuedAt`, `startedAt`, `finishedAt`, `error`). Läsbar för inloggade med någon behörighet; publicerare och uppåt skapar och byter namn. Tiles hämtas från `map_tiles/<mapId>/<current.version>/`.
+`mapId` är en kort slug (`botorp`, `atvid`). Fält som klienten skriver: `name`, `createdBy`, `createdAt`, `updatedBy`, `updatedAt`. Fält som bara konverteringen skriver (Admin SDK): `current` (`version`, `bounds` `[s, w, n, e]`, `minZoom`, `maxZoom`, `scale`, `sourceName`, `sourcePath` (originalfilen, från beslut 0026), `builtAt`) och `job` (`status` `queued`/`running`/`done`/`failed`, `sourcePath`, `sourceName`, `queuedAt`, `startedAt`, `finishedAt`, `error`). Läsbar för inloggade med någon behörighet; publicerare och uppåt skapar och byter namn. Tiles hämtas från `map_tiles/<mapId>/<current.version>/`.
 
 ### `users/{uid}`
 `displayName`, `email`, `permissions[]` (`member`, `publisher`, `board`, `superadmin`). Källan för behörigheter (beslut 0005); ändras bara av superadmin/styrelse enligt reglerna.
@@ -120,6 +120,9 @@ Ogiltiga eller dubblerade id på att göra-punkter (t.ex. `nybörjare-träff` me
 `avatarColor` (id ur paletten i `src/lib/avatar.ts`), `photoUrl` (token-URL till `avatars/<uid>.jpg`, tom sträng = ingen bild) och `hidden` (bool, "Dölj mig", beslut 0018; ersatte `hideNameInRsvp`) är valfria och skrivs bara av användaren själv (beslut 0013). Raderas hela dokumentet av `deleteMyAccount`.
 
 `consent` (valfri): `{ version, acceptedAt }`, användarens godkännande av integritetspolicyn (beslut 0011). `version` är policyns datum (`CONSENT_VERSION` i `src/lib/consent.ts`), `acceptedAt` sätts av servern (`request.time`). Bara användaren själv kan skriva fältet, och inte vid kontoskapandet; styrelse och superadmin kan läsa det.
+
+### `users/{uid}/courses/{courseId}` (egna träningsbanor, beslut 0026)
+`name` (1–80 tecken), `mapId`, `points` (högst 50 `{ lat, lng }` i ordning: första = start, sista = mål), `scale` (utskriftsskala, heltal 1 000–50 000), `createdAt`, `updatedAt`. Bara ägaren läser och skriver; bara medlemmar får skapa och ändra. Raderas av `deleteMyAccount`.
 
 ### `rsvps/{slug}/responses/{uid}`
 Svar på ett event (beslut 0012). `status` (`yes`, `maybe`, `no`), `name` (användarens visningsnamn, eller `''` när namnet är dolt) och `updatedAt` (servertid). Dokument-id = uid. Läs/skriv bara för inloggade med minst en behörighet; användaren skriver och raderar bara sitt eget.
@@ -144,7 +147,7 @@ map_rasters/{mapId}/{version}.tif             # GeoTIFF, ingen klientåtkomst
 - `avatars/<uid>.jpg`: profilbild (beslut 0013). Bara ägaren skriver och raderar, JPEG högst 500 kB, inloggade får hämta, ingen listning. Raderas av `deleteMyAccount`.
 - `image_bank/`: platt mapp. Alla får hämta (bilderna visas för besökare via token-URL), ingen får lista. Publicerare, styrelse och superadmin laddar upp nya filer (JPEG/PNG/WebP, ändelsen ska stämma med typen, max 10 MB) och bara så länge posten `imageBank/<imageId>` inte finns. Radering är tillåten bara när posten är borta. Ingen överskrivning och ingen ändring av metadata.
 
-- `map_sources/`: publicerare, styrelse och superadmin laddar upp nya kartfiler (högst 100 MB, bara om `maps/<mapId>` finns) och får hämta dem. Ingen listning, överskrivning eller radering.
+- `map_sources/`: publicerare, styrelse och superadmin laddar upp nya kartfiler (högst 100 MB, bara om `maps/<mapId>` finns). Alla medlemmar får hämta originalet (nedladdningslänken på `/kartor`, beslut 0026). Ingen listning, överskrivning eller radering.
 - `map_tiles/`: alla med adressen får hämta, ingen får lista eller skriva. Adressen innehåller en slumpad version och står bara i `maps/{mapId}`.
 
 ## Senare

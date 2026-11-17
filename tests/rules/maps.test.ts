@@ -108,11 +108,13 @@ describe('storage: map_sources', () => {
   it('filnamn utan tidsstämpel nekas', () => assertFails(uploadBytes(ref(st('publisher'), 'map_sources/botorp/karta.omap'), bytes())));
   it('tom fil nekas', () => assertFails(uploadBytes(ref(st('publisher'), source()), bytes(0))));
 
-  it('publicerare får hämta originalet, medlem inte', async () => {
+  it('medlemmar får hämta originalet, inte inloggad utan behörighet eller besökare', async () => {
     const path = source();
     await assertSucceeds(uploadBytes(ref(st('publisher'), path), bytes()));
     await assertSucceeds(getBytes(ref(st('board'), path)));
-    await assertFails(getBytes(ref(st('member'), path)));
+    await assertSucceeds(getBytes(ref(st('member'), path)));
+    await assertFails(getBytes(ref(st('nobody'), path)));
+    await assertFails(getBytes(ref(st(null), path)));
   });
   it('ingen får lista', () => assertFails(listAll(ref(st('super'), 'map_sources/botorp'))));
 });

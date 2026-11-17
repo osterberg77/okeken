@@ -105,6 +105,7 @@ try {
         maxZoom: meta.maxZoom,
         scale: meta.scale,
         sourceName: data.job.sourceName ?? basename(sourcePath),
+        sourcePath, // members download the original from here
         builtAt: FieldValue.serverTimestamp(),
       },
       'job.status': 'done',

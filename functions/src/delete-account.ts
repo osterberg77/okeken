@@ -22,7 +22,7 @@ export const DELETED_NAME = 'Borttagen';
 /**
  * Raderar en användares uppgifter permanent (beslut 0013, 0018). Ordningen gör att ett avbrott kan köras om:
  * 1. svar på events (rsvps/*\/responses/<uid>), 2. resultatrader (namn blir "Borttagen", länken tas bort) och publicerade
- * resultatlistor byggs om, 3. "Publicerat av" på events rensas, 4. personens konversationer med alla meddelanden raderas (beslut 0019),
+ * resultatlistor byggs om, 3. "Publicerat av" på events rensas, 4. personens konversationer med alla meddelanden raderas (beslut 0019), egna träningsbanor (users/<uid>/courses),
  * 5. profilbilden, 6. användardokumentet (namn, e-post, behörigheter, godkännande), 7. inloggningskontot sist. Det som medvetet blir kvar: uid i createdBy/updatedBy/uploadedBy och i
  * styrelseprotokoll (närvaro, att göra, sekreterare/justerare), med de namn som stod där när protokollet skrevs.
  * Utan användardokument och konto går ett uid inte att koppla till en person; protokoll är föreningens handlingar.
@@ -47,6 +47,7 @@ export async function deleteAccountData(uid: string, { db, auth, bucket }: Servi
   await clearPublisher(uid, db);
   await unlinkPayments(uid, db);
   await deleteConversations(uid, db);
+  await db.recursiveDelete(db.collection(`users/${uid}/courses`));
 
   await bucket.file(`avatars/${uid}.jpg`).delete({ ignoreNotFound: true });
   await db.doc(`users/${uid}`).delete();

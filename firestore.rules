@@ -983,6 +983,28 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // users/{uid}/courses/{courseId}: egna träningsbanor på klubbens kartor (beslut 0026). Bara ägaren läser och skriver,
+    // och bara medlemmar (samma krets som ser kartorna). Punkterna är ordnade: första = start, sista = mål.
+    function validCourse(d) {
+      return d.keys().hasOnly(['name', 'mapId', 'points', 'scale', 'createdAt', 'updatedAt'])
+        && d.keys().hasAll(['name', 'mapId', 'points', 'scale', 'createdAt', 'updatedAt'])
+        && d.name is string && d.name.size() >= 1 && d.name.size() <= 80
+        && d.mapId is string && d.mapId.matches('^[a-z0-9][a-z0-9-]{0,39}$')
+        && d.points is list && d.points.size() <= 50
+        && d.scale is int && d.scale >= 1000 && d.scale <= 50000
+        && d.updatedAt == request.time;
+    }
+
+    match /users/{uid}/courses/{courseId} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid && isMember()
+        && validCourse(request.resource.data)
+        && request.resource.data.createdAt == request.time;
+      allow update: if signedIn() && request.auth.uid == uid && isMember()
+        && validCourse(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
     // ---- Användare ---------------------------------------------------------------
 
     // Profilfärg (väljs ur en fast palett, se src/lib/avatar.ts) och profilbild (egen Storage-fil avatars/<uid>.jpg)

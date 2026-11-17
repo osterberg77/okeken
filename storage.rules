@@ -101,9 +101,16 @@ service firebase.storage {
 
     // ---- Orienteringskartor (beslut 0025) -----------------------------------------------
     // Originalfiler: map_sources/<mapId>/<tid>-<namn>.<omap|ocd>. Uppladdningen startar konverteringen (Function
-    // onMapSourceUploaded). Bara publicerare och uppåt, bara nya filer och bara till en karta som finns i Firestore.
+    // onMapSourceUploaded). Uppladdning bara publicerare och uppåt, bara nya filer och bara till en karta som finns i Firestore.
+    function isMember() {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.permissions.size() > 0;
+    }
+
+    // Medlemmar får hämta originalfilen (nedladdningslänken på /kartor), samma krets som får läsa maps/{mapId}.
     match /map_sources/{mapId}/{fileName} {
-      allow get: if canUploadCourses();
+      allow get: if isMember();
       allow list: if false;
       allow create: if canUploadCourses()
         && mapId.matches('^[a-z0-9][a-z0-9-]{0,39}$')

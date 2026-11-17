@@ -44,7 +44,12 @@ panmap är AGPL-3.0. Konverteringsjobbet kör en patchad panmap åt publicerarna
 
 `/kartor` (länk i kontomenyn för medlemmar): en karta i taget över OSM, val mellan kartorna, reglage för o-kartans opacitet (sparas lokalt) och "Visa min position" (GPS, följer tills man stänger av).
 
+Sedan 2026-11-17 (beslut 0026):
+- **Ladda ner originalfilen** (.omap/.ocd) för medlemmar.
+- **Skriv ut:** en streckad ram i kartans mitt visar A4-utsnittet (stående eller liggande) i vald skala; man flyttar kartan under ramen. Sidan byggs av tiles i webbläsaren (`src/lib/map-print.ts`) med Swish-bilden nere till vänster och banlängd + skala nere till höger. Skriv ut i 100 %.
+- **Lägg bana:** klick på kartan lägger punkter (första = start, sista = mål), punkterna går att dra, Ångra/Ny bana. Längden är fågelvägen. Banorna sparas per användare i `users/{uid}/courses` och listas under "Mina banor". Symbolerna har ISOM-storlek för vald skala (`src/lib/course.ts`).
+
 ## Öppet
 
 - Visa alla kartor samtidigt i stället för en i taget? Botorp och Åtvid överlappar, så det översta lagret täcker det andra där.
-- Senare: PDF-utsnitt ur GeoTIFF:en (`map_rasters/`), rättningsförslag som GeoJSON, banläggning, banan + GPS vid utsättning.
+- Senare: PDF-utsnitt ur GeoTIFF:en (`map_rasters/`, skarpare och med kartans egen nordriktning), rättningsförslag som GeoJSON, mer banläggning (kontrollbeskrivningar, flera banor per utskrift), banan + GPS vid utsättning.

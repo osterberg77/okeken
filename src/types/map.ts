@@ -10,6 +10,8 @@ export interface OMapVersion {
   maxZoom: number;
   scale: number;
   sourceName: string;
+  /** map_sources/<kartId>/<fil>, originalet som medlemmar kan ladda ner (saknas på versioner byggda före 2026-11-17) */
+  sourcePath: string | null;
   builtAt: Date | null;
 }
 
@@ -46,3 +48,23 @@ export function mapIdFromName(name: string): string {
 export function mapTileUrl(bucket: string, mapId: string, version: string, host = 'https://firebasestorage.googleapis.com'): string {
   return `${host}/v0/b/${bucket}/o/map_tiles%2F${mapId}%2F${version}%2F{z}%2F{x}%2F{y}.png?alt=media`;
 }
+
+// Egna träningsbanor (beslut 0026): users/{uid}/courses/{courseId}. Punkterna är ordnade: första = start, sista = mål.
+export interface CoursePoint {
+  lat: number;
+  lng: number;
+}
+
+export interface Course {
+  id: string;
+  name: string;
+  mapId: string;
+  points: CoursePoint[];
+  /** Utskriftsskalan som valdes när banan sparades */
+  scale: number;
+  updatedAt: Date | null;
+}
+
+export const MAX_COURSE_POINTS = 50;
+export const MAX_COURSE_NAME = 80;
+export const PRINT_SCALES = [4000, 5000, 7500, 10000, 15000] as const;
