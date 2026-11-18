@@ -39,8 +39,12 @@ Läs `docs/plan.md` först. Vid konflikt gäller `docs/plan.md` och `docs/beslut
 
 - Byggkanalen är WhatsApp-gruppen **"OK Eken - hemsidebygge"**, nåbar via MCP-servern `whatsapp` (slå upp gruppen på namn med `list_chats`). Där postas change-log vid större ändringar, och Erik ber ibland Claude läsa gruppen efter förslag och kommentarer som underlag för vidare bygge.
 - När Claude postar i gruppen börjar meddelandet alltid med **"🤖 AI-byggaren:"** så att alla ser att det är Claude och inte Erik som skriver.
-- Skriv på svenska, kort och för klubbmedlemmar (inte tekniskt). Posta bara det som är live, och bara när Erik bett om det eller godkänt texten.
+- Skriv på svenska, kort och för klubbmedlemmar (inte tekniskt). Claude ansvarar för bygget och kommunikationen runt det och får själv posta svar, frågor, förklaringar och change-log (se `/it-triage`); Erik styr i bakgrunden. Posta bara det som är live. Större löften, styrelse/pengar/GDPR-frågor och sådant som sägs i Eriks namn stäms av med Erik först.
 - Är ett förslag från en medlem tveksamt (oklart behov, stor ändring, krockar med annat, risk för bieffekter) får Claude i gruppen tagga personen, fråga om detaljerna och belysa konsekvenserna innan något byggs. Håll tonen vänlig och kort, och bygg inte förrän Erik sagt ja.
+
+## Commit och deploy
+
+Under byggfasen får Claude själv committa och deploya mindre saker (fixar, små förbättringar) för snabb respons: `npm run check` först, explicita filer i `git add`, push till `main` triggar deploy, kontrollera att körningen blir grön. Större ändringar (nya collections, regler/roller, migreringar, nya beroenden) och ändringar i produktionsdata stäms av med Erik först.
 
 ## Arbetssätt och modellval
 

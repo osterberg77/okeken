@@ -57,6 +57,8 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
   const [scrollRequest, setScrollRequest] = useState({ n: 0, smooth: false });
   const [viewDay, setViewDay] = useState(initialToday); // styr månadsrubriken
   const scroller = useRef<HTMLDivElement>(null);
+  // Prerenderad HTML börjar scrollad längst till vänster (ett år bakåt); dölj tidslinjen tills den hoppat till valt datum.
+  const [timelineReady, setTimelineReady] = useState(false);
 
   // Inloggade publicerare ser även utkast och ändringar (med statusetikett). Firebase hämtas bara om de är inloggade.
   const [overlay, setOverlay] = useState<DraftOverlay | null>(null);
@@ -121,6 +123,7 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
       left: (daysBetween(rangeStart, selectedDay) - leadDays(el)) * CELL,
       behavior: scrollRequest.smooth ? 'smooth' : 'auto',
     });
+    setTimelineReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollRequest]);
 
@@ -233,7 +236,12 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
             </div>
           </div>
 
-          <div ref={scroller} onScroll={onTimelineScroll} className="no-scrollbar flex overflow-x-auto px-5 pt-1 pb-2">
+          <div
+            ref={scroller}
+            onScroll={onTimelineScroll}
+            style={timelineReady ? undefined : { visibility: 'hidden' }}
+            className="no-scrollbar flex overflow-x-auto px-5 pt-1 pb-2"
+          >
             {days.map((key) => {
               const has = startsOn.has(key);
               const isToday = key === today;
