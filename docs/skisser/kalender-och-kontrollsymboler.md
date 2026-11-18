@@ -80,6 +80,7 @@ Beslut som togs i justeringarna:
 6. **Mindre menyrubriker** (Erik 2026-10-21: "lite i största laget, kanske dra ner till halva storleken"). Menytexten i headern är 15 px på alla skärmbredder (specen hade 30 px på desktop). Pillernas utfyllnad (16 px i sidled, 8 px uppåt/neråt) och chevronen (16 px) är nedskalade i samma proportion, och menyraden är nedflyttad så att den ligger i höjd med logotyp och profilknapp.
 7. **Relativ datummarkering i eventkortet** (Erik 2026-10-22). Bredvid datumet visas en liten lila pill: *Idag*, *Imorgon*, *Om n dagar*, *Pågående* för en flerdagsperiod som redan startat, och *Passerat* när eventet är förbi. Pillen räknas i webbläsaren, eftersom sidorna är förbyggda och "idag" från bygget vore fel dagen efter.
 8. **Karta med körsträcka i eventkortet** (Erik 2026-10-22). Event med koordinater får en SVG-karta i kalenderns kartbakgrund (avsnittet *Kartbakgrund*) med rutten i accentfärg, start som triangel (Åtvidaberg) och mål som dubbelring, samt text om km och körtid. Se `eventor.md`.
+9. **Aktiv period som start – streck – mål** (Erik 2026-11-18: raden med en kontroll per dag "är inte så rolig"). Kedjan med en symbol per dag ersätts av en starttriangel, ett sammanhängande streck och målets dubbelring (samma figurer som i kalendern, se *Aktiv period* under Eventdetalj). Under strecket står antal dagar kvar (*Aktivt i n dagar* före start, *n dagar kvar*, *1 dag kvar*, *Sista dagen*, *Avslutat*; räknas i webbläsaren som pillen i avsteg 7). Under start och mål står veckodag och datum (t.ex. *FRE 27 NOV*). Rubriken *Event är aktivt under perioden …* ligger kvar.
 
 ### Kartbakgrund i panelen
 
@@ -102,7 +103,7 @@ SVG som fyller panelen (`viewBox="0 0 1240 260"`, `preserveAspectRatio="xMidYMid
 - Kort: vit, `border-radius: 28px`; text till vänster, **bild till höger** (300 px bred, `border-radius: 20px`, marginal 14 px, `object-fit: cover`; hamnar överst på smal skärm). Bilden ska kunna väljas per event (bildbanken). Införd som huvudbild, se avsteg 5.
 - Eventtyper (tagg: text/bakgrund): Träning `#3F6B3A`/`#E3F0DC`, Tävling `#6E3A82`/`#EFE3F5`, Möte, Information, Händelse `#6A5A12`/`#F6F0D2`. Tagg: pill, 12 px, vikt 600, `padding: 4px 12px`.
 - Passerat event får en grå tagg "Avslutad" (`#ECE8F2` / `#5F5A72`) och visar resultatlista; knappar: "Jag var med – registrera tid", "Ladda ner bana". Tävling: "Se resultat i Eventor".
-- **Aktiv period ("BANAN ÄR UTE")** för event med start och slut (t.ex. tisdag till söndag): en kedja med en symbol per dag, veckodag under (11 px versaler):
+- **Aktiv period ("BANAN ÄR UTE")** för event med start och slut (t.ex. tisdag till söndag): en kedja med en symbol per dag, veckodag under (11 px versaler). **Ersatt av start – streck – mål, se avsteg 9.** Ursprunglig spec:
   - första dagen: triangel (CSS: `border-left/right: 11px transparent; border-bottom: 19px solid #8A4B9E; margin: 6px 0 4px`)
   - dagar emellan: liten ring 20 px, `border: 2.5px solid rgba(138,75,158,.5)`, `margin: 8px 0 6px`
   - sista dagen: dubbelring (26 px, `border: 3px solid #8A4B9E`, `box-shadow: 0 0 0 5px #F7F3FA, 0 0 0 8px #8A4B9E`, `margin: 4px 0`)

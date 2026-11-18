@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
-  addDays,
   dayKey,
   daysBetween,
   formatEventTime,
   formatKeyLong,
   formatKeyMedium,
+  keyDayOfMonth,
+  keyMonthShort,
   keyWeekdayShort,
 } from '../lib/time';
 import { bankImageSrc } from '../lib/markdown';
@@ -88,7 +89,7 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
         </div>
 
         {startDay !== endDay && (
-          <PeriodChain startDay={startDay} endDay={endDay} />
+          <PeriodChain startDay={startDay} endDay={endDay} now={now} />
         )}
 
         {event.bodyHtml && <div className="prose-eken" dangerouslySetInnerHTML={{ __html: event.bodyHtml }} />}
@@ -170,21 +171,35 @@ export default function EventDetail({ event, today, as: Heading = 'h1', shareUrl
   );
 }
 
-function PeriodChain({ startDay, endDay }: { startDay: string; endDay: string }) {
-  const n = daysBetween(startDay, endDay);
-  const days = Array.from({ length: n + 1 }, (_, i) => addDays(startDay, i));
+/** Text under strecket: dagar kvar av perioden. Tom tills webbläsarens "idag" är känt (sidan är förbyggd). */
+function periodLabel(startDay: string, endDay: string, now: string | null): string {
+  if (!now) return '';
+  if (endDay < now) return 'Avslutat';
+  if (startDay > now) return `Aktivt i ${daysBetween(startDay, endDay) + 1} dagar`;
+  const left = daysBetween(now, endDay);
+  return left === 0 ? 'Sista dagen' : left === 1 ? '1 dag kvar' : `${left} dagar kvar`;
+}
+
+/** Start, ett streck och mål: ingen symbol per dag. Under strecket antal dagar kvar, under start och mål veckodag och datum. */
+function PeriodChain({ startDay, endDay, now }: { startDay: string; endDay: string; now: string | null }) {
+  const dayLabel = (key: string) => `${keyWeekdayShort(key)} ${keyDayOfMonth(key)} ${keyMonthShort(key)}`;
+  const labelClass = 'whitespace-nowrap text-[11px] font-semibold tracking-[.06em] text-subtle uppercase';
   return (
     <div className="flex flex-col gap-2 rounded-[20px] bg-period px-[18px] py-4">
       <span className="text-xs font-semibold tracking-[.12em] text-subtle uppercase">
         Event är aktivt under perioden {formatKeyMedium(startDay)} till {formatKeyMedium(endDay)}
       </span>
-      <div className="no-scrollbar -mx-2 -my-1 flex items-start overflow-x-auto px-2 py-1" aria-hidden="true">
-        {days.map((key, i) => (
-          <span key={key} className="flex w-11 flex-none flex-col items-center sm:w-14">
-            <PeriodSymbol kind={i === 0 ? 'start' : i === n ? 'finish' : 'control'} />
-            <span className="text-[11px] font-semibold tracking-[.06em] text-subtle uppercase">{keyWeekdayShort(key)}</span>
-          </span>
-        ))}
+      <div className="grid grid-cols-[56px_1fr_56px] items-center px-2">
+        <div className="w-14" aria-hidden="true">
+          <PeriodSymbol kind="start" />
+        </div>
+        <div className="h-0.5 bg-[rgba(138,75,158,.62)]" aria-hidden="true" />
+        <div className="w-14" aria-hidden="true">
+          <PeriodSymbol kind="finish" />
+        </div>
+        <span className={`${labelClass} justify-self-center`} aria-hidden="true">{dayLabel(startDay)}</span>
+        <span className="min-h-5 pt-0.5 text-center text-sm font-semibold text-muted">{periodLabel(startDay, endDay, now)}</span>
+        <span className={`${labelClass} justify-self-center`} aria-hidden="true">{dayLabel(endDay)}</span>
       </div>
     </div>
   );
