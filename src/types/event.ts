@@ -55,6 +55,8 @@ export interface EventContent {
   publisher: string | null;
   /** Inloggade medlemmar kan svara kommer / kommer kanske / kommer inte (beslut 0012). Äldre events saknar fältet = av. */
   rsvpEnabled: boolean;
+  /** Information: visas i "Aktuellt" på startsidan mellan start och slut (högst tre). Äldre events saknar fältet = av. */
+  pinned: boolean;
 }
 
 /**
@@ -123,6 +125,8 @@ export interface PublicEvent {
   publisher?: PublicPublisher;
   /** Visa svarsrutan (kommer / kommer inte) för inloggade medlemmar */
   rsvpEnabled?: boolean;
+  /** Fastnålad Information: visas i "Aktuellt" på startsidan medan den pågår */
+  pinned?: boolean;
   /** Publicerad resultatlista (sorterad på bana och tid), bara när resultat publicerats */
   results?: PublicResultEntry[];
   bodyHtml: string;

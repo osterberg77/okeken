@@ -25,6 +25,7 @@ const CELL = 72; // px per dag (symbolytans bredd)
 const DAYS_BEFORE = 5; // dagar till vänster om idag/valt datum (-5 … +10)
 const PAGE = 6; // antal i huvudlistan innan "Visa fler"
 const SIDE = 3; // antal i den andra listan (tidigare resp. kommande)
+const MAX_PINNED = 3; // fastnålade i "Aktuellt"
 const DESKTOP = '(min-width: 1024px)';
 
 // Möte och Händelse är sällsynta och syns under "Alla" (avsteg från specen, se kalender-och-kontrollsymboler.md).
@@ -87,6 +88,15 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
         .map((e) => ({ ...e, startDay: dayKey(e.startsAt), endDay: dayKey(e.endsAt) }))
         .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
     [events, overlay],
+  );
+  // "Aktuellt": publicerad Information som nålats fast och pågår idag, de som slutar först (högst tre).
+  const pinned = useMemo(
+    () =>
+      all
+        .filter((e) => e.pinned && e.type === 'info' && !e.state && e.startDay <= today && e.endDay >= today)
+        .sort((a, b) => a.endsAt.localeCompare(b.endsAt))
+        .slice(0, MAX_PINNED),
+    [all, today],
   );
   const filtered = useMemo(() => (filter === 'all' ? all : all.filter((e) => e.type === filter)), [all, filter]);
   const startsOn = useMemo(() => new Set(filtered.map((e) => e.startDay)), [filtered]);
@@ -153,10 +163,17 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
   }
 
   // Listorna utgår alltid från verkliga idag: "Kommande" (närmast först) är det som inte har passerat,
-  // "Tidigare" (senaste först) det som har passerat. Valt datum styr var listan börjar: väljer man en dag
-  // bakåt i tiden blir "Tidigare" huvudlista och börjar vid den dagen, så att listan följer stegandet bakåt.
+  // "Tidigare" (senaste först) det som har passerat. Väljer man en dag framåt i tiden visas först den dagens
+  // aktiviteter under en egen rubrik, och "Kommande" börjar ändå från idag så att inget mellan idag och den
+  // valda dagen hoppas över. Väljer man en dag bakåt blir "Tidigare" huvudlista och börjar vid den dagen.
   const browsingPast = selectedDay < today;
-  const upcomingAll = filtered.filter((e) => e.endDay >= (browsingPast ? today : selectedDay));
+  const browsingFuture = selectedDay > today;
+  // Den valda dagen: det som startar då, plus pågående perioder (t.ex. en bana som är ute). Information som
+  // pågår i veckor (t.ex. en klädbeställning) visas bara på sin startdag, annars fyller den varje dag.
+  const dayEvents = browsingFuture
+    ? filtered.filter((e) => e.startDay === selectedDay || (e.type !== 'info' && e.startDay < selectedDay && e.endDay >= selectedDay))
+    : [];
+  const upcomingAll = filtered.filter((e) => e.endDay >= today && !dayEvents.includes(e));
   const pastAll = filtered.filter((e) => e.endDay < today && (!browsingPast || e.startDay <= selectedDay)).reverse();
   const lists = browsingPast
     ? [
@@ -169,7 +186,7 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
       ];
   const main = lists[0].all.slice(0, shown);
   const side = lists[1].all.slice(0, SIDE);
-  const chosen = filtered.find((e) => e.slug === selectedSlug) ?? main[0] ?? side[0];
+  const chosen = filtered.find((e) => e.slug === selectedSlug) ?? dayEvents[0] ?? main[0] ?? side[0];
 
   function onRowClick(ev: MouseEvent, e: CalEvent) {
     // Mobil: länken öppnar eventsidan. Desktop: visa i detaljvyn bredvid.
@@ -185,6 +202,23 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
 
   return (
     <div className="flex flex-col gap-7">
+      {pinned.length > 0 && (
+        <section aria-labelledby="aktuellt" className="flex flex-col gap-2.5">
+          <h2 id="aktuellt" className="m-0 font-display text-xl font-bold">Aktuellt</h2>
+          <div className="flex flex-wrap gap-3">
+            {pinned.map((e) => (
+              <a
+                key={e.slug}
+                href={`/event/${e.slug}`}
+                className="flex min-w-0 flex-[1_1_260px] flex-col gap-1 rounded-[22px] bg-white/60 px-[18px] py-3.5 text-ink no-underline shadow-[0_1px_3px_rgba(43,40,56,.06)] hover:bg-white"
+              >
+                <span className="font-display text-[17px] leading-[1.25] font-semibold">{e.title}</span>
+                {e.excerpt && <span className="line-clamp-2 text-[13px] text-subtle">{e.excerpt}</span>}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
       <section aria-label="Tidslinje" className="relative z-10 rounded-[28px] bg-map shadow-panel">
         {/* Kartan klipps i en egen ram så att månadsväljaren kan hänga ut under panelen. */}
         <div className="absolute inset-0 overflow-hidden rounded-[28px]">
@@ -272,7 +306,13 @@ export default function Calendar({ events, initialToday, siteUrl }: Props) {
 
       <section className="flex flex-wrap items-start gap-7">
         <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-3 lg:max-w-[440px]">
-          <h2 className="m-0 mb-0.5 font-display text-xl font-bold">{lists[0].title}</h2>
+          {browsingFuture && (
+            <>
+              <h2 className="m-0 mb-0.5 font-display text-xl font-bold first-letter:uppercase">{formatKeyLong(selectedDay)}</h2>
+              {dayEvents.length > 0 ? dayEvents.map(row) : <p className="m-0 text-muted">Inget planerat den dagen.</p>}
+            </>
+          )}
+          <h2 className={`${browsingFuture ? 'mt-3.5' : 'm-0'} mb-0.5 font-display text-xl font-bold`}>{lists[0].title}</h2>
           {main.length > 0 ? main.map(row) : <p className="text-muted">{lists[0].empty}</p>}
           {lists[0].all.length > main.length && (
             <button

@@ -58,6 +58,7 @@ const content = () => ({
   image: null,
   publisher: null,
   rsvpEnabled: false,
+  pinned: false,
 });
 
 const draftDoc = () => ({
@@ -247,8 +248,8 @@ describe('events: create', () => {
   });
 
   it('saknad nyckel nekas', async () => {
-    // courseFiles, image, publisher och rsvpEnabled är valfria (äldre events saknar dem)
-    for (const key of Object.keys(newEvent()).filter((k) => !['courseFiles', 'image', 'publisher', 'rsvpEnabled'].includes(k))) {
+    // courseFiles, image, publisher, rsvpEnabled och pinned är valfria (äldre events saknar dem)
+    for (const key of Object.keys(newEvent()).filter((k) => !['courseFiles', 'image', 'publisher', 'rsvpEnabled', 'pinned'].includes(k))) {
       const data: Record<string, unknown> = newEvent();
       delete data[key];
       await assertFails(setDoc(ev(as('publisher'), `m-${key}`), data));
@@ -704,6 +705,21 @@ describe('events: svar (rsvpEnabled)', () => {
   });
   it('medlem kan inte ändra', async () => {
     await assertFails(save('draft1', { rsvpEnabled: true }, 'member'));
+  });
+});
+
+describe('events: fastnålad (pinned)', () => {
+  it('publicerare kan slå på, publicera och slå av; ogiltigt värde nekas', async () => {
+    await assertSucceeds(save('draft1', { type: 'info', pinned: true }));
+    const c = { ...content(), type: 'info', pinned: true };
+    await assertSucceeds(save('draft2', { ...c, status: 'published', slug: 'fastnalad', published: c, publishedAt: serverTimestamp() }));
+    // Ögonblicksbilden måste ha samma värde som utkastet
+    await assertFails(save('draft1', { ...c, status: 'published', slug: 'fel-nal', published: { ...c, pinned: false }, publishedAt: serverTimestamp() }));
+    await assertSucceeds(save('draft1', { pinned: false }));
+    await assertFails(save('draft1', { pinned: 'ja' }));
+  });
+  it('medlem kan inte ändra', async () => {
+    await assertFails(save('draft1', { pinned: true }, 'member'));
   });
 });
 

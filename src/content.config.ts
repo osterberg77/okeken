@@ -31,6 +31,7 @@ const events = defineCollection({
     results: z.array(z.object({ name: z.string(), course: z.string(), seconds: z.number().nullable() })).optional(),
     publisher: z.object({ name: z.string(), photoUrl: z.url().optional(), color: z.string().optional() }).optional(),
     rsvpEnabled: z.boolean().optional(),
+    pinned: z.boolean().optional(),
     body: z.string(),
   }),
 });

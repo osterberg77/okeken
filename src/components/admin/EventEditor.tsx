@@ -69,6 +69,7 @@ function newEventContent(uid: string): EventContent {
     // Förvalt är den som skapar eventet; kan bytas eller tas bort i editorn
     publisher: uid,
     rsvpEnabled: false,
+    pinned: false,
   };
 }
 
@@ -85,6 +86,7 @@ const contentOf = (r: EventRecord): EventContent => ({
   image: r.image,
   publisher: r.publisher,
   rsvpEnabled: r.rsvpEnabled,
+  pinned: r.pinned,
 });
 
 /** Huvudbild från en bildbankspost; alt-texten förifylls med beskrivningen (annars namnet) */
@@ -825,6 +827,23 @@ function Editor({ session }: { session: Session }) {
               <span className="block text-[13px] font-normal text-muted">Visas på eventsidan efter att du publicerat.</span>
             </span>
           </label>
+
+          {draft.type === 'info' && (
+            <label className="flex items-start gap-3 text-[15px] font-semibold">
+              <input
+                type="checkbox"
+                checked={draft.pinned}
+                onChange={(e) => update({ pinned: e.target.checked })}
+                className="mt-0.5 h-5 w-5 accent-[#8A4B9E]"
+              />
+              <span>
+                Nåla fast på startsidan
+                <span className="block text-[13px] font-normal text-muted">
+                  Visas under Aktuellt överst på startsidan från start till slut, sedan försvinner den. Högst tre visas, de som slutar först.
+                </span>
+              </span>
+            </label>
+          )}
           </Section>
 
           {id && neverPublished && !courseOnly && (

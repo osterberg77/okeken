@@ -30,6 +30,7 @@ export function toPreview(c: EventContent, slug: string | null, publisher?: Publ
     image: toPublicImage(c.image),
     publisher,
     rsvpEnabled: c.rsvpEnabled,
+    pinned: c.pinned,
     bodyHtml: renderMarkdown(c.body),
     excerpt: toExcerpt(c.body),
   };

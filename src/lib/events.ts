@@ -20,6 +20,7 @@ export async function getPublicEvents(): Promise<PublicEvent[]> {
       image: data.image,
       publisher: data.publisher,
       rsvpEnabled: data.rsvpEnabled,
+      pinned: data.pinned,
       results: data.results,
       bodyHtml: renderMarkdown(data.body),
       excerpt: toExcerpt(data.body),

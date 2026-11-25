@@ -51,6 +51,8 @@ function contentToFirestore(c: EventContent) {
     publisher: c.publisher,
     // Alltid med (false = av), så att published.rsvpEnabled är exakt utkastets
     rsvpEnabled: c.rsvpEnabled,
+    // Alltid med (false = av), av samma skäl
+    pinned: c.pinned,
   };
 }
 
@@ -74,6 +76,7 @@ function contentFromFirestore(d: DocumentData): EventContent {
     image: d.image ?? null,
     publisher: typeof d.publisher === 'string' ? d.publisher : null,
     rsvpEnabled: d.rsvpEnabled === true,
+    pinned: d.pinned === true,
   };
 }
 

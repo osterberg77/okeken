@@ -22,6 +22,7 @@ function snapshotOf(d: FirebaseFirestore.DocumentData) {
     image: d.image ?? null,
     publisher: d.publisher ?? null,
     rsvpEnabled: d.rsvpEnabled === true,
+    pinned: d.pinned === true,
   };
 }
 

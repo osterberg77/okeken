@@ -89,6 +89,7 @@ export async function loadPublishedEvents() {
         image: toPublicImage(p.image),
         publisher: publisherOf(p.publisher),
         rsvpEnabled: p.rsvpEnabled === true,
+        pinned: p.pinned === true,
         results: resultsOf(d.id),
         body: p.body ?? '',
       },
