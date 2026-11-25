@@ -467,7 +467,7 @@ export default function MapsPage() {
           {panel === 'print' && (
             <section aria-label="Utskrift" className="flex flex-col gap-3 rounded-[20px] bg-period p-4">
               <p className="m-0 text-sm">
-                Flytta kartan så att det som ska med hamnar inom den streckade ramen. Välj 100 % (inte "Anpassa till sida") i
+                Dra i den streckade ramen så att det som ska med hamnar inom den. Ramen ligger kvar när du zoomar eller panorerar kartan. Välj 100 % (inte "Anpassa till sida") i
                 utskriftsdialogen, annars stämmer inte skalan.
               </p>
               <div className="flex flex-wrap items-center gap-3">

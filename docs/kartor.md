@@ -46,7 +46,7 @@ panmap är AGPL-3.0. Konverteringsjobbet kör en patchad panmap åt publicerarna
 
 Sedan 2026-11-17 (beslut 0026):
 - **Ladda ner originalfilen** (.omap/.ocd) för medlemmar.
-- **Skriv ut:** en streckad ram i kartans mitt visar A4-utsnittet (stående eller liggande) i vald skala; man flyttar kartan under ramen. Sidan byggs av tiles i webbläsaren (`src/lib/map-print.ts`) med Swish-bilden nere till vänster och banlängd + skala nere till höger. Skriv ut i 100 %.
+- **Skriv ut:** en streckad ram visar A4-utsnittet (stående eller liggande) i vald skala. Den startar i kartans mitt, ligger kvar vid zoom och panorering och flyttas genom att dra i den. Sidan byggs av tiles i webbläsaren (`src/lib/map-print.ts`) med Swish-bilden nere till vänster och banlängd + skala nere till höger. Skriv ut i 100 %.
 - **Lägg bana:** klick på kartan lägger punkter (första = start, sista = mål), punkterna går att dra och klick på ett streck lägger in en kontroll där, klick på en punkt tar bort den, Ångra (backar senaste ändringen)/Ny bana. Längden är fågelvägen. Banorna sparas per användare i `users/{uid}/courses` och listas under "Mina banor". Symbolerna har ISOM-storlek för vald skala (`src/lib/course.ts`).
 
 ## Öppet

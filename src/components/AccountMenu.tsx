@@ -16,7 +16,6 @@ export default function AccountMenu() {
   const [session, setSession] = useState<Session$>(undefined);
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [passwordMail, setPasswordMail] = useState<'idle' | 'sent' | 'error'>('idle');
   const root = useRef<HTMLDivElement>(null);
   // Senast kända avatar, ritas direkt medan sessionen laddas (annars blir det en tom bubbla som byts mot bilden)
   const [cached, setCached] = useState<CachedAvatar | null>(null);
@@ -87,17 +86,6 @@ export default function AccountMenu() {
       document.removeEventListener('keydown', onKey);
     };
   }, [open]);
-
-  async function onChoosePassword() {
-    if (!session) return;
-    try {
-      const { sendPasswordReset } = await import('../lib/firebase/session');
-      await sendPasswordReset(session.email);
-      setPasswordMail('sent');
-    } catch {
-      setPasswordMail('error');
-    }
-  }
 
   async function onSignOut() {
     const { signOut } = await import('../lib/firebase/session');
@@ -195,17 +183,9 @@ export default function AccountMenu() {
             </>
           )}
           <div className="h-px bg-line" />
-          {passwordMail === 'idle' ? (
-            <button type="button" onClick={onChoosePassword} className="cursor-pointer py-1.5 text-left font-medium text-ink hover:text-accent">
-              Välj eller byt lösenord
-            </button>
-          ) : (
-            <p className="m-0 text-[13px] text-muted">
-              {passwordMail === 'sent'
-                ? `Vi har mejlat en länk till ${session.email} där du väljer lösenord.`
-                : 'Kunde inte skicka mejlet. Försök igen senare.'}
-            </p>
-          )}
+          <a href="/profil" className="py-1.5 font-medium text-ink no-underline hover:text-accent">
+            Lösenord
+          </a>
           {needsConsent ? (
             <button type="button" onClick={() => { setOpen(false); setConsentAsked(false); }} className="cursor-pointer py-1.5 text-left font-medium text-ink hover:text-accent">
               Godkänn integritetspolicyn

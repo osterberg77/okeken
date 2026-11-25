@@ -23,7 +23,7 @@ export interface OMapViewer {
   setOpacity(opacity: number): void;
   /** Följ GPS-positionen; `onError` får ett meddelande på svenska. */
   locate(on: boolean, onError: (message: string) => void): void;
-  /** Utskriftsram i kartans mitt (följer med när man panorerar), eller null för att ta bort den. */
+  /** Utskriftsram: startar i kartans mitt, ligger sedan kvar på sin plats och flyttas bara genom att dra i den. null tar bort den. */
   setPrintFrame(frame: { scale: number; orientation: Orientation } | null): void;
   center(): L.LatLng;
   /** Ritar banan i den storlek den får vid `scale` (som på utskriften). */
@@ -53,9 +53,39 @@ export function mountOMapViewer(el: HTMLElement, opacity: number): OMapViewer {
 
   // ---- Utskriftsram ----
   let frame: { scale: number; orientation: Orientation } | null = null;
-  const frameRect = L.rectangle([[0, 0], [0, 0]], { color: ACCENT, weight: 2, dashArray: '6 6', fill: false, interactive: false });
-  const moveFrame = () => frame && frameRect.setBounds(printFrame(map.getCenter(), frame.scale, frame.orientation));
-  map.on('move', moveFrame);
+  let frameCenter: L.LatLng | null = null;
+  const frameRect = L.rectangle([[0, 0], [0, 0]], { color: ACCENT, weight: 2, dashArray: '6 6', fill: true, fillOpacity: 0.04, interactive: true, className: 'print-frame' });
+  const drawFrame = () => frame && frameCenter && frameRect.setBounds(printFrame(frameCenter, frame.scale, frame.orientation));
+  // Dra ramen med mus eller finger; kartan panorerar inte under tiden
+  frameRect.on('add', () => {
+    const path = frameRect.getElement() as SVGElement | undefined;
+    if (!path) return;
+    path.style.cursor = 'move';
+    path.style.touchAction = 'none';
+    let grab: L.LatLng | null = null; // skillnad mellan greppunkt och ramens mitt
+    path.addEventListener('pointerdown', (e) => {
+      if (!frameCenter) return;
+      const at = map.mouseEventToLatLng(e);
+      grab = L.latLng(frameCenter.lat - at.lat, frameCenter.lng - at.lng);
+      path.setPointerCapture(e.pointerId);
+      map.dragging.disable();
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    path.addEventListener('pointermove', (e) => {
+      if (!grab) return;
+      const at = map.mouseEventToLatLng(e);
+      frameCenter = L.latLng(at.lat + grab.lat, at.lng + grab.lng);
+      drawFrame();
+    });
+    const end = () => {
+      if (!grab) return;
+      grab = null;
+      map.dragging.enable();
+    };
+    path.addEventListener('pointerup', end);
+    path.addEventListener('pointercancel', end);
+  });
 
   // ---- Bana ----
   let points: CoursePoint[] = [];
@@ -195,14 +225,16 @@ export function mountOMapViewer(el: HTMLElement, opacity: number): OMapViewer {
       frame = next;
       if (!frame) {
         frameRect.remove();
+        frameCenter = null;
         return;
       }
-      moveFrame();
-      frameRect.addTo(map);
+      frameCenter ??= map.getCenter();
+      drawFrame();
+      if (!map.hasLayer(frameRect)) frameRect.addTo(map);
       // Zooma ut om ramen inte får plats
       if (!map.getBounds().contains(frameRect.getBounds())) map.fitBounds(frameRect.getBounds(), { padding: [24, 24] });
     },
-    center: () => map.getCenter(),
+    center: () => frameCenter ?? map.getCenter(),
     setCourse(next, scale) {
       points = next;
       courseScale = scale;

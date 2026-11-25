@@ -59,7 +59,16 @@ function JobStatus({ map }: { map: OMap }) {
   if (job.status === 'failed') {
     return (
       <p role="alert" className="m-0 rounded-2xl bg-[#FBEAEA] px-3 py-2 text-sm text-[#8A2B2B]">
-        {job.sourceName} gick inte att bygga{job.error ? `: ${job.error}` : '.'} Kontrollera att kartan är georefererad i Mapper och försök igen.
+        {/georeferencing/i.test(job.error ?? '') ? (
+          <>
+            {job.sourceName} saknar en riktig georeferens (koordinatsystem, t.ex. SWEREF 99 TM, och en referenspunkt), så den går inte att lägga mot GPS.
+            Ange koordinatsystem i OCAD (Kartinställningar → Koordinatsystem) eller Mapper (Map → Georeferencing), spara om filen och försök igen.
+          </>
+        ) : (
+          <>
+            {job.sourceName} gick inte att bygga{job.error ? `: ${job.error}` : '.'} Kontrollera att kartan är georefererad i Mapper och försök igen.
+          </>
+        )}
       </p>
     );
   }
